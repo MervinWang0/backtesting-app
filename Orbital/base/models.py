@@ -2,6 +2,16 @@ from django.db import models
 from django.contrib.auth.models import User
 from Orbital.Orbital import settings
 
+
+#Time stamp model to track creation date/time and update date/time
+class TimeStampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add = True)
+    updated_at = models.DateTimeField(auto_now = True)
+
+    class Meta:
+        abstract = True
+
+
 # Create your models here.
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="User_Profile")
@@ -68,4 +78,81 @@ class FuturesPriceHistory(models.Model):
     def __str__(self) -> str:
         return f"{self.contracts.contract_code} - {self.date} expiring on {self.contracts.expiry_date}"
     
+
+#This is to store results of each backtest
+#Backtest contains final result of a backtest run, mainly storing performance metrics
+
 class Backtest(TimeStampedModel): 
+    class AssetType(models.TextChoices):
+        STOCK = "STOCK", "Stock"
+        FUTURES = "FUTURES", "Futures"
+
+    #name of backtest run
+    name = models.CharField(max_length=255, blank=True)
+
+    #strategy name
+    strategy_name = models.CharField(max_length=100, blank=False)
+
+    #Find out what is being traded (stock, futures etc..)
+    asset_type = models.CharField(max_length=10, choices= AssetType.choices)
+
+    stock = models.ForeignKey(Stock, on_delete=models.CASCADE, null=True, blank=True)
+    futures = models.ForeignKey(FuturesContract, on_delete=models.CASCADE, null=True, blank= True)
+
+    start_date = models.DateField()
+    end_date = models.DateField()
+
+    starting_capital = models.DecimalField(max_digits = 10, decimal_places=2)
+    end_equity = models.DecimalField(max_digits = 15, decimal_places= 2)
+
+    #Trade performance metrics 
+    total_return = models.FloatField()
+    cagr = models.FloatFied()
+    sharpe_ratio = models.FloatField()
+    sortino_ratio = models.FloatField()
+    drawdown = models.FloatField()
+
+    #portfolio performance metrics
+    total_trade = models.PositiveBigIntegerField(default = 0)
+    win_rate = models.FloatField(default = 0.0)
+    average_win = models.FloatField(default= 0.0)
+    average_loss = models.FloatField(default = 0.0)
+    profit_factor = models.FloatField(default = 0.0)
+
+
+#This is to store information of every trade made in the backtest run
+class BacktestTrade(models.Model):
+    class Signal(models.TextChoices):
+        LONG = "LONG", 'Long'       #Bullish 
+        SHORT = "SHORT", 'Short'    #Bearish
+
+    backtest = models.ForeignKey(Backtest, on_delete=models.CASCADE, related_names = "trades")
+
+    symbol = models.CharField(max_length = 20)
+    direction = models.CharField(max_length=10, choices=Signal.choices)
+
+    entry_time = models.DateTimeField()
+    exit_time = models.DateTimeField()
+
+    volume = models.DecimalField(max_digits = 20, decimal_places = 8)
+
+    entry_price = models.DecimalField(max_digits = 20, decimal_places = 8)
+    exit_price = models.DecimalField(max_digits = 20, decimal_places= 8)
+
+    pnl = models.DecimalField(max_digits = 20, decimal_places= 2)
+    pct = models.FloatField(default= 0.0)
+
+
+#This is to store portfolio information at every day 
+class EquityPoint(models.Model):
+    backtest = models.ForeignKey(Backtest, on_delete=models.CASCADE, related_names = "equity_point")\
+    
+    datetime = models.DateTimeField()
+
+    cash = models.DecimalField(max_digits = 20, decimal_places = 8)
+    holdings_value = models.DecimalField(max_digits=20, decimal_places= 8)
+    equity = models.DecimalField(max_digits = 20, decimal_places = 8)
+    pct = models.FloatField(default=0.0)
+    drawdown = models.FloatField(default=0.0)
+
+
