@@ -16,9 +16,8 @@ def sample_trades():
 INITIAL_CAPITAL = 1000.0
 RISK_FREE_RATE = 0.0
 
-# ============================================================
 # calculate_total_returns
-# ============================================================
+
 def test_total_returns_basic(sample_trades):
     result = calculate_total_returns(sample_trades, INITIAL_CAPITAL)
     assert result == pytest.approx(0.2), f"Expected 0.2 but got {result}"
@@ -47,9 +46,7 @@ def test_total_returns_breakeven():
     result = calculate_total_returns(trades, INITIAL_CAPITAL)
     assert result == pytest.approx(0.0)
  
- # ============================================================
 # calculate_win_rate
-# ============================================================
  
 def test_win_rate_basic(sample_trades):
     result = calculate_win_rate(sample_trades)
@@ -80,9 +77,7 @@ def test_win_rate_single_trade_win():
     assert result == pytest.approx(1.0)
  
  
-# ============================================================
 # calculate_profit_factor
-# ============================================================
  
 def test_profit_factor_basic(sample_trades):
     result = calculate_profit_factor(sample_trades)
@@ -104,9 +99,7 @@ def test_profit_factor_breakeven():
     assert result == pytest.approx(1.0)
  
  
-# ============================================================
 # calculate_win_loss_ratio
-# ============================================================
  
 def test_win_loss_ratio_basic(sample_trades):
     result = calculate_win_loss_ratio(sample_trades)
@@ -120,9 +113,7 @@ def test_win_loss_ratio_is_positive(sample_trades):
     assert result > 0, "Win/loss ratio should always be positive"
  
  
-# ============================================================
 # calculate_expectancy
-# ============================================================
  
 def test_expectancy_basic(sample_trades):
     result = calculate_expectancy(sample_trades)
@@ -138,9 +129,7 @@ def test_expectancy_is_positive_for_good_strategy(sample_trades):
     assert result > 0, "Expectancy should be positive for a profitable strategy"
  
  
-# ============================================================
 # calculate_max_drawdown
-# ============================================================
  
 def test_max_drawdown_basic(sample_trades):
     result = calculate_max_drawdown(sample_trades, INITIAL_CAPITAL)
@@ -164,9 +153,7 @@ def test_max_drawdown_only_wins():
     assert result == pytest.approx(0.0)
  
  
-# ============================================================
 # calculate_sharpe_ratio
-# ============================================================
  
 def test_sharpe_ratio_basic(sample_trades):
     result = calculate_sharpe_ratio(sample_trades, INITIAL_CAPITAL, RISK_FREE_RATE)
@@ -181,9 +168,7 @@ def test_sharpe_ratio_higher_risk_free_rate_lowers_sharpe(sample_trades):
     assert sharpe_low_rf > sharpe_high_rf, "Higher risk free rate should lower Sharpe ratio"
  
  
-# ============================================================
 # calculate_sortino_ratio
-# ============================================================
  
 def test_sortino_ratio_basic():
     # Use trades with varied negative returns so std is non-zero
@@ -211,18 +196,14 @@ def test_sortino_is_greater_than_sharpe_for_asymmetric_returns():
     assert sortino > sharpe, "Sortino should be greater than Sharpe when downside volatility is low"
  
  
-# ============================================================
 # calculate_calmar_ratio
-# ============================================================
  
 def test_calmar_ratio_is_positive_for_profitable_strategy(sample_trades):
     result = calculate_calmar_ratio(sample_trades, INITIAL_CAPITAL)
     assert result > 0, "Calmar ratio should be positive for a profitable strategy"
 
 
-# ============================================================
 # calculate_metrics
-# ============================================================
 
 def test_empty_trades_calculate_metrics():
     trades = pd.DataFrame()
