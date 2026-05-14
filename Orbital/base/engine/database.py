@@ -2,11 +2,11 @@
 # Connection to database -> allows code to manipulate database
 # Session -> ongoing changes to the database
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 
-engine = create_engine("postgresql+psycopg2://postgres:1@localhos:5432/stock_price_db")
+engine = create_engine("postgresql+psycopg2://postgres:1@localhost:5432/Stock_price_db")
 Session = sessionmaker(engine)
 
 with Session() as session:
