@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from Orbital.Orbital import settings
-
+from django.conf import settings
 
 #Time stamp model to track creation date/time and update date/time
 class TimeStampedModel(models.Model):
@@ -107,7 +106,7 @@ class Backtest(TimeStampedModel):
 
     #Trade performance metrics 
     total_return = models.FloatField()
-    cagr = models.FloatFied()
+    cagr = models.FloatField()
     sharpe_ratio = models.FloatField()
     sortino_ratio = models.FloatField()
     drawdown = models.FloatField()
@@ -126,7 +125,7 @@ class BacktestTrade(models.Model):
         LONG = "LONG", 'Long'       #Bullish 
         SHORT = "SHORT", 'Short'    #Bearish
 
-    backtest = models.ForeignKey(Backtest, on_delete=models.CASCADE, related_names = "trades")
+    backtest = models.ForeignKey(Backtest, on_delete=models.CASCADE, related_name="trades")
 
     symbol = models.CharField(max_length = 20)
     direction = models.CharField(max_length=10, choices=Signal.choices)
@@ -145,7 +144,7 @@ class BacktestTrade(models.Model):
 
 #This is to store portfolio information at every day 
 class EquityPoint(models.Model):
-    backtest = models.ForeignKey(Backtest, on_delete=models.CASCADE, related_names = "equity_point")\
+    backtest = models.ForeignKey(Backtest, on_delete=models.CASCADE, related_name="equity_point")\
     
     datetime = models.DateTimeField()
 
