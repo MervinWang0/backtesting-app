@@ -6,11 +6,15 @@ import pandas as pd
 import requests
 from io import StringIO
 
-
+# The specification of this file, is running a shell command
+# python manage.py load_stock_data --symbol symbol --period period --interval interval
+# The output is a filled StockPriceHistory table in postgreSQL
 class Command(BaseCommand):
     
     help = 'Loads historical data for a list of stocks through yfinance'
     
+    # add_arguments is used to convert the command line arguments into a dict
+    # which is then passed into the handle method
     def add_arguments(self, parser):
         parser.add_argument(
             '--symbol',
