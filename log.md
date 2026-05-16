@@ -24,3 +24,6 @@ Accomplished
 - 
 
 Time Contributions
+Mervin 16 May  20-22:30 Looking at data_loader. 
+- Installed local copy of stocks 1 year record 1 day intervals (took me ~3 min)
+- Determined rough idea of data_loader
