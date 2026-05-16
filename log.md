@@ -10,6 +10,9 @@ Accomplished
 corresponding unit tests for them
 
 Week 1. 11 - 17 May 2026
+AIMS
+Create data handler. A function that takes data from the data base and feeds\ 
+it into the backtester function.
 
 Accomplished
 - 
