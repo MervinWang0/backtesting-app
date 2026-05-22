@@ -21,3 +21,8 @@ Accomplished
 - 
 
 Time Contributions
+21 May had discussion on deadlines.
+23rd may finish events.py and dataloader.py and have a discussion
+
+22 May (~4h)
+Mervin finishes updated version of dataloader.py. Added initial prototype of test_data_loader that initializes a test database 
