@@ -26,3 +26,13 @@ Time Contributions
 
 22 May (~4h)
 Mervin finishes updated version of dataloader.py. Added initial prototype of test_data_loader that initializes a test database 
+
+23 May 3 pm meeting
+Discussion of events.py and determining direction from here.
+Classes to implement
+strategy => Take in MarketEvent create SignalEvent
+portfolio => Take in SignalEvent maybe create OrderEvent, take in FillEvent and generate MarketEvent
+execution => Take in OrderEvent maybe create FillEvent.
+
+performance => necessary to update methods for strategy?
+
