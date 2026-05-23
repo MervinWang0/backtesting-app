@@ -36,3 +36,17 @@ execution => Take in OrderEvent maybe create FillEvent.
 
 performance => necessary to update methods for strategy?
 
+25 Monday, finish up initial portfolio and backtesting by Mervin, look into metrics for strategy
+
+finish up execution, strategy(one), initial portfolio, (unit testing for dataloader maybe)
+
+By Tuesday we should have finished up after call on Monday 
+Then the following days we finish up UI stuffs. 
+
+
+
+
+
+
+
+
