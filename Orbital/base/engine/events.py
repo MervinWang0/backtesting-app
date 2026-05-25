@@ -1,7 +1,7 @@
 from models import StockPriceHistory, FuturesPriceHistory, Stock, FuturesContract
 from data_loader import Bar
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from django.db import models
 
 class SignalType(models.TextChoices):
@@ -22,37 +22,40 @@ class DirectionType(models.TextChoices):
 @dataclass
 class MarketEvent:
     datetime: datetime
-    type: str 
-    bar: Bar
+    type: str = field(default="MARKET", init=False)
 
 #Tells what it wants to do EG: Long/Short/Exit
 #Note: Exit applies to a short position as well.
 @dataclass
 class SignalEvent:
-    symbol: str
+    ticker: str
+    strategy_id : str
     datetime: datetime
-    signal_type : SignalType.choices
+    signal_type : SignalType
     strength: float
+    type: str = field(default="SIGNAL", init=False)
 
 
 #Generates actl order based on signal event
 @dataclass
 class OrderEvent:
-    symbol: str
+    ticker: str
     datetime: datetime
-    order_type: OrderType.choices
+    order_type: OrderType
     quantity: int
-    direction: DirectionType.choices
-    datetime: datetime
+    direction: DirectionType
+    type: str = field(default="ORDER", init=False)
 
 
 #After order is executed, fill event is generated to update the portfolio
 @dataclass
 class FillEvent:
-    symbol: str
+    ticker: str
     datetime: datetime
     quantity: int
-    direction: DirectionType.choices
+    direction: DirectionType
     fill_cost: float
     commission: float = 0.0
+    type: str = field(default="FILL", init=False)
+
 

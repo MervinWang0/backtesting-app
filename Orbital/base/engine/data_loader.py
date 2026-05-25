@@ -1,3 +1,4 @@
+from Orbital.base.engine.events import MarketEvent
 from ..models import StockPriceHistory, FuturesPriceHistory
 from dataclasses import dataclass
 import datetime
@@ -132,6 +133,7 @@ class DataLoader:
             #If bar exists, reveal bar to the backtester 
             if bar:
                 self.latest_stock_data[ticker].append(bar)
+                self.events.put(MarketEvent(datetime=self.curr_datetime, bar = bar))
 
 
     def get_latest_bar(self, ticker: str) -> Bar:
