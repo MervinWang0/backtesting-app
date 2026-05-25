@@ -44,7 +44,22 @@ By Tuesday we should have finished up after call on Monday
 Then the following days we finish up UI stuffs. 
 
 
-
+25 May
+12 pm Mervin works on Backtest.py
+- Ask Ryan and agree on adding docstring to classes
+- I should stop editing to the log.md directly and instead push and commit
+- 1 pm finished Backtest.py, Looking into portfolio.py 
+- Portfolio has many more advanced features that can be implemented after the basic
+ version has been implemented
+- E.g estimation of holdings using seconds, minutes, hourly bars => our current daily
+  bar is not that accurate
+  - Risk factors => How much risk the strategy is taking
+  - Position sizing => How much capital is the strategy allocating to each trade
+  - For our initial working prototype, we will go with a simple version which ignores risk factors
+    and position sizing
+- Ask ryan is comission should be in portfolio or in execution
+- Ask Ryan why his indention for Types is 8 spaces
+- Is get_latest_bar_value the close value of the latest bar?
 
 
 
