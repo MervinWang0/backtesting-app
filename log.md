@@ -51,7 +51,7 @@ Then the following days we finish up UI stuffs.
 - 1 pm finished Backtest.py, Looking into portfolio.py 
 - Portfolio has many more advanced features that can be implemented after the basic
  version has been implemented
-- E.g estimation of holdings using seconds, minutes, hourly bars => our current daily
+- E.g estimation of equity using seconds, minutes, hourly bars => our current daily
   bar is not that accurate
   - Risk factors => How much risk the strategy is taking
   - Position sizing => How much capital is the strategy allocating to each trade
@@ -61,7 +61,8 @@ Then the following days we finish up UI stuffs.
 - Ask Ryan why his indention for Types is 8 spaces
 - Is get_latest_bar_value the close value of the latest bar?
 
-
+7 pm Discussion
+I'll finish up porfolio, I'll look at the strategy, and I'll try and see how the entire backtest works.
 
 
 
