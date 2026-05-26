@@ -1,5 +1,3 @@
-from models import StockPriceHistory, FuturesPriceHistory, Stock, FuturesContract
-from data_loader import Bar
 from datetime import datetime
 from dataclasses import dataclass, field
 from django.db import models
@@ -29,7 +27,7 @@ class MarketEvent:
 @dataclass
 class SignalEvent:
     ticker: str
-    strategy_id : str
+    #strategy_id : str
     datetime: datetime
     signal_type : SignalType
     strength: float

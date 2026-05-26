@@ -1,14 +1,12 @@
 import math
-
-from Orbital.base.engine.data_loader import DataLoader
+from base.engine.data_loader import DataLoader
 from datetime import datetime
-from events import *
+from base.engine.events import SignalEvent, OrderEvent, FillEvent
 from queue import Queue
 
 class Portfolio:
     def __init__(self, data_loader: DataLoader, events: Queue, 
-                 initial_capital: float =  100000.0, 
-                 holdings: dict[str, int] = None, quantity =  5):
+                 initial_capital: float =  100000.0, quantity =  5):
         self.data_loader = data_loader
         self.events = events
         self.initial_capital = initial_capital
@@ -16,8 +14,8 @@ class Portfolio:
 
         self.fixed_quantity = quantity
 
-        self.holdings = dict[str, float] = {
-            ticker: 0 for ticker in self.data_loader.bar_lookup.tickers
+        self.holdings : dict[str, float] = {
+            ticker: 0 for ticker in self.data_loader.tickers
         }
 
         self.commission = 0.0
@@ -65,7 +63,7 @@ class Portfolio:
             return self.generate_short_order(ticker, stock_quantity, order_quantity,signal.datetime)
         
         elif signal_type == 'EXIT':
-            return self.generate_exit_order(ticker, stock_quantity, exit_frac = signal.strength, signal.datetime)
+            return self.generate_exit_order(ticker, stock_quantity, exit_frac = signal.strength, dt = signal.datetime)
        
         else:
             raise ValueError(f"Invalid signal type {signal_type} in signal event. Expected 'LONG', 'SHORT', or 'EXIT'.")
@@ -85,7 +83,7 @@ class Portfolio:
             direction = "BUY"
         )
     
-    def generate_short_order(self, ticker: str, stock_quantity: int, order_quantity: int, datetime: datetime) -> OrderEvent:
+    def generate_short_order(self, ticker: str, stock_quantity: int, order_quantity: int, dt: datetime) -> OrderEvent:
         if stock_quantity <= 0:
             #If current position is flat or short, sell more
             sell_quantity = order_quantity
@@ -94,13 +92,13 @@ class Portfolio:
             sell_quantity = stock_quantity + order_quantity
         return OrderEvent(
             ticker = ticker,
-            datetime = datetime,
+            datetime = dt,
             order_type = "MKT",
             quantity = sell_quantity,
             direction = "SELL"
         )
 
-    def generate_exit_order(self, ticker: str, stock_quantity: int, exit_frac: float, datetime: datetime) -> OrderEvent:
+    def generate_exit_order(self, ticker: str, stock_quantity: int, exit_frac: float, dt: datetime) -> OrderEvent:
         if stock_quantity == 0:
             raise ValueError(f"No existing position in {ticker} to exit.")
         if exit_frac < 0 or exit_frac > 1:
@@ -114,7 +112,7 @@ class Portfolio:
         
         return OrderEvent(
             ticker = ticker,
-            datetime = datetime,
+            datetime = dt,
             order_type = "MKT",
             quantity = buy_or_sell_quantity,
             direction = direction
@@ -134,6 +132,8 @@ class Portfolio:
         #self.update_records(event)
 
         self.holdings[ticker] = new_quantity
+        print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
+        print(f"Current capital after fill: {self.current_capital}")
     
 
     def update_cash(self, fill: FillEvent) -> None:

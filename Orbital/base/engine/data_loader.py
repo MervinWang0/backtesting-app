@@ -1,5 +1,5 @@
-from Orbital.base.engine.events import MarketEvent
-from ..models import StockPriceHistory, FuturesPriceHistory
+from base.engine.events import MarketEvent
+from base.models import StockPriceHistory, FuturesPriceHistory
 from dataclasses import dataclass
 import datetime
 from queue import Queue
@@ -90,11 +90,11 @@ class DataLoader:
     def load_data(self) -> None:
         #track which date has already been visited
         date_times_visited = set()
-        
+
         for ticker in self.tickers:
-            if self.asset_type == "Stock":
+            if self.asset_type == "STOCK":
                 main_bar = self.load_stock_data(ticker)
-            elif self.asset_type == "Futures":
+            elif self.asset_type == "FUTURES":
                 main_bar = self.load_futures_data(ticker)
             else:
                 raise ValueError(f"Unsupported asset type: {self.asset_type}")

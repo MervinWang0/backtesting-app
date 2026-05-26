@@ -1,7 +1,7 @@
-from events import OrderEvent, FillEvent
-from data_loader import DataLoader
+from base.engine.events import OrderEvent, FillEvent
+from base.engine.data_loader import DataLoader
 from datetime import datetime, date
-from data_loader import Bar
+from base.engine.data_loader import Bar
 from queue import Queue
 
 
@@ -14,7 +14,7 @@ class executionLoader:
 
 
     def execute(self, event: OrderEvent):
-        if event.type  != "ORDER":
+        if event.type != "ORDER":
             raise ValueError(f"Invalid event type passed to executionLoader. Expected 'ORDER' but got {event.type}")
         if event.order_type == "MKT":
             self.execute_market_order(event)
@@ -48,12 +48,13 @@ class executionLoader:
         )
     
     def execute_market_order(self, order: OrderEvent):
-        latest_price = self.data_loader.get_latest_bar_value(order.ticker, "close")
+        latest_price = self.data_loader.get_latest_bar_value(order.ticker, "Close")
         if latest_price is None:
             raise ValueError(f"No price data available for ticker {order.ticker} at the time of order execution.")
         price = self.slippage_adjustment(latest_price, order.direction)
         commission = self.calculate_commission(order.quantity, price)
         fill = self.create_fill_event(order, price, commission)
+        print(f"Executing market order for {order.ticker} at price {price} with commission {commission}")
         self.events.put(fill)
 
     def execute_limit_order(self, order: OrderEvent):
