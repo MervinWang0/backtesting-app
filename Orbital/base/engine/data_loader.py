@@ -5,12 +5,6 @@ import datetime
 from queue import Queue
 
 
-
-@staticmethod
-def date_to_datetime(date: datetime.date) -> datetime.datetime:
-    return datetime.datetime.combine(date, datetime.time.min)
-
-
 #Dataclass to represent a single bar of data, each data contains the ticker, date, open, high, low, close, volume and asset type
 @dataclass(frozen=True)
 class Bar:
@@ -47,17 +41,19 @@ class DataLoader:
         self.curr_datetime = None
         self.timeline: list[datetime.time] = []
 
-        self.data = self.load_data()
-
         #backtest condition
         self.continue_bt = True
+
+    @staticmethod
+    def date_to_datetime(date: datetime.date) -> datetime.datetime:
+        return datetime.datetime.combine(date, datetime.time.min)
 
 
     def load_stock_data(self, ticker: str) -> list[Bar]:
         bars: list[Bar] = []
         rows = (StockPriceHistory.objects.filter(stock__ticker=ticker, date__range=(self.start_date, self.end_date))
                 .order_by("date")
-                .values("date", "open_price", "high_price", "low_price", "close_price", "volume"))
+                .values("stock__ticker", "date", "open_price", "high_price", "low_price", "close_price", "volume"))
 
         for record in rows:
             bars_date = self.date_to_datetime(record["date"])
@@ -66,9 +62,9 @@ class DataLoader:
                 Date = bars_date,
                 Open = float(record["open_price"]),
                 High = float(record["high_price"]),
-                Low = float(record.low_price),
-                Close = float(record.close_price),
-                Volume = record.volume,
+                Low = float(record["low_price"]),
+                Close = float(record["close_price"]),
+                Volume = record["volume"],
                 Asset_type = "STOCK"
             ))
         return bars
@@ -91,10 +87,10 @@ class DataLoader:
     #     return bars
     
     
-    def load_data(self) -> list[Bar]:
+    def load_data(self) -> None:
         #track which date has already been visited
         date_times_visited = set()
-
+        
         for ticker in self.tickers:
             if self.asset_type == "Stock":
                 main_bar = self.load_stock_data(ticker)
@@ -107,6 +103,8 @@ class DataLoader:
                 raise  ValueError(f"No data found for ticker: {ticker} in the specified date range.")
             
             self.stock_data[ticker] = main_bar
+            self.latest_stock_data[ticker] = []
+            self.bar_lookup[ticker] = {}
 
             #populate bar lookup for fast access to bars by date
             for bar in main_bar:
@@ -120,7 +118,7 @@ class DataLoader:
         #Increment time index 
         next_index = self.curr_index + 1
         #If time index exceeds data length, end backtest loop
-        if next_index >= len(self.data):
+        if next_index >= len(self.timeline):
             self.continue_bt = False
             return
         
@@ -133,7 +131,7 @@ class DataLoader:
             #If bar exists, reveal bar to the backtester 
             if bar:
                 self.latest_stock_data[ticker].append(bar)
-                self.events.put(MarketEvent(datetime=self.curr_datetime, bar = bar))
+                self.events.put(MarketEvent(datetime=self.curr_datetime))
 
 
     def get_latest_bar(self, ticker: str) -> Bar:

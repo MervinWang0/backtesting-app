@@ -1,19 +1,21 @@
 from events import OrderEvent, FillEvent
-from datetime import datetime
+from data_loader import DataLoader
+from datetime import datetime, date
 from data_loader import Bar
 from queue import Queue
 
 
 class executionLoader:
-    def __init__(self, events: Queue, bars: dict[str, dict[datetime.date, Bar]], commission: float = 0.0, slippage: float = 0.0):
+    def __init__(self, events: Queue, data_loader: DataLoader, commission: float = 0.0, slippage: float = 0.0):
         self.events = events
-        self.bars = bars
+        self.data_loader = data_loader
         self.commission = commission
+        self.slippage = slippage
 
 
     def execute(self, event: OrderEvent):
         if event.type  != "ORDER":
-            raise ValueError("Invalid event type passed to executionLoader. Expected 'ORDER' but got {event.type}")
+            raise ValueError(f"Invalid event type passed to executionLoader. Expected 'ORDER' but got {event.type}")
         if event.order_type == "MKT":
             self.execute_market_order(event)
         elif event.order_type == "LMT":
@@ -21,7 +23,7 @@ class executionLoader:
         else:
             raise ValueError(f"Unsupported order type {event.order_type}")
         
-    def splippage_adjustment(self, price: float, direction: str) -> float:
+    def slippage_adjustment(self, price: float, direction: str) -> float:
         #Buy: slippage adds to price , price increases
         #sell: splippage reduces price, price decreases
         if direction == "BUY":
@@ -41,21 +43,21 @@ class executionLoader:
             datetime = order.datetime,
             quantity = order.quantity,
             direction = order.direction,
-            fill_price = price,
+            fill_cost = price,
             commission = commission
         )
     
     def execute_market_order(self, order: OrderEvent):
-        latest_price = self.get_latest_bar_value(order.ticker, "close")
+        latest_price = self.data_loader.get_latest_bar_value(order.ticker, "close")
         if latest_price is None:
             raise ValueError(f"No price data available for ticker {order.ticker} at the time of order execution.")
-        price = self.slippage_adjustment(latest_price)
+        price = self.slippage_adjustment(latest_price, order.direction)
         commission = self.calculate_commission(order.quantity, price)
         fill = self.create_fill_event(order, price, commission)
         self.events.put(fill)
 
     def execute_limit_order(self, order: OrderEvent):
-        latest_bar = self.get_latest_bar(order.ticker)
+        latest_bar = self.data_loader.get_latest_bar(order.ticker)
         can_fill = False
 
         if latest_bar is None:

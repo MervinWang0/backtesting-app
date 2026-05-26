@@ -5,17 +5,17 @@ from dataclasses import dataclass, field
 from django.db import models
 
 class SignalType(models.TextChoices):
-        LONG = "LONG", "Long"
-        SHORT = "SHORT", "Short"
-        EXIT = "EXIT", "Exit"
+    LONG = "LONG", "Long"
+    SHORT = "SHORT", "Short"
+    EXIT = "EXIT", "Exit"
 
 class OrderType(models.TextChoices):
-        MKT = "MKT", "Market"
-        LMT = "LMT", "Limit"
+    MKT = "MKT", "Market"
+    LMT = "LMT", "Limit"
 
 class DirectionType(models.TextChoices):
-        BUY = "BUY", "Buy"
-        SELL = "SELL", "Sell"
+    BUY = "BUY", "Buy"
+    SELL = "SELL", "Sell"
 
 
 #dataclass to track whenever a new bar is generated
