@@ -5,8 +5,8 @@ from django.conf import settings
 
 #Time stamp model to track creation date/time and update date/time
 class TimeStampedModel(models.Model):
-    created_at = models.DateTimeField(auto_now_add = True)
-    updated_at = models.DateTimeField(auto_now = True)
+    created_at = models.DateField(auto_now_add = True)
+    updated_at = models.DateField(auto_now = True)
 
     class Meta:
         abstract = True
@@ -88,7 +88,7 @@ class BacktestRun(TimeStampedModel):
         FUTURES = "FUTURES", "Futures"
 
     #name of backtest run
-    name = models.CharField(max_length=255, blank=True)
+    run_name = models.CharField(max_length=255, blank=True)
 
     #strategy name
     strategy_name = models.CharField(max_length=100, blank=False)
@@ -104,11 +104,11 @@ class BacktestRun(TimeStampedModel):
     start_date = models.DateField()
     end_date = models.DateField()
 
-    starting_capital = models.DecimalField(max_digits = 10, decimal_places=2)
+    initial_capital = models.DecimalField(max_digits = 10, decimal_places=2)
     end_equity = models.DecimalField(max_digits = 15, decimal_places= 2)
 
     is_completed = models.BooleanField(default = False)
-    completed_at = models.DateTimeField(blank=True, null=True)
+    completed_at = models.DateField(blank=True, null=True)
 
     #Stores list of tickers used in the backtest
     tickers = models.JSONField(default=list, blank=True)
@@ -133,7 +133,7 @@ class BacktestRun(TimeStampedModel):
 
 class PortfolioEquityRecord(TimeStampedModel):
     backtest_run = models.ForeignKey(BacktestRun, on_delete=models.CASCADE, related_name="equity_record")
-    date = models.DateTimeField()
+    date = models.DateField()
 
     cash = models.DecimalField(max_digits=20, decimal_places=2)
     holdings_value = models.DecimalField(max_digits=20, decimal_places=2)
@@ -159,7 +159,7 @@ class PortfolioFillRecord(TimeStampedModel):
         SELL = "SELL", "Sell"
     
     backtest_run = models.ForeignKey(BacktestRun, on_delete=models.CASCADE, related_name="fill_record")
-    date = models.DateTimeField()
+    date = models.DateField()
     ticker = models.CharField(max_length = 20)
     quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
     fill_price = models.DecimalField(max_digits = 20, decimal_places = 4)

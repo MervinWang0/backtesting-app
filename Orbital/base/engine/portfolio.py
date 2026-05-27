@@ -13,7 +13,7 @@ def to_decimal(val) -> Decimal:
 
 class Portfolio:
     def __init__(self, data_loader: DataLoader, events: Queue, 
-                 run_name: str, strategy_name: str,
+                 run_name: str, strategy_name: str, start_date: datetime, end_date: datetime,
                  initial_capital: float =  100000.0, quantity =  5 ):#, User = None):
         self.data_loader = data_loader
         self.events = events
@@ -45,7 +45,10 @@ class Portfolio:
             #user = User,
             run_name = run_name,
             strategy_name= strategy_name,
+            start_date = start_date,
+            end_date = end_date,
             initial_capital = to_decimal(self.initial_capital),
+            end_equity = to_decimal(self.initial_capital),
             fixed_quantity = self.fixed_quantity,
             tickers = list(self.data_loader.tickers),
         )
@@ -264,18 +267,17 @@ class Portfolio:
                 "realised_pnl_day": realised_pnl_day,
             }
         self.fill_record.append(record)
-        stock = Stock.object.filter(ticker = fill.ticker)
+        stock = Stock.objects.filter(ticker = fill.ticker).first()
 
-        PortfolioFillRecord.object.create(
+        PortfolioFillRecord.objects.create(
             backtest_run = self.backtest_run,
             date = fill.datetime,
             ticker = fill.ticker,
-            stock = stock,
             quantity = to_decimal(fill.quantity),
             fill_price = to_decimal(fill.fill_cost),
             direction = fill.direction,
             commission = to_decimal(self.commission),
-            prev_quantity = to_decimal(prev_quantity),
+            previous_quantity = to_decimal(prev_quantity),
             new_quantity = to_decimal(new_quantity),
             realised_pnl_day = to_decimal(realised_pnl_day),
         )
@@ -336,7 +338,7 @@ class Portfolio:
             market_value = market_price * quantity
             unrealised_pnl = self.calculate_unrealised_pnl_ticker(ticker)
 
-            stock = Stock.objects.filter(ticker=ticker)
+            stock = Stock.objects.filter(ticker=ticker).first()
 
             PortfolioPositionRecord.objects.update_or_create(
                 backtest_run = self.backtest_run,

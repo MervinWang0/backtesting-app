@@ -58,7 +58,7 @@ def run_backtest(start_date, end_date):
     backtest = Backtest(
         events=events,
         tickers=[TICKER],
-        start_date=datetime(2025, 1, 1),
+        start_date=datetime(2023, 1, 1),
         end_date=datetime(2025, 12, 31),
         strategy_name="MovingAverageCross",
         strength=1.0,
