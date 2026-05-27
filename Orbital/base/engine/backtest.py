@@ -64,7 +64,7 @@ class BackTest():
                                          data_loader=self.data_loader,
                                          commission=comission,
                                          slippage=slippage)
-        
+
         self.initial_capital = initial_capital
         self.risk_free_rate = risk_free_rate
 
@@ -75,16 +75,19 @@ class BackTest():
         day = 0
         while self.data_loader.should_continue_bt():
             day += 1
-            # print(f"Day {day} run")
             self.events.put(events.MarketEvent(datetime=self.data_loader.get_current_date()))
             self.execute_events() # Executes all events in the queue
+            # print(f"Day {day}, has events: {list(self.events.queue)} run")
             self.data_loader.next_day() # Increments a day
 
         trade_records_df = pd.DataFrame(self.portfolio.history())
 
         initial_capital = self.initial_capital
         risk_free_rate = self.risk_free_rate
-        print(f"{trade_records_df}, {risk_free_rate}, {initial_capital}")
+        # print("It reaches the stage of passing back result")
+        print(f"{trade_records_df},"
+              f"\nrisk free rate = {risk_free_rate},"
+               f"\ninitial capital = {initial_capital}")
         return BackTestResult(trade_records_df, initial_capital, risk_free_rate)
 
     # The nested if elses that call the event clases. .handle()
@@ -115,9 +118,10 @@ class BackTest():
         def handle_fill_event():
             # print(f"A fill event is handled")
             self.portfolio.update_from_fill(event) # Should not generate a new event
+            # print(list(self.events.queue))
 
         # Loop to execute all events in the queue
-        while self.events:
+        while not self.events.empty():
             event = self.events.get()
             # print(f"event = {event}")
             if event is None:

@@ -140,6 +140,7 @@ class DataLoader:
         '''
         # Originally I used self.get_current_date() <= self.end_date
         # But the fail case causes list index out of range bug in get_current_date
+        # print({self.current_index < len(self.timeline)})
         return self.current_index < len(self.timeline)
 
     def next_day(self) -> None:

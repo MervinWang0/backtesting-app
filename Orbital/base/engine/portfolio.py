@@ -78,12 +78,13 @@ class Portfolio:
         self.all_holdings[current_date] = self.current_holdings.copy()
         self.construct_current_equity()
         self.all_equity[current_date] = self.current_equity
+        # print("Infinite loop is not in update_from_fill")
 
     def history(self):
         '''
         Turns the trade log, a list of dictionaries to a trade_records_df, two columns date, pnl
         '''
-        print(f"{self.trade_log}")
+        # print(f"This is the trade log = {self.trade_log}")
         return pd.DataFrame(self.trade_log)
 
     # The below are helper functions
@@ -110,13 +111,14 @@ class Portfolio:
             # cash is reduced by quanttiy * unit price of stock and  comission
             self.cash -= ((fill.quantity * fill.fill_cost) + fill.commission)
         elif fill.direction == "SELL":
-            self.current_holdings = prev_holding[fill.ticker] - fill.quantity
+            self.current_holdings[fill.ticker] = prev_holding[fill.ticker] - fill.quantity
             self.cash += ((fill.quantity * fill.fill_cost) - fill.commission)
         pnl = self.cash - original_cash
         self.update_trade_log(pnl=pnl, fill=fill)
 
         #Error testing
-        print(f"{self.trade_log}")
+        # print(f"{self.trade_log}")
+        print(f"This is the current {self.current_holdings}")
 
     def construct_current_equity(self) -> None:
         '''
