@@ -17,7 +17,7 @@ class Bar:
     @staticmethod
     def to_bar(self, stock_price_history)-> Bar:
         return Bar(
-        ticker = ticker,
+        ticker = stock_price_history.ticker,
         date = stock_price_history.date,
         open = stock_price_history.open_price,
         high = stock_price_history.high_price,
@@ -70,28 +70,28 @@ class DataLoader:
     # get get the current bar of a specific stock
     def get_current_bar(self, ticker:str) -> Bar:
         # dict key is string, has to convert date to string
-        return get_bar_historical(ticker)[self.current_time.strftime("%Y-%m-%d")]
+        return self.get_bar_historical(ticker)[self.current_time.strftime("%Y-%m-%d")]
 
     # get current bars of inclusive of all stocks of interests
     def get_current_bars(self) -> list[Bar]: 
-        return get_current_bars_selection(self.tickers)
+        return self.get_current_bars_selection(self.tickers)
 
     # gets current bars based on a list of tickers
     def get_current_bars_selection(self, tickers: list[str])-> list[Bar]:
         result = list()
         for ticker in tickers:
-            result.append(get_current_bar(ticker))
+            result.append(self.get_current_bar(ticker))
         return result
 
     # stores the start to current inclusive bars of a stock in a dict
     def get_bar_historical(self, ticker: str)-> dict["date" : Bar]:
         # gets a query set of the start to current date rows of a stock
         stock_price_history = (self.data
-                                    .filter(stock__ticker=ticker)
-                                    .filter(date__range=(self.start_time, self.current_time))
+                                   .filter(stock__ticker=ticker)
+                                   .filter(date__range=(self.start_time, self.current_time))
                               )
-        return {"date" : to_bar(stock_price) for stock_price in stock_price_history}
-    
+        return {stock_price.date : to_bar(stock_price) for stock_price in stock_price_history}
+
     # stores all bars of all stocks of interest in dict{"ticker" : dict{"date" : Bar}}
     def get_bars_historical(self)-> dict["ticker" : dict["date" : Bar]]:
         return get_bars_historical_selection(self.tickers)
@@ -99,15 +99,15 @@ class DataLoader:
     def get_bars_historical_selection(self, tickers: list[str])-> dict["ticker" : dict["date" : Bar]]:
         result = dict()
         for ticker in tickers:
-            result[ticker] = get_bar_historical(ticker)
+            result[ticker] = self.get_bar_historical(ticker)
         return result
 
     # just returns the current time of the object
     def get_current_time(self) -> date:
             return self.current_time
-    
-    # increments the current date   
-    def next_day(self) -> void:
+
+    # increments the current date to the next trading day not just the next day.
+    def next_day(self) -> None:
         self.current_time += timedelta(days=1)
 
 
