@@ -1,12 +1,20 @@
 import math
 from base.engine.data_loader import DataLoader
+from decimal import Decimal
 from datetime import datetime
 from base.engine.events import SignalEvent, OrderEvent, FillEvent
 from queue import Queue
 
+from base.models import BacktestRun, PortfolioEquityRecord, PortfolioPositionRecord, PortfolioFillRecord, Stock
+
+def to_decimal(val) -> Decimal:
+    return Decimal(str(val))
+
+
 class Portfolio:
     def __init__(self, data_loader: DataLoader, events: Queue, 
-                 initial_capital: float =  100000.0, quantity =  5):
+                 run_name: str, strategy_name: str,
+                 initial_capital: float =  100000.0, quantity =  5 ):#, User = None):
         self.data_loader = data_loader
         self.events = events
         self.initial_capital = initial_capital
@@ -20,24 +28,60 @@ class Portfolio:
 
         self.commission = 0.0
         self.total_commission = 0.0
-        #self.total_holdings_value
         
         #store equity data for every time step 
         self.equity_record: list[dict] = []
-        # self.open_trades: 
-        # self.closed_trades: 
+        self.avg_price: dict[str, float] = {ticker: 0.0 for ticker in self.data_loader.tickers}
+        self.realised_pnl = 0.0
 
-    def equity_update(self) -> None:
-        holdings_value = self.calculate_holdings_value()
-        total_equity = self.current_capital + holdings_value
-        self.equity_record.append(
-            {
-                "date" : self.data_loader.curr_datetime,
-                "cash": self.current_capital,
-                "holdings_value": holdings_value,
-                "equity": total_equity
-            }
+        #Stores what happened on each fill/trade, Date ticker direction quantity fill_price commission previous_quantity new_quantity realised_pnl_day
+        self.fill_record: list[dict] = []
+
+        #Stores portfolio state for each day
+        self.equity_record: list[dict] = []
+
+        #creates database for this backtest run when portfolio is intialised 
+        self.backtest_run = BacktestRun.objects.create(
+            #user = User,
+            run_name = run_name,
+            strategy_name= strategy_name,
+            initial_capital = to_decimal(self.initial_capital),
+            fixed_quantity = self.fixed_quantity,
+            tickers = list(self.data_loader.tickers),
         )
+
+    
+    def complete_bt(self) -> None:
+        BacktestRun.objects.filter(BacktestRun = self.backtest_run).update(
+            is_completed = True,
+            completed_at = self.data_loader.get_current_datetime()
+        )
+
+
+    def get_latest_price(self, ticker: str) -> float:
+        curr_date = self.data_loader.get_current_datetime()
+        return self.data_loader.bar_lookup[ticker][curr_date].Close
+    
+    def calculate_unrealised_pnl(self) -> float:
+        total_unrealised_pnl = 0.0
+        for ticker in self.holdings:
+            total_unrealised_pnl += self.calculate_unrealised_pnl_ticker(ticker)
+        return total_unrealised_pnl
+    
+    def calculate_unrealised_pnl_ticker(self, ticker: str) -> float:
+        curr_quantity = self.holdings[ticker]
+
+        if curr_quantity == 0:
+            return 0.0
+        
+        current_price = self.get_latest_price(ticker)
+        avg_price = self.avg_price[ticker]
+        if curr_quantity > 0:
+            return curr_quantity * (current_price - avg_price)
+        else:
+            #short position
+            return abs(curr_quantity) * (avg_price - current_price)
+
     
     def calculate_holdings_value(self) -> float:
         total_value = 0.0
@@ -124,16 +168,32 @@ class Portfolio:
             raise ValueError(f"Invalid event type {event.type} in fill update. Expected 'FILL'.")
         
         ticker = event.ticker
+
         curr_quantity = self.holdings.get(ticker, 0)
         trade_quantity = event.quantity if event.direction == "BUY" else -event.quantity
         new_quantity = curr_quantity + trade_quantity
 
+        realised_pnl_day = self.update_position_tracker(
+                                ticker, 
+                                curr_quantity,
+                                trade_quantity, 
+                                event.fill_cost, 
+                                event.commission
+        )
+
         self.update_cash(event)
-        #self.update_records(event)
 
         self.holdings[ticker] = new_quantity
         print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
         print(f"Current capital after fill: {self.current_capital}")
+        self.realised_pnl += realised_pnl_day
+        print(f"Realized PnL after fill: {self.realised_pnl}")
+
+        self.update_fill_records(event,
+                            curr_quantity,
+                            new_quantity,
+                            realised_pnl_day= realised_pnl_day)
+
     
 
     def update_cash(self, fill: FillEvent) -> None:
@@ -145,4 +205,160 @@ class Portfolio:
         else:
             raise ValueError(f"Invalid fill direction {fill.direction} in cash update. Expected 'BUY' or 'SELL'.")
         self.total_commission += fill.commission
+
+
+    #Updates average price and realized PnL for the ticker based on the new fill
+    #Note: Returns -commission as a negative cost to the trade
+    def update_position_tracker(self, ticker: str, curr_quantity: float, fill_quantity: float, fill_price: float, commission: float) -> float:
+        curr_avg_price = self.avg_price.get(ticker, 0.0)
+        new_quantity = curr_quantity + fill_quantity
+
+        #No existing position, so open a new position
+        if curr_quantity == 0:
+            self.avg_price[ticker] = fill_price 
+            return -commission
+
+        #Same direction trade: Long add more to long, short add more to short
+        if curr_quantity * fill_quantity > 0:
+            old_position_value = abs(curr_quantity) * curr_avg_price
+            additional_position_value = abs(fill_quantity) * fill_price
+            self.avg_price[ticker] = (old_position_value + additional_position_value) / abs(new_quantity)
+            return -commission
+
+        #Opposite direction trade: reducing, exiting or position reversal
+        closing_quantity = min(abs(curr_quantity), abs(fill_quantity))
+        if curr_quantity > 0:
+            #Close long position by selling
+            realised_pnl_day = closing_quantity * (fill_price - curr_avg_price)
+        else:
+            #Close short position by buying
+            realised_pnl_day = closing_quantity * (curr_avg_price - fill_price)
+        
+        realised_pnl_day -= commission
+
+        #position fully closed
+        if new_quantity == 0:
+            self.avg_price[ticker] = 0.0
+        
+        #Position reduced but not closed and not reversed
+        elif curr_quantity * new_quantity > 0:
+            self.avg_price[ticker] = curr_avg_price
+        
+        #Position reversed
+        else:
+            self.avg_price[ticker] = fill_price
+        
+        return realised_pnl_day
+    
+
+    def update_fill_records(self, fill: FillEvent, prev_quantity: float, new_quantity: float, realised_pnl_day: float) -> None:
+        record = {
+                "date": fill.datetime,
+                "ticker": fill.ticker,
+                "quantity": fill.quantity,
+                "fill_price": fill.fill_cost,
+                "direction": fill.direction,
+                "commission": fill.commission,
+                "previous_quantity": prev_quantity,
+                "new_quantity": new_quantity,
+                "realised_pnl_day": realised_pnl_day,
+            }
+        self.fill_record.append(record)
+        stock = Stock.object.filter(ticker = fill.ticker)
+
+        PortfolioFillRecord.object.create(
+            backtest_run = self.backtest_run,
+            date = fill.datetime,
+            ticker = fill.ticker,
+            stock = stock,
+            quantity = to_decimal(fill.quantity),
+            fill_price = to_decimal(fill.fill_cost),
+            direction = fill.direction,
+            commission = to_decimal(self.commission),
+            prev_quantity = to_decimal(prev_quantity),
+            new_quantity = to_decimal(new_quantity),
+            realised_pnl_day = to_decimal(realised_pnl_day),
+        )
+
+
+    #Updates equity record for each day, should be called whenever .next_day() is called
+    def update_equity_record(self) -> None:
+        date = self.data_loader.get_current_datetime()
+
+        holdings_value = self.calculate_holdings_value()
+        unrealised_pnl = self.calculate_unrealised_pnl()
+        total_equity = self.current_capital + holdings_value
+
+        #calculates all investments long + short
+        gross_exposure = sum(abs(self.holdings[ticker] * self.get_latest_price(ticker))
+                            for ticker in self.holdings)
+
+        #calculates long - short investments
+        net_exposure = sum(self.holdings[ticker] * self.get_latest_price(ticker)
+                            for ticker in self.holdings)
+        
+        #Higher ratio = more risk, lower ratio = less risk
+        gross_exposure_leverage = gross_exposure / total_equity if total_equity != 0 else 0.0
+
+        record = {
+                "date": date,
+                "cash": self.current_capital,
+                "holdings_value": holdings_value,
+                "equity": total_equity,
+                "realised_pnl" : self.realised_pnl,
+                "unrealised_pnl": unrealised_pnl,
+                "total_commission" : self.total_commission,
+                "gross_exposure": gross_exposure,
+                "net_exposure" : net_exposure,
+                "gross_exposure_leverage" : gross_exposure_leverage
+            }
+
+        self.equity_record.append(record)
+        
+        PortfolioEquityRecord.objects.update_or_create(
+            backtest_run = self.backtest_run,
+            date = date,
+            defaults = {
+                "cash": to_decimal(self.current_capital),
+                "holdings_value": to_decimal(holdings_value),
+                "equity": to_decimal(total_equity),
+                "realised_pnl": to_decimal(self.realised_pnl),
+                "unrealised_pnl": to_decimal(unrealised_pnl),
+                "total_commission": to_decimal(self.total_commission),
+                "gross_exposure": to_decimal(gross_exposure),
+                "net_exposure": to_decimal(net_exposure),
+                "gross_exposure_leverage": to_decimal(gross_exposure_leverage),
+            }
+        )
+
+        for ticker, quantity in self.holdings.items():
+            market_price = self.get_latest_price(ticker)
+            market_value = market_price * quantity
+            unrealised_pnl = self.calculate_unrealised_pnl_ticker(ticker)
+
+            stock = Stock.objects.filter(ticker=ticker)
+
+            PortfolioPositionRecord.objects.update_or_create(
+                backtest_run = self.backtest_run,
+                date = date,
+                ticker = ticker,
+                defaults = {
+                    "stock": stock,
+                    "quantity": to_decimal(quantity),
+                    "avg_price": to_decimal(self.avg_price[ticker]),
+                    "market_price": to_decimal(market_price),
+                    "market_value": to_decimal(market_value),
+                    "unrealised_pnl": to_decimal(unrealised_pnl),
+                }
+            )
+
+        
+
+        
+
+
+
+
+
+        
     

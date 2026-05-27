@@ -49,9 +49,9 @@ class Backtest:
     def run(self):
         while self.data_loader.continue_bt:
             self.data_loader.next_day()
-            print(f"Processing market event for {self.data_loader.curr_datetime}")
+            print(self.data_loader.get_current_datetime())
             self.execute_events()
-            #self.portfolio.update_records()
+            self.portfolio.update_equity_record()
 
     def execute_events(self):
         while not self.events.empty():
@@ -69,6 +69,8 @@ class Backtest:
                 self.execute.execute(event)
             elif event.type == "FILL":
                 self.portfolio.update_fill(event)
+
+        
 
 
 

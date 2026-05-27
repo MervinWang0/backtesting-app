@@ -82,7 +82,7 @@ class FuturesPriceHistory(models.Model):
 #This is to store results of each backtest
 #Backtest contains final result of a backtest run, mainly storing performance metrics
 
-class Backtest(TimeStampedModel): 
+class BacktestRun(TimeStampedModel): 
     class AssetType(models.TextChoices):
         STOCK = "STOCK", "Stock"
         FUTURES = "FUTURES", "Futures"
@@ -96,6 +96,8 @@ class Backtest(TimeStampedModel):
     #Find out what is being traded (stock, futures etc..)
     asset_type = models.CharField(max_length=10, choices= AssetType.choices)
 
+    fixed_quantity = models.DecimalField(max_digits=15, decimal_places= 2, default= 5)
+
     stock = models.ForeignKey(Stock, on_delete=models.CASCADE, null=True, blank=True)
     futures = models.ForeignKey(FuturesContract, on_delete=models.CASCADE, null=True, blank= True)
 
@@ -105,54 +107,133 @@ class Backtest(TimeStampedModel):
     starting_capital = models.DecimalField(max_digits = 10, decimal_places=2)
     end_equity = models.DecimalField(max_digits = 15, decimal_places= 2)
 
-    #Trade performance metrics 
-    total_return = models.FloatField()
-    cagr = models.FloatField()
-    sharpe_ratio = models.FloatField()
-    sortino_ratio = models.FloatField()
-    drawdown = models.FloatField()
+    is_completed = models.BooleanField(default = False)
+    completed_at = models.DateTimeField(blank=True, null=True)
 
-    #portfolio performance metrics
-    total_trade = models.PositiveBigIntegerField(default = 0)
-    win_rate = models.FloatField(default = 0.0)
-    average_win = models.FloatField(default= 0.0)
-    average_loss = models.FloatField(default = 0.0)
-    profit_factor = models.FloatField(default = 0.0)
+    #Stores list of tickers used in the backtest
+    tickers = models.JSONField(default=list, blank=True)
 
+    # #Trade performance metrics 
+    # total_return = models.FloatField()
+    # cagr = models.FloatField()
+    # sharpe_ratio = models.FloatField()
+    # sortino_ratio = models.FloatField()
+    # drawdown = models.FloatField()
 
-#This is to store information of every trade made in the backtest run
-class BacktestTrade(models.Model):
-    class Signal(models.TextChoices):
-        LONG = "LONG", 'Long'       #Bullish 
-        SHORT = "SHORT", 'Short'    #Bearish
+    # #portfolio performance metrics
+    # total_trade = models.PositiveBigIntegerField(default = 0)
+    # win_rate = models.FloatField(default = 0.0)
+    # average_win = models.FloatField(default= 0.0)
+    # average_loss = models.FloatField(default = 0.0)
+    # profit_factor = models.FloatField(default = 0.0)
 
-    backtest = models.ForeignKey(Backtest, on_delete=models.CASCADE, related_name = "trades")
-
-    symbol = models.CharField(max_length = 20)
-    direction = models.CharField(max_length=10, choices=Signal.choices)
-
-    entry_time = models.DateTimeField()
-    exit_time = models.DateTimeField()
-
-    volume = models.DecimalField(max_digits = 20, decimal_places = 8)
-
-    entry_price = models.DecimalField(max_digits = 20, decimal_places = 8)
-    exit_price = models.DecimalField(max_digits = 20, decimal_places= 8)
-
-    pnl = models.DecimalField(max_digits = 20, decimal_places= 2)
-    pct = models.FloatField(default= 0.0)
+    def __str__(self):
+        return f"BacktestRun {self.name} using {self.strategy_name}"
 
 
-#This is to store portfolio information at every day 
-class EquityPoint(models.Model):
-    backtest = models.ForeignKey(Backtest, on_delete=models.CASCADE, related_name = "equity_point")
+class PortfolioEquityRecord(TimeStampedModel):
+    backtest_run = models.ForeignKey(BacktestRun, on_delete=models.CASCADE, related_name="equity_record")
+    date = models.DateTimeField()
+
+    cash = models.DecimalField(max_digits=20, decimal_places=2)
+    holdings_value = models.DecimalField(max_digits=20, decimal_places=2)
+    equity = models.DecimalField(max_digits=20, decimal_places=2)
+    realised_pnl = models.DecimalField(max_digits=20, decimal_places=2)
+    unrealised_pnl =models.DecimalField(max_digits=20, decimal_places=2)
+    total_commission = models.DecimalField(max_digits=20, decimal_places=2)
+    gross_exposure = models.DecimalField(max_digits=20, decimal_places=2)
+    net_exposure = models.DecimalField(max_digits=20, decimal_places=2)
+    gross_exposure_leverage = models.DecimalField(max_digits=20, decimal_places=2)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields = ["backtest_run", "date"],
+                                                name = "unique_equity_record")]
+        ordering = ["date"]
+
+    def __str__(self):
+        return f"{self.backtest_run} equity record on {self.date} : {self.equity}"
     
-    datetime = models.DateTimeField()
+class PortfolioFillRecord(TimeStampedModel):
+    class DirectionType(models.TextChoices):
+        BUY = "BUY", "Buy"
+        SELL = "SELL", "Sell"
+    
+    backtest_run = models.ForeignKey(BacktestRun, on_delete=models.CASCADE, related_name="fill_record")
+    date = models.DateTimeField()
+    ticker = models.CharField(max_length = 20)
+    quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
+    fill_price = models.DecimalField(max_digits = 20, decimal_places = 4)
+    direction = models.CharField(max_length=10, choices= DirectionType)
+    commission = models.DecimalField(max_digits = 20, decimal_places = 4)
+    previous_quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
+    new_quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
+    realised_pnl_day = models.DecimalField(max_digits = 20, decimal_places = 4)
 
-    cash = models.DecimalField(max_digits = 20, decimal_places = 8)
-    holdings_value = models.DecimalField(max_digits=20, decimal_places= 8)
-    equity = models.DecimalField(max_digits = 20, decimal_places = 8)
-    pct = models.FloatField(default=0.0)
-    drawdown = models.FloatField(default=0.0)
+    class Meta:
+        ordering = ["date"]
+    
+    def __str__(self):
+        return f"{self.backtest_run} fill record"
+
+class PortfolioPositionRecord(TimeStampedModel):
+    backtest_run = models.ForeignKey(BacktestRun, on_delete=models.CASCADE, related_name="position_record")
+    date = models.DateField()
+    ticker = models.CharField(max_length=20)
+    stock = models.ForeignKey(Stock, on_delete=models.SET_NULL, blank=True, null=True)
+
+    quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
+    avg_price = models.DecimalField(max_digits = 20, decimal_places = 4)
+    market_price = models.DecimalField(max_digits = 20, decimal_places = 4)
+    market_value = models.DecimalField(max_digits = 20, decimal_places = 4)
+    unrealised_pnl = models.DecimalField(max_digits = 20, decimal_places = 4)
+    
+    class Meta:
+        constraints = [models.UniqueConstraint(fields = ["backtest_run", "date", "ticker"],
+                      name = "Unique_positions")]
+        ordering = ["date", "ticker"]
+
+    def __str__(self):
+        return (f"{self.backtest_run}: "
+                f"{self.ticker} : {self.quantity} on {self.date}" )
+            
+
+
+
+
+
+# #This is to store information of every trade made in the backtest run
+# class BacktestTrade(models.Model):
+#     class Signal(models.TextChoices):
+#         LONG = "LONG", 'Long'       #Bullish 
+#         SHORT = "SHORT", 'Short'    #Bearish
+
+#     backtest = models.ForeignKey(Backtest, on_delete=models.CASCADE, related_name = "trades")
+
+#     symbol = models.CharField(max_length = 20)
+#     direction = models.CharField(max_length=10, choices=Signal.choices)
+
+#     entry_time = models.DateTimeField()
+#     exit_time = models.DateTimeField()
+
+#     volume = models.DecimalField(max_digits = 20, decimal_places = 8)
+
+#     entry_price = models.DecimalField(max_digits = 20, decimal_places = 8)
+#     exit_price = models.DecimalField(max_digits = 20, decimal_places= 8)
+
+#     pnl = models.DecimalField(max_digits = 20, decimal_places= 2)
+#     pct = models.FloatField(default= 0.0)
+
+
+# #This is to store portfolio information at every day 
+# class EquityPoint(models.Model):
+#     backtest = models.ForeignKey(Backtest, on_delete=models.CASCADE, related_name = "equity_point")
+    
+#     datetime = models.DateTimeField()
+
+#     cash = models.DecimalField(max_digits = 20, decimal_places = 8)
+#     holdings_value = models.DecimalField(max_digits=20, decimal_places= 8)
+#     equity = models.DecimalField(max_digits = 20, decimal_places = 8)
+#     pct = models.FloatField(default=0.0)
+#     drawdown = models.FloatField(default=0.0)
 
 
