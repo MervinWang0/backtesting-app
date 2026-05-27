@@ -7,4 +7,6 @@ name = "backtesting-app"
 version = "0.1.0"
 
 [tool.setuptools.packages.find]
-include = ["base*", "Orbital*"]
+where = ["."] # look for packages in current directory
+include = ["Orbital*", "base*"]
+

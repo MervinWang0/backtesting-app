@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from django.conf import settings
 
 #Time stamp model to track creation date/time and update date/time
@@ -11,13 +11,13 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
-# Create your models here.
-class UserProfile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="User_Profile")
-    cash_holdings = models.DecimalField(max_digits=20, decimal_places=2, default=100000.00)
+# # Create your models here.
+# class UserProfile(models.Model):
+#     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="User_Profile")
+#     cash_holdings = models.DecimalField(max_digits=20, decimal_places=2, default=100000.00)
 
-    def __str__(self) -> str:
-        return f"{self.user.username}'s profile with cash holdings: {self.cash_holdings}"
+#     def __str__(self) -> str:
+#         return f"{self.user.username}'s profile with cash holdings: {self.cash_holdings}"
     
 class Stock(models.Model):
     ticker = models.CharField(max_length=10, unique=True)

@@ -1,6 +1,5 @@
 import pandas as pd
 from math import sqrt
-import json
 
 # The metrics I'm interested in computing are these 10
 # Total return
@@ -45,12 +44,14 @@ def calculate_sharpe_ratio(trade_records_df, initial_capital, risk_free_rate):
 def calculate_max_drawdown(trade_records_df, initial_capital):
     # Calculates Maximum Drawdown (MDD)
     # This is a simplified approach to calculating equity which ignores open holdings
-    # An equity curve is created as a series. date : equity. Where equity = initial_capital + cumulative returns
+    # An equity curve is created as a series. date : equity.
+    # Where equity = initial_capital + cumulative returns
     # equity_curve_df.cummax() => series of date : peak equity so far
     daily_returns_df = trade_records_df.groupby('date')['pnl'].sum()
-    equity_curve_df = initial_capital + daily_returns_df.cumsum() 
-    equity_peak_df = equity_curve_df.cummax() 
-    # drawdown formula = (Peak equity - equity at day ) / Peak equity. There are multiple conventions
+    equity_curve_df = initial_capital + daily_returns_df.cumsum()
+    equity_peak_df = equity_curve_df.cummax()
+    # drawdown formula = (Peak equity - equity at day ) / Peak equity.
+    # There are multiple conventions
     # This one results in a positive value, the bigger it is, the greater the drawdown
     drawdown_df = (equity_peak_df - equity_curve_df) / equity_peak_df
     max_drawdown = drawdown_df.max()
@@ -105,6 +106,15 @@ def calculate_sortino_ratio(trade_records_df, initial_capital, risk_free_rate):
 
 
 def calculate_metrics(trade_records_df, initial_capital, risk_free_rate):
+    '''
+    The pnl used in the trade records here is the realised cash flow only.
+    Meaning that it only looks at the change to cash for each trade.
+    Buy 100 AAPL stocks for 1000 = loss. pnl = -1000
+    Sell 100 AAPL stocks for 800 = profit, pnl = +800
+
+    As such trade_records_df only has to columns, date and pnl. Each row represents 
+    a FillEvent.
+    '''
     # Carry out some checks on the input
     assert len(trade_records_df) > 0, "trade_records_df cannot be empty"
     assert initial_capital > 0, "initial_capital must be greater than 0"
