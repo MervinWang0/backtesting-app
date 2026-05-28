@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from datetime import timedelta, datetime
+from datetime import datetime
 from base.models import StockPriceHistory
 
+# Add some error handling to get current bar
 # Bar is a fundamental data structure representing data of an asset
 @dataclass
 class Bar:
@@ -157,17 +158,17 @@ class DataLoader:
         '''
         return self.data[ticker][self.get_current_date()]
 
-    def get_current_bar_value(self, ticker: str, bar_attribiute: str)-> str|float|int|datetime.date:
+    def get_current_bar_value(self, ticker: str, bar_attribute: str)-> str|float|int|datetime.date:
         '''
         Returns a specific attribute of the current bar
         '''
-        return getattr(self.get_current_bar(ticker), bar_attribiute)
+        return getattr(self.get_current_bar(ticker), bar_attribute)
 
     def get_tickers(self) -> list[str]:
         '''
         getter for tickers
         '''
-        return self.tickers
+        return self.tickers.copy()
 
     def get_past_bars(self, ticker: str, num: int) -> list[Bar]:
         '''
