@@ -128,7 +128,7 @@ class BacktestRun(TimeStampedModel):
     # profit_factor = models.FloatField(default = 0.0)
 
     def __str__(self):
-        return f"BacktestRun {self.name} using {self.strategy_name}"
+        return f"BacktestRun {self.run_name} using {self.strategy_name}"
 
 
 class PortfolioEquityRecord(TimeStampedModel):

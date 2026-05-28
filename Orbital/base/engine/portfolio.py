@@ -63,7 +63,7 @@ class Portfolio:
 
     def get_latest_price(self, ticker: str) -> float:
         curr_date = self.data_loader.get_current_datetime()
-        return self.data_loader.bar_lookup[ticker][curr_date].Close
+        return self.data_loader.bar_lookup[ticker][curr_date].close
     
     def calculate_unrealised_pnl(self) -> float:
         total_unrealised_pnl = 0.0
@@ -89,7 +89,7 @@ class Portfolio:
     def calculate_holdings_value(self) -> float:
         total_value = 0.0
         for ticker, quantity in self.holdings.items():
-            price = self.data_loader.bar_lookup[ticker][self.data_loader.curr_datetime].Close
+            price = self.data_loader.bar_lookup[ticker][self.data_loader.curr_datetime].close
             total_value += quantity * price
         return total_value
     
@@ -321,7 +321,7 @@ class Portfolio:
             backtest_run = self.backtest_run,
             date = date,
             defaults = {
-                "cash": to_decimal(self.current_capital),
+                "cash": to_decimal(self.current_capital),  
                 "holdings_value": to_decimal(holdings_value),
                 "equity": to_decimal(total_equity),
                 "realised_pnl": to_decimal(self.realised_pnl),

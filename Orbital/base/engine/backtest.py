@@ -49,7 +49,6 @@ class Backtest:
     def run(self):
         while self.data_loader.continue_bt:
             self.data_loader.next_day()
-            print(self.data_loader.get_current_datetime())
             self.execute_events()
             self.portfolio.update_equity_record()
 

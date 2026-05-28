@@ -16,13 +16,13 @@ class MovingAverageCross:
         self.previous_signal = {ticker: None for ticker in tickers}
 
     def calculate_SMA(self, bars: list[Bar]) -> float:
-        closes = [bar.Close for bar in bars]
+        closes = [bar.close for bar in bars]
         return sum(closes) / len(closes)
     
     def generate_signal(self, ticker: str) -> SignalEvent:
         #print("generating signal for ticker", ticker)
         try:
-            long_window_bars = self.data_loader.get_latest_bars(ticker, self.long_window)
+            long_window_bars = self.data_loader.get_past_bars(ticker, self.long_window)
         except ValueError:
             #print(f"Not enough bars yet for {ticker}. Need {self.long_window}.")
             return None
