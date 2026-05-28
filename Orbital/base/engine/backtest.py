@@ -40,7 +40,7 @@ class Backtest:
         self.slippage = slippage
 
         self.data_loader = DataLoader(events, tickers= tickers, start_date= self.start_date, end_date= self.end_date, asset_type="STOCK")
-        self.data_loader.load_data()
+
         self.events = events
         self.portfolio = Portfolio(self.data_loader, self.events,run_name = "test", strategy_name= "Moving Average Cross", start_date= self.start_date, end_date = self.end_date, initial_capital=self.initial_capital, quantity=5 )
         self.execute = executionLoader(self.events, self.data_loader, commission=self.commission, slippage=self.slippage)
