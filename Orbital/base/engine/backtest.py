@@ -52,6 +52,8 @@ class Backtest:
             self.execute_events()
             self.portfolio.update_equity_record()
 
+        return self.portfolio.backtest_run
+
     def execute_events(self):
         while not self.events.empty():
             event = self.events.get()

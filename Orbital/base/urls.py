@@ -3,7 +3,9 @@ from . import views
 
 urlpatterns = [
     # path("", views.home, name="home"),
-    #path("dashboard/", views.dashboard, name="dashboard"),
+    path("", views.dashboard, name="dashboard"),
+    path("run_backtest/", views.backtest_run, name = "run_backtest"),
+    path("backtestrunrecords/", views.backtest_run_records, name = "backtest_run_records"),
 
     # #Authentication wrapped under accounts
     # path("accounts/Login/", views.Login, name = "Login"),

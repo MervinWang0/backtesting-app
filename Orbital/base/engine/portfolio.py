@@ -45,6 +45,7 @@ class Portfolio:
             #user = User,
             run_name = run_name,
             strategy_name= strategy_name,
+            asset_type = BacktestRun.AssetType.STOCK,
             start_date = start_date,
             end_date = end_date,
             initial_capital = to_decimal(self.initial_capital),

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backtest Dashboard</title>
+</head>
+<body>
+    <h1>Backtest Dashboard</h1>
+
+    <form method = "post", action = "{% url 'run_backtest' %}">
+        {% csrf_token %}
+
+        <div>
+            <label for="ticker">Ticker</label>
+            <input type="text" id="ticker" name="ticker" placeholder="add a ticker">
+        </div>
+
+        <div>
+            <label for="start_date">Start Date</label>
+            <input type="date" id="start_date" name="start_date" placeholder="2025-02-02">
+        </div>
+
+        <div>
+            <label for="end_date">End Date</label>
+            <input type="date" id="end_date" name="end_date" placeholder="2025-02-02">
+        </div>
+
+        <button type="submit" style="font-size:  30px;">
+            Run Backtest
+        </button>
+    </form>
+
+</body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</html>
