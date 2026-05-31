@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backtest records</title>
+</head>
+<body>
+    <h1>Backtest records</h1>
+    <h2>{{ selected_run.run_name }}</h2>
+    <p>
+        Strategy: {{ selected_run.run_name }} <br>
+        Start: {{ selected_run.start_date }} <br>
+        End: {{ selected_run.end_date }} <br>
+        Initial Capital: {{ selected_run.initial_capital }} <br>
+        End equity: {{ selected_run.end_equity }} <br>
+    </p>
+
+    <form method="get" action="{% url 'backtest_run_records' %}">
+        <input type="hidden" name="run_id" value="{{ selected_run.id }}">
+
+
+        <label for="date">Choose a date:</label>
+        <select name="date" id="date" onchange="this.form.submit()">
+            {% for date in dates %}
+            <option value="{{ date|date:'Y-m-d' }}"
+                {% if date_query == date|stringformat:"s" %} selected {%endif%}>
+                {{ date }}
+            </option>
+            {% endfor %}
+        </select>"
+    </form>
+    
+    <h3> Equity record </h3>
+    {% if equity_record %}
+        <table border="1" cellpadding="8">
+            <tr>
+                <th>Date</th>
+                <th>Cash</th>
+                <th>Holdings Value</th>
+                <th>Equity</th>
+                <th>Realised PnL</th>
+                <th>Unrealised PnL</th>
+                <th>Total Commission</th>
+                <th>Gross Exposure</th>
+                <th>Net Exposure</th>
+                <th>Gross Exposure Leverage</th>
+            </tr>
+            <tr>
+                <td>{{ equity_record.date }}</td>
+                <td>{{ equity_record.cash }}</td>
+                <td>{{ equity_record.holdings_value }}</td>
+                <td>{{ equity_record.equity }}</td>
+                <td>{{ equity_record.realised_pnl }}</td>
+                <td>{{ equity_record.unrealised_pnl }}</td>
+                <td>{{ equity_record.total_commission }}</td>
+                <td>{{ equity_record.gross_exposure }}</td>
+                <td>{{ equity_record.net_exposure }}</td>
+                <td>{{ equity_record.gross_exposure_leverage }}</td>
+            </tr>
+        </table>
+    {% else %}
+        </p> No equity record found for this date </p>
+    {% endif %}
+
+    <h3> Fill record </h3>
+    {% if fill_record %}
+        <table border="1" cellpadding="8">
+            <tr>
+                <th>Date</th>
+                <th>Ticker</th>
+                <th>Quantity</th>
+                <th>Fill price</th>
+                <th>Direction</th>
+                <th>Commission</th>
+                <th>Previous Quantity</th>
+                <th>New Quantity</th>
+                <th>Realised PnL for this trade</th>
+            </tr>
+
+            {% for  fill in fill_record %}
+            <tr>
+                <td>{{ fill.date }}</td>
+                <td>{{ fill.ticker }}</td>
+                <td>{{ fill.quantity }}</td>
+                <td>{{ fill.fill_price }}</td>
+                <td>{{ fill.direction }}</td>
+                <td>{{ fill.commission }}</td>
+                <td>{{ fill.previous_quantity }}</td>
+                <td>{{ fill.new_quantity }}</td>
+                <td>{{ fill.realised_pnl_day }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>No fill records for this date.</p>
+    {% endif %}
+
+    <h3> Position record </h3>
+    {% if position_record %}
+        <table border="1" cellpadding="8">
+            <tr>
+                <th>Date</th>
+                <th>Ticker</th>
+                <th>Quantity</th>
+                <th>Average price</th>
+                <th>Market price</th>
+                <th>Market value</th>
+                <th>Unrealised PnL</th>
+            </tr>
+
+            {% for  position in position_record %}
+            <tr>
+                <td>{{ position.date }}</td>
+                <td>{{ position.ticker }}</td>
+                <td>{{ position.quantity }}</td>
+                <td>{{ position.avg_price }}</td>
+                <td>{{ position.market_price }}</td>
+                <td>{{ position.market_value }}</td>
+                <td>{{ position.unrealised_pnl }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>No position records for this date.</p>
+    {% endif %}
+
+</body>
+</html>
