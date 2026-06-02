@@ -7,7 +7,7 @@ This is a backtesting web app created for NUS Orbital 2026.
 
 How to Use:
 Download all libraries as specified in the requirement.txt file
-Install PostgresQL from here: https://www.postgresql.org/download/, Ensure pgAdmin is install as well, set up an account.
+Install PostgresQL from here: https://www.postgresql.org/download/, Ensure pgAdmin is install as well here : https://www.pgadmin.org/download/pgadmin-4-windows/, set up an account.
 In your terminal run these commands in order:
 "python manage.py makemigrations"
 "python manage.py migrate"
