@@ -1,6 +1,11 @@
 import pandas as pd
 from math import sqrt
 import json
+import random
+import numpy
+from queue import Queue
+from datetime import datetime
+from base.engine.data_loader import DataLoader
 
 # The metrics I'm interested in computing are these 10
 # Total return
@@ -123,3 +128,4 @@ def calculate_metrics(trade_records_df, initial_capital, risk_free_rate):
                 'expectancy': calculate_expectancy(trade_records_df),
                 'sortino': calculate_sortino_ratio(trade_records_df, initial_capital, risk_free_rate)
         }
+

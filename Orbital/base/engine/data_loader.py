@@ -1,11 +1,25 @@
+import os
+import sys
+import django
+from pathlib import Path
+
+
+BASE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(BASE_DIR))
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Orbital.settings")
+django.setup()
+
 from base.engine.events import MarketEvent
 from base.models import StockPriceHistory, FuturesPriceHistory
 from dataclasses import dataclass
-import datetime
+from datetime import datetime
 from queue import Queue
+from abc import ABC, abstractmethod
 
 
-#Dataclass to represent a single bar of data, each data contains the ticker, date, open, high, low, close, volume and asset type
+#Dataclass to represent a single bar of data, each data contains
+#  the ticker, date, open, high, low, close, volume and asset type
 @dataclass(frozen=True)
 class Bar:
     '''
@@ -37,17 +51,16 @@ class Bar:
         )
 
 
-class DataLoader:
+
+class DataLoader(ABC):
     '''
     Description
-    Each instance of the class is a pointer to a specific bar,
-    with methods to get current date, increment date and obtain
-    values of the bar.
+    The DataLoader is a general class that contains methods to interact with some form
+    of asset data.
 
     Attributes (Only cover non trivial ones)
     1. timeline: list[datetime.date], sorted. Stores valid dates for retrieving bars
     2. current_index: int. Used with timeline to get a specific bar/ bars
-    3. data: dict{ticker: dict{date: Bar}}
 
     Methods (Publicly available)
     1. get_current_date() => The day the data loader is looking at
@@ -64,7 +77,8 @@ class DataLoader:
     considers all dates where at least one stock traded as a valid date.
     '''
      
-    def __init__(self, events : Queue, tickers: list[str], start_date: datetime.date, end_date: datetime.date, asset_type : str):
+    def __init__(self, events : Queue, tickers: list[str], start_date: datetime.date,
+                 end_date: datetime.date, asset_type : str):
         self.events = events
         self.tickers = tickers
         self.start_date = start_date
@@ -75,13 +89,14 @@ class DataLoader:
         #This will store all available data for each stock
         self.stock_data: dict[str, list[Bar]] = {}
         #This will store data from the beginning up till the current time index for each stock
-        self.latest_stock_data: dict[str, list[Bar]] = {} 
+        self.latest_stock_data: dict[str, list[Bar]] = {}
 
         #Optimisation: Fast lookup for each ticker for each date in the bar data
         self.bar_lookup: dict[str, dict[datetime.date, Bar]] = {}
 
         #Time index for backtest loop, increments whenever next_day is called
-        #curr_index tracks index of current bar in the timeline, curr_datetime tracks the date of the current bar
+        #curr_index tracks index of current bar in the timeline,
+        # curr_datetime tracks the date of the current bar
         self.curr_index = -1
         self.curr_datetime = None
         self.timeline: list[datetime.time] = []
@@ -91,34 +106,16 @@ class DataLoader:
 
         self.load_data()
 
-    @staticmethod
-    def date_to_datetime(date: datetime.date) -> datetime.datetime:
-        return datetime.datetime.combine(date, datetime.time.min)
+    @abstractmethod
+    def load_data(self) -> None:
+        '''
+        initializes the variables necessary for the data loader to operate
+        '''
 
-
-    def load_stock_data(self, ticker: str) -> list[Bar]:
-        bars: list[Bar] = []
-        rows = (StockPriceHistory.objects.filter(stock__ticker=ticker, date__range=(self.start_date, self.end_date))
-                .order_by("date")
-                .values("stock__ticker", "date", "open_price", "high_price", "low_price", "close_price", "volume"))
-
-        for record in rows:
-            bars_date = self.date_to_datetime(record["date"])
-            bars.append(Bar(
-                symbol = record["stock__ticker"],
-                date = bars_date,
-                open = float(record["open_price"]),
-                high = float(record["high_price"]),
-                low = float(record["low_price"]),
-                close = float(record["close_price"]),
-                volume = record["volume"],
-                asset_type = "STOCK"
-            ))
-        return bars
-    
-    
     # def load_futures_data(self, contract_code: str) -> list[Bar]:
-    #     futures_history = FuturesPriceHistory.objects.filter(contracts__contract_code=contract_code, date__range=(self.start_date, self.end_date)).order_by("date")
+    #     futures_history = FuturesPriceHistory.objects.filter
+    # (contracts__contract_code=contract_code,
+    #  date__range=(self.start_date, self.end_date)).order_by("date")
     #     bars = []
     #     for record in futures_history:
     #         bars.append(Bar(
@@ -132,33 +129,6 @@ class DataLoader:
     #             Asset_type = "Futures"
     #         ))
     #     return bars
-
-    
-    def load_data(self) -> None:
-        #track which date has already been visited
-        date_times_visited = set()
-
-        for ticker in self.tickers:
-            if self.asset_type == "STOCK":
-                main_bar = self.load_stock_data(ticker)
-            elif self.asset_type == "FUTURES":
-                main_bar = self.load_futures_data(ticker)
-            else:
-                raise ValueError(f"Unsupported asset type: {self.asset_type}")
-            
-            if not main_bar:
-                raise  ValueError(f"No data found for ticker: {ticker} in the specified date range.")
-            
-            self.stock_data[ticker] = main_bar
-            self.latest_stock_data[ticker] = []
-            self.bar_lookup[ticker] = {}
-
-            #populate bar lookup for fast access to bars by date
-            for bar in main_bar:
-                self.bar_lookup[ticker][bar.date] = bar
-                date_times_visited.add(bar.date)
-
-        self.timeline = sorted(date_times_visited)
 
 
     def next_day(self) -> None:
@@ -206,12 +176,12 @@ class DataLoader:
         if ticker not in self.latest_stock_data or len(self.latest_stock_data[ticker]) < num:
             raise ValueError(f"Not enough data available for ticker: {ticker} at the current time index.")
         return self.latest_stock_data[ticker][-num:]
-    
+
 
     # def get_latest_bar_datetime(self, ticker: str) -> datetime.date:
     #     latest_bar = self.get_latest_bar(ticker)
     #     return latest_bar.Date
-    
+
 
     #returns specific value type (open, high, low, close, volume) of the latest bar for a given ticker
     def get_current_bar_value(self, ticker: str, value_type: str) -> float:
@@ -220,21 +190,95 @@ class DataLoader:
         '''
         latest_bar = self.get_current_bar(ticker)
         if not hasattr(latest_bar, value_type):
-            raise ValueError(f"Invalid value type: {value_type}. Must be one of 'Open', 'High', 'Low', 'Close', 'Volume'.")
+            raise ValueError(f"Invalid value type: {value_type}."
+                             f" Must be one of 'Open', 'High', 'Low', 'Close', 'Volume'.")
         return getattr(latest_bar, value_type)
-    
-    
-    #returns current date time of the backtester 
+
+  
+    #returns current date time of the backtester
     def get_current_datetime(self) -> datetime.date:
         '''
         Returns the current date the data loader is point to
         '''
         return self.curr_datetime
-    
+
     # def should_continue_bt(self):
     #     return self.curr_index < len(self.timeline)
-    
 
 
+    def get_timeline(self) -> list[datetime.date]:
+        '''
+        Getter for timeline, returns a list of all dates where at least
+        one stock is open for trading.
+        '''
+        return self.timeline
+
+class MCSDataLoader(DataLoader):
+    '''
+    This is a data laoder that initializes its attributes using a list of bars
+    '''
+    def load_data(self):
+        pass
+
+class DatabaseDataLoader(DataLoader):
+    '''
+    This data laoder initializes its attributes using a connection to a 
+    postgreSQL database
+    '''
 
 
+    def load_stock_data(self, ticker: str) -> list[Bar]:
+        bars: list[Bar] = []
+        rows = (StockPriceHistory.objects.filter(stock__ticker=ticker,
+                                                 date__range=(self.start_date, self.end_date))
+                .order_by("date")
+                .values("stock__ticker", "date", "open_price",
+                        "high_price", "low_price", "close_price", "volume"))
+
+        for record in rows:
+            bars_date = record["date"]
+            bars.append(Bar(
+                symbol = record["stock__ticker"],
+                date = bars_date,
+                open = float(record["open_price"]),
+                high = float(record["high_price"]),
+                low = float(record["low_price"]),
+                close = float(record["close_price"]),
+                volume = record["volume"],
+                asset_type = "STOCK"
+            ))
+        return bars
+
+    def load_data(self) -> None:
+        #track which date has already been visited
+        date_times_visited = set()
+
+        for ticker in self.tickers:
+            if self.asset_type == "STOCK":
+                main_bar = self.load_stock_data(ticker)
+            elif self.asset_type == "FUTURES":
+                main_bar = self.load_futures_data(ticker)
+            else:
+                raise ValueError(f"Unsupported asset type: {self.asset_type}")
+            
+            if not main_bar:
+                raise  ValueError(f"No data found for ticker: {ticker} in the specified date range.")
+            
+            self.stock_data[ticker] = main_bar
+            self.latest_stock_data[ticker] = []
+            self.bar_lookup[ticker] = {}
+
+            #populate bar lookup for fast access to bars by date
+            for bar in main_bar:
+                self.bar_lookup[ticker][bar.date] = bar
+                date_times_visited.add(bar.date)
+
+        self.timeline = sorted(date_times_visited)
+
+if __name__ == "__main__":
+    start_date = datetime.fromisoformat("2021-05-24").date()
+    end_date = datetime.fromisoformat("2021-06-07").date()
+    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
+                             end_date, "STOCK")
+    data_loader.next_day()
+    print(f"This is the current bar = {data_loader.get_current_bar("AAPL")}")

@@ -4,18 +4,15 @@ import sys
 from pathlib import Path
 from queue import Queue
 from datetime import datetime
-
 import django
+from base.models import StockPriceHistory
+from base.engine.backtest import Backtest
+
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Orbital.settings")
 django.setup()
-
-
-from base.models import Stock, StockPriceHistory
-from base.engine.backtest import Backtest
-
 
 TICKER = "AAPL"
 DOWNLOAD_DATA = False
@@ -68,7 +65,7 @@ def run_backtest(start_date, end_date):
             "short_window": 20,
             "long_window": 100,
         },
-        comission=0.0,
+        commission=0.0,
     )
 
     print("\nRunning backtest...")

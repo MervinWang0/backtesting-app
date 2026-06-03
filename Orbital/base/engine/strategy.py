@@ -1,24 +1,25 @@
 from base.engine.events import SignalEvent
 from base.engine.data_loader import DataLoader, Bar
-from base.engine.execution import executionLoader
+from base.engine.execution import ExecutionLoader
 from queue import Queue
 
 
 class MovingAverageCross:
-    def __init__(self, data_loader: DataLoader, events: Queue, tickers: list[str], short_window, long_window, strength: float = 1.0):
+    def __init__(self, data_loader: DataLoader, events: Queue,
+                 tickers: list[str], short_window, long_window, strength: float = 1.0):
         self.data_loader = data_loader
         self.events = events
         self.tickers = tickers
         self.short_window = short_window
         self.long_window = long_window
         self.strength = strength
-        
+
         self.previous_signal = {ticker: None for ticker in tickers}
 
     def calculate_SMA(self, bars: list[Bar]) -> float:
         closes = [bar.close for bar in bars]
         return sum(closes) / len(closes)
-    
+
     def generate_signal(self, ticker: str) -> SignalEvent:
         #print("generating signal for ticker", ticker)
         try:

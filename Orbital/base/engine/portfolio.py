@@ -1,13 +1,16 @@
-import math
-from base.engine.data_loader import DataLoader
-from decimal import Decimal
-from datetime import datetime
-from base.engine.events import SignalEvent, OrderEvent, FillEvent
 from queue import Queue
+from datetime import datetime
+from decimal import Decimal
 
-from base.models import BacktestRun, PortfolioEquityRecord, PortfolioPositionRecord, PortfolioFillRecord, Stock
+from base.engine.data_loader import DataLoader
+from base.engine.events import SignalEvent, OrderEvent, FillEvent
+from base.models import (BacktestRun, PortfolioEquityRecord,
+PortfolioPositionRecord, PortfolioFillRecord, Stock)
 
 def to_decimal(val) -> Decimal:
+    '''
+    converts a float to a decimal type
+    '''
     return Decimal(str(val))
 
 
@@ -28,19 +31,20 @@ class Portfolio:
 
         self.commission = 0.0
         self.total_commission = 0.0
-        
-        #store equity data for every time step 
+
+        #store equity data for every time step
         self.equity_record: list[dict] = []
         self.avg_price: dict[str, float] = {ticker: 0.0 for ticker in self.data_loader.tickers}
         self.realised_pnl = 0.0
 
-        #Stores what happened on each fill/trade, Date ticker direction quantity fill_price commission previous_quantity new_quantity realised_pnl_day
+        #Stores what happened on each fill/trade, Date ticker direction quantity
+        #fill_price commission previous_quantity new_quantity realised_pnl_day
         self.fill_record: list[dict] = []
 
         #Stores portfolio state for each day
         self.equity_record: list[dict] = []
 
-        #creates database for this backtest run when portfolio is intialised 
+        #creates database for this backtest run when portfolio is intialised
         self.backtest_run = BacktestRun.objects.create(
             #user = User,
             run_name = run_name,
@@ -53,7 +57,6 @@ class Portfolio:
             tickers = list(self.data_loader.tickers),
         )
 
-    
     def complete_bt(self) -> None:
         BacktestRun.objects.filter(BacktestRun = self.backtest_run).update(
             is_completed = True,
@@ -64,19 +67,19 @@ class Portfolio:
     def get_latest_price(self, ticker: str) -> float:
         curr_date = self.data_loader.get_current_datetime()
         return self.data_loader.bar_lookup[ticker][curr_date].close
-    
+
     def calculate_unrealised_pnl(self) -> float:
         total_unrealised_pnl = 0.0
         for ticker in self.holdings:
             total_unrealised_pnl += self.calculate_unrealised_pnl_ticker(ticker)
         return total_unrealised_pnl
-    
+
     def calculate_unrealised_pnl_ticker(self, ticker: str) -> float:
         curr_quantity = self.holdings[ticker]
 
         if curr_quantity == 0:
             return 0.0
-        
+
         current_price = self.get_latest_price(ticker)
         avg_price = self.avg_price[ticker]
         if curr_quantity > 0:
@@ -85,14 +88,12 @@ class Portfolio:
             #short position
             return abs(curr_quantity) * (avg_price - current_price)
 
-    
     def calculate_holdings_value(self) -> float:
         total_value = 0.0
         for ticker, quantity in self.holdings.items():
             price = self.data_loader.bar_lookup[ticker][self.data_loader.curr_datetime].close
             total_value += quantity * price
         return total_value
-    
 
     def generate_order(self, signal: SignalEvent) -> OrderEvent:
         ticker = signal.ticker
@@ -101,26 +102,32 @@ class Portfolio:
         order_quantity = self.fixed_quantity * signal.strength
 
         if order_quantity <= 0:
-            raise ValueError(f"Invalid order quantity {order_quantity} generated from signal strength {signal.strength}. Order quantity must be positive.")
-        
+            raise ValueError(f"Invalid order quantity {order_quantity} "
+                             f"generated from signal strength {signal.strength}. "
+                             f"Order quantity must be positive.")
+
         if signal_type == 'LONG':
             return self.generate_long_order(ticker, stock_quantity, order_quantity, signal.datetime)
-        
+
         elif signal_type == 'SHORT':
             return self.generate_short_order(ticker, stock_quantity, order_quantity,signal.datetime)
-        
-        elif signal_type == 'EXIT':
-            return self.generate_exit_order(ticker, stock_quantity, exit_frac = signal.strength, dt = signal.datetime)
-       
-        else:
-            raise ValueError(f"Invalid signal type {signal_type} in signal event. Expected 'LONG', 'SHORT', or 'EXIT'.")
 
-    def generate_long_order(self, ticker: str, stock_quantity: int, order_quantity: int, dt: datetime) -> OrderEvent:
+        elif signal_type == 'EXIT':
+            return self.generate_exit_order(ticker, stock_quantity,
+                                            exit_frac=signal.strength, dt=signal.datetime)
+
+        else:
+            raise ValueError(f"Invalid signal type {signal_type} in signal event."
+                             f" Expected 'LONG', 'SHORT', or 'EXIT'.")
+
+    def generate_long_order(self, ticker: str, stock_quantity: int,
+                            order_quantity: int, dt: datetime) -> OrderEvent:
         if stock_quantity >= 0:
             #If current position is flat or long, buy more
             buy_quantity = order_quantity
         else:
-            #If current position is short, buy to cover existing short position and open a new long position
+            #If current position is short,
+            #buy to cover existing short position and open a new long position
             buy_quantity = abs(stock_quantity) + order_quantity
         return OrderEvent(
             ticker = ticker,
@@ -129,8 +136,9 @@ class Portfolio:
             quantity = buy_quantity,
             direction = "BUY"
         )
-    
-    def generate_short_order(self, ticker: str, stock_quantity: int, order_quantity: int, dt: datetime) -> OrderEvent:
+
+    def generate_short_order(self, ticker: str, stock_quantity: int,
+                             order_quantity: int, dt: datetime) -> OrderEvent:
         if stock_quantity <= 0:
             #If current position is flat or short, sell more
             sell_quantity = order_quantity
@@ -145,7 +153,8 @@ class Portfolio:
             direction = "SELL"
         )
 
-    def generate_exit_order(self, ticker: str, stock_quantity: int, exit_frac: float, dt: datetime) -> OrderEvent:
+    def generate_exit_order(self, ticker: str, stock_quantity: int,
+                            exit_frac: float, dt: datetime) -> OrderEvent:
         if stock_quantity == 0:
             raise ValueError(f"No existing position in {ticker} to exit.")
         if exit_frac < 0 or exit_frac > 1:
@@ -156,7 +165,7 @@ class Portfolio:
             direction = "SELL"
         else:
             direction = "BUY"
-        
+
         return OrderEvent(
             ticker = ticker,
             datetime = dt,
@@ -169,7 +178,7 @@ class Portfolio:
     def update_fill(self, event: FillEvent) -> None:
         if event.type != "FILL":
             raise ValueError(f"Invalid event type {event.type} in fill update. Expected 'FILL'.")
-        
+
         ticker = event.ticker
 
         curr_quantity = self.holdings.get(ticker, 0)
@@ -177,10 +186,10 @@ class Portfolio:
         new_quantity = curr_quantity + trade_quantity
 
         realised_pnl_day = self.update_position_tracker(
-                                ticker, 
+                                ticker,
                                 curr_quantity,
-                                trade_quantity, 
-                                event.fill_cost, 
+                                trade_quantity,
+                                event.fill_cost,
                                 event.commission
         )
 
@@ -197,8 +206,6 @@ class Portfolio:
                             new_quantity,
                             realised_pnl_day= realised_pnl_day)
 
-    
-
     def update_cash(self, fill: FillEvent) -> None:
         fill_cost = fill.quantity * fill.fill_cost
         if fill.direction == "BUY":
@@ -206,13 +213,16 @@ class Portfolio:
         elif fill.direction == "SELL":
             self.current_capital += fill_cost - fill.commission
         else:
-            raise ValueError(f"Invalid fill direction {fill.direction} in cash update. Expected 'BUY' or 'SELL'.")
+            raise ValueError(f"Invalid fill direction {fill.direction} "
+                             f"in cash update. Expected 'BUY' or 'SELL'.")
         self.total_commission += fill.commission
 
 
     #Updates average price and realized PnL for the ticker based on the new fill
     #Note: Returns -commission as a negative cost to the trade
-    def update_position_tracker(self, ticker: str, curr_quantity: float, fill_quantity: float, fill_price: float, commission: float) -> float:
+    def update_position_tracker(self, ticker: str, curr_quantity: float,
+                                fill_quantity: float, fill_price: float,
+                                commission: float) -> float:
         curr_avg_price = self.avg_price.get(ticker, 0.0)
         new_quantity = curr_quantity + fill_quantity
 
@@ -225,7 +235,8 @@ class Portfolio:
         if curr_quantity * fill_quantity > 0:
             old_position_value = abs(curr_quantity) * curr_avg_price
             additional_position_value = abs(fill_quantity) * fill_price
-            self.avg_price[ticker] = (old_position_value + additional_position_value) / abs(new_quantity)
+            self.avg_price[ticker] = ((old_position_value + additional_position_value)
+                                      / abs(new_quantity))
             return -commission
 
         #Opposite direction trade: reducing, exiting or position reversal
@@ -236,25 +247,25 @@ class Portfolio:
         else:
             #Close short position by buying
             realised_pnl_day = closing_quantity * (curr_avg_price - fill_price)
-        
+
         realised_pnl_day -= commission
 
         #position fully closed
         if new_quantity == 0:
             self.avg_price[ticker] = 0.0
-        
+
         #Position reduced but not closed and not reversed
         elif curr_quantity * new_quantity > 0:
             self.avg_price[ticker] = curr_avg_price
-        
+
         #Position reversed
         else:
             self.avg_price[ticker] = fill_price
-        
-        return realised_pnl_day
-    
 
-    def update_fill_records(self, fill: FillEvent, prev_quantity: float, new_quantity: float, realised_pnl_day: float) -> None:
+        return realised_pnl_day
+
+    def update_fill_records(self, fill: FillEvent, prev_quantity: float,
+                            new_quantity: float, realised_pnl_day: float) -> None:
         record = {
                 "date": fill.datetime,
                 "ticker": fill.ticker,
@@ -298,7 +309,7 @@ class Portfolio:
         #calculates long - short investments
         net_exposure = sum(self.holdings[ticker] * self.get_latest_price(ticker)
                             for ticker in self.holdings)
-        
+
         #Higher ratio = more risk, lower ratio = less risk
         gross_exposure_leverage = gross_exposure / total_equity if total_equity != 0 else 0.0
 
@@ -316,7 +327,7 @@ class Portfolio:
             }
 
         self.equity_record.append(record)
-        
+
         PortfolioEquityRecord.objects.update_or_create(
             backtest_run = self.backtest_run,
             date = date,
@@ -353,14 +364,3 @@ class Portfolio:
                     "unrealised_pnl": to_decimal(unrealised_pnl),
                 }
             )
-
-        
-
-        
-
-
-
-
-
-        
-    
