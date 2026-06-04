@@ -94,9 +94,9 @@ class ExecutionLoader:
         price = self.slippage_adjustment(latest_price, order.direction)
         commission = self.calculate_commission(order.quantity, price)
         fill = self.create_fill_event(order, price, commission)
-        print(self.data_loader.get_current_datetime())
-        print(f"Executing market order for {order.ticker} at price "
-              f"{price} with commission {commission}")
+        # print(self.data_loader.get_current_datetime())
+        # print(f"Executing market order for {order.ticker} at price "
+            #   f"{price} with commission {commission}")
         self.events.put(fill)
 
     def execute_limit_order(self, order: OrderEvent):

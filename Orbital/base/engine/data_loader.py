@@ -13,7 +13,7 @@ django.setup()
 from base.engine.events import MarketEvent
 from base.models import StockPriceHistory, FuturesPriceHistory
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from queue import Queue
 from abc import ABC, abstractmethod
 
@@ -133,7 +133,8 @@ class DataLoader(ABC):
 
     def next_day(self) -> None:
         '''
-        points the data loader to the next valid day.
+        points the data loader to the next valid day. And adds a bar to
+        events queue.
         '''
         #Increment time index 
         next_index = self.curr_index + 1
@@ -345,16 +346,34 @@ if __name__ == "__main__":
     # print(f"This is the current bar = {data_loader.get_current_bar("AAPL")}")
 
     # Testing to see if MCSDataLoader works as expected
-    # data_loader = MCSDataLoader(Queue(), ["AAPL"], start_date,
-    #                          end_date, "STOCK",{"AAPL" : [Bar("AAPL",
-    #                                                           start_date,
-    #                                                           100,
-    #                                                           110,
-    #                                                           90,
-    #                                                           105,
-    #                                                           100,
-    #                                                           "STOCK")]})
+    data_loader = MCSDataLoader(Queue(), ["AAPL"], start_date,
+                             end_date, "STOCK",{"AAPL" : [Bar("AAPL",
+                                                              start_date,
+                                                              100,
+                                                              110,
+                                                              90,
+                                                              105,
+                                                              100,
+                                                              "STOCK"),
+                                                              Bar("AAPL",
+                                                              start_date + timedelta(1),
+                                                              100,
+                                                              110,
+                                                              90,
+                                                              105,
+                                                              100,
+                                                              "STOCK")]
+                                                              })
     # Initialization works, I'm going to assume the other methods work as
     # they don't need to retrieve data.
     # data_loader.next_day()
     # print(f"This is the current bar = {data_loader.get_current_bar("AAPL")}") 
+
+    # Next day doesn't seem to be working, going to test if methods inherited work.
+    # data_loader.next_day()
+    # print(f"This is the current bar = {data_loader.get_current_bar("AAPL")}") 
+    # data_loader.next_day()
+    # print(f"This is the next bar = {data_loader.get_current_bar("AAPL")}") 
+    # print(data_loader.events.qsize())
+
+    # Next day appears to work, but I need to check if events queue is updated.

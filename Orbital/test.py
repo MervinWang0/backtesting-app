@@ -5,8 +5,7 @@ from pathlib import Path
 from queue import Queue
 from datetime import datetime
 import django
-from base.models import StockPriceHistory
-from base.engine.backtest import Backtest
+
 
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
@@ -17,6 +16,9 @@ django.setup()
 TICKER = "AAPL"
 DOWNLOAD_DATA = False
 
+from base.models import StockPriceHistory
+from base.engine.backtest import Backtest
+from base.engine.data_loader import DatabaseDataLoader
 
 def get_existing_date_range(ticker):
     rows = StockPriceHistory.objects.filter(stock__ticker=ticker).order_by("date")
@@ -65,6 +67,11 @@ def run_backtest(start_date, end_date):
             "short_window": 20,
             "long_window": 100,
         },
+        data_loader=DatabaseDataLoader(events=Queue(),
+                                                    tickers=["AAPL"],
+                                                    start_date=start_date,
+                                                    end_date=end_date,
+                                                    asset_type="STOCK"),
         commission=0.0,
     )
 

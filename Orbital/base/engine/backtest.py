@@ -31,6 +31,9 @@ class Backtest:
                  initial_capital: float = 100000.0,
                  strategy_params: dict[str, object] = None,
                  commission: float = 0.0,):
+        self.data_loader = data_loader
+        # In the case of MCS data loader is passed in,
+        # events has to point to the same queue for all the components
         self.events = events
         self.tickers = tickers
         self.start_date = start_date
@@ -45,7 +48,6 @@ class Backtest:
         self.commission = commission
         self.slippage = slippage
 
-        self.data_loader = data_loader
         self.events = events
         self.portfolio = Portfolio(self.data_loader, self.events,
                                    run_name="test", strategy_name="Moving Average Cross",
@@ -61,11 +63,11 @@ class Backtest:
         '''
         Function that executes the backtest.
         '''
-        print("A Backtest has occurred!")
         while self.data_loader.continue_bt:
             self.data_loader.next_day()
             self.execute_events()
             self.portfolio.update_equity_record()
+        return self.portfolio.equity_record.copy()
 
     def execute_events(self):
         '''

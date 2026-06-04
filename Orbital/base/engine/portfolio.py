@@ -196,10 +196,7 @@ class Portfolio:
         self.update_cash(event)
 
         self.holdings[ticker] = new_quantity
-        print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
-        print(f"Current capital after fill: {self.current_capital}")
         self.realised_pnl += realised_pnl_day
-        print(f"Realized PnL after fill: {self.realised_pnl}")
 
         self.update_fill_records(event,
                             curr_quantity,
