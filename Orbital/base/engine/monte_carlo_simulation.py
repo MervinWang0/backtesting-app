@@ -19,6 +19,7 @@ from base.engine.data_loader import (DataLoader, Bar,
 from base.engine.backtest import Backtest
 import numpy as np
 import pandas as pd
+import math
 
 class MonteCarloSimulatior():
     '''
@@ -50,41 +51,122 @@ current return = (close price today - close price yesterday) / close price yeste
     def __init__(self, backtest: Backtest, volatility_regime):
         self.backtest = backtest
         self.volatility = self.get_volatility(volatility_regime)
-    
+
+    def GBM(self, stock_data: list[Bar]) -> list[Bar]:
+        '''
+        Description 
+        Function takes in a list of stock prices and returns a randomized list
+        of stock prices
+
+        Implementation details
+        Geometric Brownian Motion is a method of generating random stock prices.
+        Note that for GBM, drift and volatility are constant throughout the period.
+
+        It has the formula (before ito correction)
+        X(t) = X(0) * nat_exp(mu * t + sigma * B(t))
+
+        Variables explanation
+        X(t) price of stock at day t
+        X(0) initial price of stock
+        mu => drift => annualized sample mean of logged daily returns 
+        t => day => fraction of year, n/252, where n is the day of the stock (0 is first day)
+        sigma => volatility => annualized std of logged daily returns
+        B(t) => Brownian motion evaluated at t => equivalent to N(0, t)
+
+        GBS with Ito correction, (more accurate)
+        X(t) = X(0) * nat_exp((mu - (sigma^2 / 2)) * t + sigma * B(t))
+        The difference is that mu has a subtraction of sigma squared divided by 2
+
+        Function takes in a list of og stock prices and returns a randomized list
+        of stock prices
+        '''
+        # There are two attributes important in a bar, open and close.
+        # Both are to be modified
+        random_data: list[Bar] = [] # Stores randomized data
+
+        # First obtain a list containing open prices and close prices
+        open_log = list(map(lambda bar: bar.open, stock_data))
+        close_log = list(map(lambda bar: bar.close, stock_data))
+
+        # important to note that these logged returns have 1 less element than the
+        # original list.
+        open_logged_returns = self.transform_daily_logged(open_log)
+        close_logged_returns = self.transform_daily_logged(close_log)
+
+        # Obtain X(0)
+        open_initial = stock_data[0].open
+        close_initial = stock_data[0].close
+
+        # random number generator used to calculate brownian motion
+        rng = np.random.default_rng()
+
+        # This loop applies the GBM change to each day's stock data
+        for day, bar in enumerate(stock_data): # day = [0, len(stock_data) - 1]
+            # Obtain t in formula
+            t = day / 252
+
+            # Obtain B(t) in formula
+            # The second argument to normal is standard deviation while t is variance
+            # thus sqrt. Note std and var is for brownian motion not GBM
+            brownian_t = rng.normal(0, math.sqrt(t))
+
+            # Obtain sigma annualized
+            open_sigma = open_logged_returns.std() * 252
+            close_sigma = close_logged_returns.std() * 252
+
+            # Obtain mu annualized
+            # With iso correction, note mean is annualized first before correction
+            # is applied using annualized sigma
+            open_mu = (open_logged_returns.mean() * 252) - (open_sigma ** 2) / 2
+            close_mu = (close_logged_returns.mean() * 252) - (close_sigma ** 2) / 2
+
+            # Add a random bar for each day in the og stock data in results list
+            random_open_price = open_initial * math.exp(open_mu * t + open_sigma * brownian_t)
+            random_close_price = close_initial * math.exp(close_mu * t + close_sigma * brownian_t)
+            random_data.append(Bar(symbol=bar.symbol,
+                                   date=bar.date,
+                                   open=round(random_open_price, 2),
+                                   high=bar.high,
+                                   low=bar.low,
+                                   close=round(random_close_price, 2),
+                                   volume=bar.volume,
+                                   asset_type=bar.asset_type
+                                   ))
+        return random_data
+
+
+
+
+    def transform_daily_logged(self, values: list[float]) -> pd.Series[float]:
+        '''
+        Takes in a list of values, representing prices and returns a list
+        of the daily returns logged by the natural log
+        '''
+        # First log price then obtains price diff (if log carried after may log a negative)
+        logged = map(math.log, values)
+        return pd.Series(logged).pct_change().dropna()
+
+
     def simulate(self, num):
         '''
         Runs num simulations where num >= 1
         '''
-        # Calculate parameters for price noise
-        og_stock_data = self.backtest.data_loader.get_past_bars("AAPL",
-                        len(self.backtest.data_loader.get_timeline()))
-        returns_std = self.get_returns_std(og_stock_data)
-        rng = np.random.default_rng()
+        # Need to implement a method to get all bars of all stocks
+        # of the data loader
+        stock_data: dict[str, list[Bar]] = {"AAPL" : self.backtest.data_loader.get_past_bars("AAPL",
+            len(self.backtest.data_loader.get_timeline()))}
 
         # results is a list storing the equity records of each run
         results = []
+
         # For each simulation
         for _ in range(num):
-            # random stock data holds historical stock data of each simulation
+            # random stock data holds randomized stock data of each simulation
             random_stock_data: dict[str, list[Bar]] = {}
-            # Needs to initialize each ticker as a list
+            # This creates the random data using GBM method
             for ticker in self.backtest.tickers:
-                random_stock_data[ticker] = []
-            # For each record
-            for bar in og_stock_data:
-                # Each day is affected by a different price noise
-                # volatility here may be replaced by a function to compute variable volatility
-                price_noise = rng.normal(0, returns_std * self.volatility)
-                # Only Close and Open are modified. They are rounded to 2dp to reflect realism
-                # print(f"This is the price_noise = {price_noise}, This is returns std = {returns_std}")
-                random_stock_data[bar.symbol].append(Bar(symbol=bar.symbol,
-                                             date=bar.date,
-                                             open=round((bar.open) * (1 + price_noise), 2),
-                                             high=bar.high,
-                                             low=bar.low,
-                                             close=round((bar.close) * (1 + price_noise), 2),
-                                             volume=bar.volume,
-                                             asset_type=bar.asset_type))
+                random_stock_data[ticker] = self.GBM(stock_data["AAPL"])
+
             # Once the random historical stock data is obtained, backtest using it
             mcs_data_loader = MCSDataLoader(events=Queue(),
                                             tickers=self.backtest.tickers,
@@ -115,7 +197,7 @@ current return = (close price today - close price yesterday) / close price yeste
         if volatility_regime == "CRISIS":
             return 4
         raise ValueError("Volatility regime should be of LOW/MEDIUM/HIGH/CRISIS")
-    
+
     def get_returns_std(self, stock_data: list[Bar]) -> list[float]:
         '''
         Descrpition
@@ -132,11 +214,11 @@ current return = (close price today - close price yesterday) / close price yeste
         # Gets returns. Drops the first element as it can't be calculated
         prices = prices.pct_change().dropna()
         return np.std(prices)
-    
+
 if __name__ == "__main__":
     # Test obtaining og list historical data
     start_date = datetime.fromisoformat("2021-05-24").date()
-    end_date = datetime.fromisoformat("2023-06-07").date()
+    end_date = datetime.fromisoformat("2022-06-07").date()
     data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
                              end_date, "STOCK")
     backtest = Backtest(
@@ -152,7 +234,11 @@ if __name__ == "__main__":
                                                     start_date=start_date,
                                                     end_date=end_date,
                                                     asset_type="STOCK"))
-    # backtest.run()
+    backtest.run()
+    stock_data = backtest.data_loader.get_past_bars("AAPL",
+                len(backtest.data_loader.get_timeline()))
+    mcs = MonteCarloSimulatior(backtest, "LOW")
+
     # Tests if the list of bars can be obtained via backtester
     # n = 1
     # for bar in MonteCarloSimulatior(backtest,1).simulate(1):
@@ -170,5 +256,15 @@ if __name__ == "__main__":
     # Attempt to make the list of equity records into a more readable format
     for equity_record in MonteCarloSimulatior(backtest,"LOW").simulate(3):
         print(pd.DataFrame(equity_record))
+
+    # For testing of GBM
+    # print("This is the original stock data")
+    # for num in range(1, len(stock_data) + 1):
+    #     print(f"Day{num}: {stock_data[num-1]}")
+
+    # print("\nThis is the randomized stock data")
+    # random_data = mcs.GBM(stock_data)
+    # for num in range(1, len(random_data) + 1):
+    #     print(f"Day{num}: {random_data[num-1]}")
 
 
