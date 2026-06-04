@@ -45,12 +45,13 @@ class Backtest:
         self.portfolio = Portfolio(self.data_loader, self.events,run_name = "test", strategy_name= "Moving Average Cross", start_date= self.start_date, end_date = self.end_date, initial_capital=self.initial_capital, quantity=5 )
         self.execute = executionLoader(self.events, self.data_loader, commission=self.commission, slippage=self.slippage)
         self.strategy = MovingAverageCross(self.data_loader, self.events, self.tickers, self.strategy_params["short_window"], self.strategy_params["long_window"], self.strength)
-    
+        
     def run(self):
         while self.data_loader.continue_bt:
             self.data_loader.next_day()
             self.execute_events()
             self.portfolio.update_equity_record()
+            self.portfolio.update_benchmark_record()
 
         return self.portfolio.backtest_run
 
