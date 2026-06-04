@@ -1,5 +1,7 @@
+from typing import Optional
+
 from base.engine.events import MarketEvent
-from base.models import StockPriceHistory, FuturesPriceHistory
+from base.models import StockPriceHistory, FuturesPriceHistory, ForexPriceHistory
 from dataclasses import dataclass
 import datetime
 from queue import Queue
@@ -12,13 +14,16 @@ class Bar:
     Attributes are ticker, date, OHLVC, asset type
     '''
     symbol: str
-    date: datetime.date
+    date: datetime
     open: float
     high: float
     low: float
     close: float
-    volume: int
+    volume: Optional[int]
     asset_type: str
+
+    base_currency: Optional[str] = None
+    quote_currency: Optional[str] = None
 
     @staticmethod
     def to_bar(stock_price_history):
@@ -116,6 +121,28 @@ class DataLoader:
             ))
         return bars
     
+    def load_forex_date(self, forex_pair_code: str) -> list[Bar]:
+        bars: list[Bar] = []
+        rows = (ForexPriceHistory.objects.filter(pair__symbol =forex_pair_code, timestamp__range=(self.start_date, self.end_date))
+                .select_related("pair")
+                .order_by("timestamp"))
+        
+        for record in rows:
+            bars_date = self.date_to_datetime(record["timestamp"])
+            bars.append(Bar(
+                symbol = record["pair__symbol"],
+                date = bars_date,
+                open = float(record["open_price"]),
+                high = float(record["high_price"]),
+                low = float(record["low_price"]),
+                close = float(record["close_price"]),
+                volume = record["volume"],
+                asset_type = "FOREX",
+                base_currency = record["pair__base_currency"],
+                quote_currency = record["pair__quote_currency"]
+            ))
+        return bars
+    
     
     # def load_futures_data(self, contract_code: str) -> list[Bar]:
     #     futures_history = FuturesPriceHistory.objects.filter(contracts__contract_code=contract_code, date__range=(self.start_date, self.end_date)).order_by("date")
@@ -133,6 +160,7 @@ class DataLoader:
     #         ))
     #     return bars
 
+
     
     def load_data(self) -> None:
         #track which date has already been visited
@@ -143,6 +171,8 @@ class DataLoader:
                 main_bar = self.load_stock_data(ticker)
             elif self.asset_type == "FUTURES":
                 main_bar = self.load_futures_data(ticker)
+            elif self.asset_type == "FOREX":
+                main_bar = self.load_forex_date(ticker)
             else:
                 raise ValueError(f"Unsupported asset type: {self.asset_type}")
             

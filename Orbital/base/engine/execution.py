@@ -76,6 +76,7 @@ class executionLoader:
         return FillEvent(
             ticker = order.ticker,
             datetime = order.datetime,
+            asset_type= order.asset_type,
             quantity = order.quantity,
             direction = order.direction,
             fill_cost = price,
