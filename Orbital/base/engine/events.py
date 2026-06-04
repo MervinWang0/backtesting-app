@@ -49,10 +49,11 @@ class OrderEvent:
     datetime: datetime
     order_type: OrderType
     quantity: float
+    direction: DirectionType
 
     #only for limit orders, ekse 
     limit_price: Optional[float] = None
-    direction: DirectionType
+    
     type: str = field(default="ORDER", init=False)
 
 

@@ -101,8 +101,8 @@ class ForexPriceHistory(models.Model):
 
     open = models.DecimalField(max_digits = 20, decimal_places= 4)
     high = models.DecimalField(max_digits = 20, decimal_places= 4)
-    Low = models.DecimalField(max_digits = 20, decimal_places= 4)
-    volume = models.PositiveBigIntegerField(default=0)
+    low = models.DecimalField(max_digits = 20, decimal_places= 4)
+    volume = models.PositiveBigIntegerField(default=0, null = True, blank= True)
     close = models.DecimalField(max_digits = 20, decimal_places= 4)
 
     class Meta:

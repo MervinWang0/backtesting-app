@@ -1,4 +1,4 @@
-from pyparsing import Optional
+from typing import Optional
 
 from base.engine.events import MarketEvent
 from base.models import StockPriceHistory, FuturesPriceHistory, ForexPriceHistory
