@@ -13,7 +13,9 @@ django.setup()
 
 from queue import Queue
 from datetime import datetime
-from base.engine.data_loader import DataLoader, Bar
+from base.engine.data_loader import (DataLoader, Bar,
+                                     DatabaseDataLoader,
+                                     MCSDataLoader)
 from base.engine.backtest import Backtest
 import numpy as np
 import pandas as pd
@@ -61,26 +63,41 @@ current return = (close price today - close price yesterday) / close price yeste
 
         # For each simulation
         for _ in range(num):
-            # Create list to store random stock data 
-            random_stock_data = []
+            # random stock data holds historical stock data of each simulation
+            random_stock_data: dict[str, list[Bar]] = {}
+            # Needs to initialize each ticker as a list
+            for ticker in self.backtest.tickers:
+                random_stock_data[ticker] = []
             # For each record
             for bar in og_stock_data:
                 # Each day is affected by a different price noise
+                # volatility here may be replaced by a function to compute variable volatility
                 price_noise = rng.normal(0, returns_std * self.volatility)
-                # Only Close and Open are modified
-                random_stock_data.append(Bar(symbol=bar.symbol,
+                # Only Close and Open are modified. They are rounded to 2dp to reflect realism
+                random_stock_data[bar.symbol].append(Bar(symbol=bar.symbol,
                                              date=bar.date,
-                                             open=(bar.open) * (1 + price_noise),
+                                             open=round((bar.open) * (1 + price_noise), 2),
                                              high=bar.high,
                                              low=bar.low,
-                                             close=(bar.close) * (1 + price_noise),
+                                             close=round((bar.close) * (1 + price_noise), 2),
                                              volume=bar.volume,
                                              asset_type=bar.asset_type))
-                
+            # Once the random historical stock data is obtained, backtest using it
+            mcs_data_loader = MCSDataLoader(events=Queue(),
+                                            tickers=self.backtest.tickers,
+                                            start_date=self.backtest.start_date,
+                                            end_date=self.backtest.end_date,
+                                            asset_type="STOCK",
+                                            data=random_stock_data)
+            mcs_backtest = Backtest(events=Queue(),
+                                    tickers=self.backtest.tickers,
+                                    start_date=self.backtest.start_date,
+                                    end_date=self.backtest.end_date,
+                                    strategy_name=self.backtest.strategy_name,
+                                    data_loader=mcs_data_loader)
+            mcs_backtest.run()
 
 
-
-    
     def get_volatility(self, volatility_regime: str) -> float:
         '''
         Takes in a string representing a volatility regime and returns the scaling factor
@@ -117,7 +134,7 @@ if __name__ == "__main__":
     # Test obtaining og list historical data
     start_date = datetime.fromisoformat("2021-05-24").date()
     end_date = datetime.fromisoformat("2021-06-07").date()
-    data_loader = DataLoader(Queue(), ["AAPL"], start_date,
+    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
                              end_date, "STOCK")
     backtest = Backtest(
     events=Queue(),
@@ -132,6 +149,11 @@ if __name__ == "__main__":
         "short_window": 20,
         "long_window": 100,
     },
+    data_loader=DatabaseDataLoader(events=Queue(),
+                                   tickers=["AAPL"],
+                                   start_date=start_date,
+                                   end_date=end_date,
+                                   asset_type="STOCK"),
     commission=0.0)
     backtest.run()
     # Tests if the list of bars can be obtained via backtester
@@ -140,8 +162,11 @@ if __name__ == "__main__":
     #     print(f"This is the bar on Day {n} = {bar}\n")
     #     n += 1
     # Successfully tested that historical returns list is obtained
-    print(f"This is the historical returns {MonteCarloSimulatior(backtest,1).simulate(1)}")
-    
+    # print(f"This is the historical returns {MonteCarloSimulatior(backtest,"LOW").simulate(1)}")
+
     # Testing to see if returns std works
     # print(f"This is the returns std = {MonteCarloSimulatior(backtest,1).simulate(1)}")
+
+    # Testing to see if loop works to create random historical stock data
+    print(f"This is the random stock data = {MonteCarloSimulatior(backtest,"LOW").simulate(3)}")
 
