@@ -78,6 +78,46 @@ class FuturesPriceHistory(models.Model):
     def __str__(self) -> str:
         return f"{self.contracts.contract_code} - {self.date} expiring on {self.contracts.expiry_date}"
     
+class ForexPair(models.Model):
+    ticker = models.CharField(max_length=20, unique = True)
+    #USDEUR
+
+    name = models.CharField(max_length=20)
+
+    base_currency = models.CharField(max_length=10)
+    quote_currency = models.CharField(max_length=10)
+
+    pip_value = models.FloatField(default = 0.0001)
+    lot_size = models.IntegerField(default = 100000)
+
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self) -> str:
+        return self.ticker
+
+class ForexPriceHistory(models.Model):
+    pair = models.ForeignKey(ForexPair, on_delete=models.CASCADE, related_name="forex_price_history")
+    timestamp = models.DateTimeField()
+
+    open = models.DecimalField(max_digits = 20, decimal_places= 4)
+    high = models.DecimalField(max_digits = 20, decimal_places= 4)
+    Low = models.DecimalField(max_digits = 20, decimal_places= 4)
+    volume = models.PositiveBigIntegerField(default=0)
+    close = models.DecimalField(max_digits = 20, decimal_places= 4)
+
+    class Meta:
+        unique_together = ("pair", "timestamp")
+        ordering = ["timestamp"]
+        indexes = [
+            models.Index(fields=["pair", "timestamp"], name="forex_pair_timestamp_idx")
+        ]
+    
+    def __str__(self) -> str:
+        return f"{self.pair.ticker} on {self.timestamp}"
+
+
+
+
 
 #This is to store results of each backtest
 #Backtest contains final result of a backtest run, mainly storing performance metrics
@@ -86,6 +126,7 @@ class BacktestRun(TimeStampedModel):
     class AssetType(models.TextChoices):
         STOCK = "STOCK", "Stock"
         FUTURES = "FUTURES", "Futures"
+        FOREX = "FOREX", "Forex"
 
     #name of backtest run
     run_name = models.CharField(max_length=255, blank=True)
@@ -100,6 +141,7 @@ class BacktestRun(TimeStampedModel):
 
     stock = models.ForeignKey(Stock, on_delete=models.CASCADE, null=True, blank=True)
     futures = models.ForeignKey(FuturesContract, on_delete=models.CASCADE, null=True, blank= True)
+    forex = models.ForeignKey(ForexPair, on_delete=models.CASCADE, null=True, blank=True)
 
     start_date = models.DateField()
     end_date = models.DateField()
@@ -195,6 +237,26 @@ class PortfolioPositionRecord(TimeStampedModel):
     def __str__(self):
         return (f"{self.backtest_run}: "
                 f"{self.ticker} : {self.quantity} on {self.date}" )
+    
+class BenchmarkRecord(TimeStampedModel):
+    backtest_run = models.ForeignKey(BacktestRun, on_delete=models.CASCADE, related_name = "benchmark_record")
+    date = models.DateField()
+    ticker = models.CharField(max_length=20)
+    close_price = models.DecimalField(max_digits = 20, decimal_places = 4)
+    quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
+    market_value = models.DecimalField(max_digits = 20, decimal_places = 4)
+    unrealised_pnl = models.DecimalField(max_digits = 20, decimal_places = 4)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields = ["backtest_run", "date"],
+                                                name = "unique_benchmark_record")]
+        ordering = ["date"]
+    
+    def __str__(self):
+        return (f"{self.backtest_run}: "
+                f"{self.ticker} with market value {self.market_value} on {self.date}" )
+
+
             
 
 

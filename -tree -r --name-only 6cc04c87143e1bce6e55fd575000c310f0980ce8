@@ -1,0 +1,54 @@
+[33mcommit 6cc04c87143e1bce6e55fd575000c310f0980ce8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrestore-changes[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m, [m[1;32mforex-update[m[33m)[m
+Merge: 0a31d38 5e87c81
+Author: ryans <ryansyk21@gmail.com>
+Date:   Mon Jun 1 01:13:19 2026 +0800
+
+    Merge branch 'checkpoint_1'
+
+ .vscode/settings.json                              |   4 [32m+[m[31m-[m
+ .../Orbital/__pycache__/settings.cpython-312.pyc   | Bin [31m2539[m -> [32m2539[m bytes
+ Orbital/Orbital/__pycache__/urls.cpython-312.pyc   | Bin [31m1038[m -> [32m1112[m bytes
+ .../conftest.cpython-312-pytest-9.0.3.pyc          | Bin [31m0[m -> [32m168[m bytes
+ Orbital/base/__pycache__/models.cpython-312.pyc    | Bin [31m209[m -> [32m12534[m bytes
+ Orbital/base/__pycache__/urls.cpython-312.pyc      | Bin [31m0[m -> [32m563[m bytes
+ Orbital/base/__pycache__/views.cpython-312.pyc     | Bin [31m0[m -> [32m2885[m bytes
+ .../engine/__pycache__/__init__.cpython-312.pyc    | Bin [31m0[m -> [32m175[m bytes
+ .../engine/__pycache__/backtest.cpython-312.pyc    | Bin [31m0[m -> [32m4805[m bytes
+ .../engine/__pycache__/data_loader.cpython-312.pyc | Bin [31m0[m -> [32m9245[m bytes
+ .../base/engine/__pycache__/events.cpython-312.pyc | Bin [31m0[m -> [32m2626[m bytes
+ .../engine/__pycache__/execution.cpython-312.pyc   | Bin [31m0[m -> [32m6232[m bytes
+ .../engine/__pycache__/performance.cpython-312.pyc | Bin [31m0[m -> [32m5751[m bytes
+ .../engine/__pycache__/portfolio.cpython-312.pyc   | Bin [31m0[m -> [32m15401[m bytes
+ .../engine/__pycache__/strategy.cpython-312.pyc    | Bin [31m0[m -> [32m2705[m bytes
+ Orbital/base/engine/backtest.py                    |  78 [32m+++++[m
+ Orbital/base/engine/data_loader.py                 | 240 [32m++++++++++++++[m
+ Orbital/base/engine/events.py                      |  59 [32m++++[m
+ Orbital/base/engine/execution.py                   | 133 [32m++++++++[m
+ Orbital/base/engine/portfolio.py                   | 367 [32m+++++++++++++++++++++[m
+ Orbital/base/engine/strategy.py                    |  55 [32m+++[m
+ Orbital/base/forms.py                              |  16 [32m+[m
+ .../__pycache__/load_stock_data.cpython-312.pyc    | Bin [31m0[m -> [32m4368[m bytes
+ .../base/management/commands/load_stock_data.py    |  93 [32m++++++[m
+ Orbital/base/migrations/0001_initial.py            | 145 [32m++++++++[m
+ ...ktest_futures_remove_backtest_stock_and_more.py | 134 [32m++++++++[m
+ ...leted_at_backtestrun_fixed_quantity_and_more.py |  28 [32m++[m
+ ...capital_backtestrun_initial_capital_and_more.py |  23 [32m++[m
+ ...0005_alter_backtestrun_completed_at_and_more.py |  68 [32m++++[m
+ .../__pycache__/0001_initial.cpython-312.pyc       | Bin [31m0[m -> [32m8531[m bytes
+ ..._remove_backtest_stock_and_more.cpython-312.pyc | Bin [31m0[m -> [32m7268[m bytes
+ ...testrun_fixed_quantity_and_more.cpython-312.pyc | Bin [31m0[m -> [32m1213[m bytes
+ ...estrun_initial_capital_and_more.cpython-312.pyc | Bin [31m0[m -> [32m867[m bytes
+ ...cktestrun_completed_at_and_more.cpython-312.pyc | Bin [31m0[m -> [32m2090[m bytes
+ Orbital/base/models.py                             | 179 [32m+++++++[m[31m---[m
+ Orbital/base/requirements.txt                      |   5 [32m+[m
+ Orbital/base/templates/backtestrunrecords.html     | 127 [32m+++++++[m
+ Orbital/base/templates/dashboard.html              |  58 [32m++++[m
+ Orbital/base/tests.py                              |   3 [31m-[m
+ .../tests/__pycache__/__init__.cpython-312.pyc     | Bin [31m0[m -> [32m174[m bytes
+ .../test_performance.cpython-312-pytest-9.0.3.pyc  | Bin [31m0[m -> [32m28014[m bytes
+ Orbital/base/tests/test_data_loader.py             |  21 [32m++[m
+ Orbital/base/urls.py                               |  34 [32m+[m[31m-[m
+ Orbital/base/views.py                              |  76 [32m++++[m[31m-[m
+ Orbital/requirements.txt                           | Bin [31m0[m -> [32m35816[m bytes
+ Orbital/test.py                                    |  91 [32m+++++[m
+ 46 files changed, 1966 insertions(+), 71 deletions(-)

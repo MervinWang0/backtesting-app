@@ -15,6 +15,9 @@ class MovingAverageCross:
         
         self.previous_signal = {ticker: None for ticker in tickers}
 
+    def get_asset_type(self):
+        return self.data_loader.asset_type
+
     def calculate_SMA(self, bars: list[Bar]) -> float:
         closes = [bar.close for bar in bars]
         return sum(closes) / len(closes)
@@ -29,6 +32,8 @@ class MovingAverageCross:
         short_window_bars = long_window_bars[-self.short_window:]
         long_SMA = self.calculate_SMA(long_window_bars)
         short_SMA = self.calculate_SMA(short_window_bars)
+
+        asset_type = self.get_asset_type()
 
         current_datetime = self.data_loader.get_current_datetime()
         if short_SMA > long_SMA:
@@ -48,6 +53,7 @@ class MovingAverageCross:
 
         return SignalEvent(
             ticker = ticker,
+            asset_type = asset_type,
             datetime= current_datetime,
             signal_type= current_signal,
             strength= self.strength

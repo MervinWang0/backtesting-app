@@ -1,5 +1,6 @@
 from datetime import datetime
 from dataclasses import dataclass, field
+from typing import Optional
 from django.db import models
 
 class SignalType(models.TextChoices):
@@ -15,6 +16,11 @@ class DirectionType(models.TextChoices):
     BUY = "BUY", "Buy"
     SELL = "SELL", "Sell"
 
+class AssetType(models.TextChoices):
+    STOCK = "STOCK", "Stock"
+    FUTURES = "FUTURES", "Futures"
+    FOREX = "FOREX", "Forex"
+
 
 #dataclass to track whenever a new bar is generated
 @dataclass
@@ -27,6 +33,7 @@ class MarketEvent:
 @dataclass
 class SignalEvent:
     ticker: str
+    asset_type: str
     #strategy_id : str
     datetime: datetime
     signal_type : SignalType
@@ -38,9 +45,13 @@ class SignalEvent:
 @dataclass
 class OrderEvent:
     ticker: str
+    asset_type: str
     datetime: datetime
     order_type: OrderType
-    quantity: int
+    quantity: float
+
+    #only for limit orders, ekse 
+    limit_price: Optional[float] = None
     direction: DirectionType
     type: str = field(default="ORDER", init=False)
 
@@ -49,11 +60,17 @@ class OrderEvent:
 @dataclass
 class FillEvent:
     ticker: str
+    asset_type: str
     datetime: datetime
-    quantity: int
+    quantity: float
     direction: DirectionType
     fill_cost: float
-    commission: float = 0.0
+    commission: float = 0.
+    
+    #for forex
+    base_currency: Optional[str] = None
+    quote_currency: Optional[str] = None
+    
     type: str = field(default="FILL", init=False)
 
 
