@@ -31,7 +31,7 @@ class Portfolio:
         }
 
         self.asset_type_by_ticker :dict[str, AssetType] = {
-            ticker : getattr(self.data_loader, "asset_type", AssetType.Stock) for ticker in self.data_loader.tickers
+            ticker : getattr(self.data_loader, "asset_type", AssetType.STOCK) for ticker in self.data_loader.tickers
         }
 
         self.commission = 0.0
@@ -60,7 +60,7 @@ class Portfolio:
             #user = User,
             run_name = run_name,
             strategy_name= strategy_name,
-            asset_type = getattr(self.data_loader, "asset_type", AssetType.Stock),
+            asset_type = getattr(self.data_loader, "asset_type", AssetType.STOCK),
             start_date = start_date,
             end_date = end_date,
             initial_capital = to_decimal(self.initial_capital),
@@ -267,6 +267,7 @@ class Portfolio:
                             curr_quantity,
                             new_quantity,
                             realised_pnl_day= realised_pnl_day)
+        self.end_equity()
 
     
 
@@ -279,6 +280,16 @@ class Portfolio:
         else:
             raise ValueError(f"Invalid fill direction {fill.direction} in cash update. Expected 'BUY' or 'SELL'.")
         self.total_commission += fill.commission
+    
+    def end_equity(self):
+        current_holdings = self.calculate_holdings_value()
+        end_equity = current_holdings + self.current_capital
+
+        self.backtest_run.end_equity = to_decimal(end_equity)
+        self.backtest_run.save(update_fields=["end_equity"])
+
+
+
 
 
     #Updates average price and realized PnL for the ticker based on the new fill
@@ -375,7 +386,7 @@ class Portfolio:
 
             asset_type = self.asset_type_by_ticker.get(ticker)
 
-            if asset_type == AssetType.Forex:
+            if asset_type == AssetType.FOREX:
                 bar = self.data_loader.get_current_bar(ticker)
                 exposure = self.convert_to_account_currency(exposure, bar.quote_currency)
             
@@ -424,7 +435,7 @@ class Portfolio:
             unrealised_pnl = self.calculate_unrealised_pnl_ticker(ticker)
 
             asset_type = self.asset_type_by_ticker.get(ticker)
-            if asset_type == AssetType.stock:
+            if asset_type == AssetType.STOCK:
                 stock = Stock.objects.filter(ticker=ticker).first()
             
             PortfolioPositionRecord.objects.update_or_create(
@@ -464,7 +475,7 @@ class Portfolio:
                 "unrealised_pnl": to_decimal(benchmark_unrealised_pnl),
             }
         )
-        print(f"Updated benchmark record for {self.benchmark_ticker} on {date}: price {benchmark_price}, quantity {self.benchmark_quantity}, market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")
+        #print(f"Updated benchmark record for {self.benchmark_ticker} on {date}: price {benchmark_price}, quantity {self.benchmark_quantity}, market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")
 
 
         
