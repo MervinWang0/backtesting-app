@@ -215,10 +215,68 @@ class DataLoader(ABC):
 
 class MCSDataLoader(DataLoader):
     '''
-    This is a data laoder that initializes its attributes using a list of bars
+    This is a data laoder that initializes its attributes using a list of bars.
+
+    Notes
+    There are only 2 differences from DatabaseDataLoader
+    1. The difference in its init method is that it takes in an additional parameter,
+    which is data, a list of bars. Which represents historical data.
+    2. The difference in load_stock_data, it still returns a list[Bar], just that
+    the data is from input not from database.
+
+    load_data is the exact same as in DatabaseDataLoader (I think this can be
+    placed in parent class and have load stock data be the abstract method)
     '''
-    def load_data(self):
-        pass
+    # This init method has been overriden, creating attributes to allow load stock
+    # data to work. Logic: Create necessary attribute => call parent constructor
+    def __init__(self, events : Queue, tickers: list[str], start_date: datetime.date,
+                 end_date: datetime.date, asset_type : str, data: dict[str, list[Bar]]):
+        # self.data stores the dict[str, list[Bar]] passed as input,
+        self.data = data.copy()
+        super().__init__(events=events,
+                         tickers=tickers,
+                         start_date=start_date,
+                         end_date=end_date,
+                         asset_type=asset_type)
+        
+
+    def load_stock_data(self, ticker: str) -> list[Bar]:
+        '''
+        This method is created for load_data to remain 
+        '''
+        return self.data[ticker]
+        
+    def load_data(self) -> None:
+        '''
+        This load data method takes in a list of bars and uses it to initalize internal
+        attributes. More specifically, self.stock_data, self.latest_stock_data, self.bar_lookup,
+        self.timeline
+        '''
+        #track which date has already been visited
+        date_times_visited = set()
+
+        for ticker in self.tickers:
+            if self.asset_type == "STOCK":
+                main_bar = self.load_stock_data(ticker)
+            elif self.asset_type == "FUTURES":
+                main_bar = self.load_futures_data(ticker)
+            else:
+                raise ValueError(f"Unsupported asset type: {self.asset_type}")
+            
+            if not main_bar:
+                raise  ValueError(f"No data found for ticker: {ticker} in the specified date range.")
+            
+            self.stock_data[ticker] = main_bar
+            self.latest_stock_data[ticker] = []
+            self.bar_lookup[ticker] = {}
+
+            #populate bar lookup for fast access to bars by date
+            for bar in main_bar:
+                self.bar_lookup[ticker][bar.date] = bar
+                date_times_visited.add(bar.date)
+
+        self.timeline = sorted(date_times_visited)
+
 
 class DatabaseDataLoader(DataLoader):
     '''
@@ -278,7 +336,25 @@ class DatabaseDataLoader(DataLoader):
 if __name__ == "__main__":
     start_date = datetime.fromisoformat("2021-05-24").date()
     end_date = datetime.fromisoformat("2021-06-07").date()
-    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
-                             end_date, "STOCK")
-    data_loader.next_day()
-    print(f"This is the current bar = {data_loader.get_current_bar("AAPL")}")
+
+    # Tests if changing DataLoader to an abstract class has broken the current
+    # implementation, it has not, still works.
+    # data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
+    #                          end_date, "STOCK")
+    # data_loader.next_day()
+    # print(f"This is the current bar = {data_loader.get_current_bar("AAPL")}")
+
+    # Testing to see if MCSDataLoader works as expected
+    # data_loader = MCSDataLoader(Queue(), ["AAPL"], start_date,
+    #                          end_date, "STOCK",{"AAPL" : [Bar("AAPL",
+    #                                                           start_date,
+    #                                                           100,
+    #                                                           110,
+    #                                                           90,
+    #                                                           105,
+    #                                                           100,
+    #                                                           "STOCK")]})
+    # Initialization works, I'm going to assume the other methods work as
+    # they don't need to retrieve data.
+    # data_loader.next_day()
+    # print(f"This is the current bar = {data_loader.get_current_bar("AAPL")}") 
