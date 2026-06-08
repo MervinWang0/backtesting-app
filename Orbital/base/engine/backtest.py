@@ -17,6 +17,7 @@ class BacktestResult:
 class Backtest:
     def __init__(self, events: Queue, 
                  tickers: list[str], 
+                 asset_type: str,
                  start_date: datetime.date,
                  end_date: datetime.date,
                  strategy_name: str,
@@ -27,6 +28,7 @@ class Backtest:
                  comission: float = 0.0):
         self.events = events
         self.tickers = tickers
+        self.asset_type = asset_type
         self.start_date = start_date
         self.end_date = end_date
         self.strategy_name = strategy_name
@@ -39,7 +41,7 @@ class Backtest:
         self.commission = comission
         self.slippage = slippage
 
-        self.data_loader = DataLoader(events, tickers= tickers, start_date= self.start_date, end_date= self.end_date, asset_type="STOCK")
+        self.data_loader = DataLoader(events, tickers= tickers, start_date= self.start_date, end_date= self.end_date, asset_type=self.asset_type)
 
         self.events = events
         self.portfolio = Portfolio(self.data_loader, self.events,run_name = "test", strategy_name= "Moving Average Cross", start_date= self.start_date, end_date = self.end_date, initial_capital=self.initial_capital, quantity=5 )
@@ -47,11 +49,14 @@ class Backtest:
         self.strategy = MovingAverageCross(self.data_loader, self.events, self.tickers, self.strategy_params["short_window"], self.strategy_params["long_window"], self.strength)
         
     def run(self):
+        day = 0
         while self.data_loader.continue_bt:
+            print(day)
             self.data_loader.next_day()
             self.execute_events()
             self.portfolio.update_equity_record()
             self.portfolio.update_benchmark_record()
+            day += 1
 
         return self.portfolio.backtest_run
 

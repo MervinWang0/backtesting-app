@@ -4,8 +4,7 @@ from decimal import Decimal
 from datetime import datetime
 from base.engine.events import AssetType, SignalEvent, OrderEvent, FillEvent
 from queue import Queue
-
-from base.models import BacktestRun, BenchmarkRecord, PortfolioEquityRecord, PortfolioPositionRecord, PortfolioFillRecord, Stock, StockPriceHistory
+from base.models import BacktestRun, BenchmarkRecord, PortfolioEquityRecord, PortfolioPositionRecord, PortfolioFillRecord, Stock, StockPriceHistory, ForexPair, ForexPriceHistory
 
 def to_decimal(val) -> Decimal:
     return Decimal(str(val))
@@ -435,8 +434,12 @@ class Portfolio:
             unrealised_pnl = self.calculate_unrealised_pnl_ticker(ticker)
 
             asset_type = self.asset_type_by_ticker.get(ticker)
+            stock = None
+            forex = None
             if asset_type == AssetType.STOCK:
                 stock = Stock.objects.filter(ticker=ticker).first()
+            elif asset_type == AssetType.FOREX:
+                forex = ForexPair.objects.filter(ticker=ticker).first()
             
             PortfolioPositionRecord.objects.update_or_create(
                 backtest_run = self.backtest_run,
@@ -444,6 +447,7 @@ class Portfolio:
                 ticker = ticker,
                 defaults = {
                     "stock": stock,
+                    "forex": forex,
                     "quantity": to_decimal(quantity),
                     "avg_price": to_decimal(self.avg_price[ticker]),
                     "market_price": to_decimal(market_price),

@@ -123,14 +123,15 @@ class DataLoader:
     
     def load_forex_date(self, forex_pair_code: str) -> list[Bar]:
         bars: list[Bar] = []
-        rows = (ForexPriceHistory.objects.filter(pair__symbol =forex_pair_code, timestamp__range=(self.start_date, self.end_date))
+        rows = (ForexPriceHistory.objects.filter(pair__ticker =forex_pair_code, timestamp__range=(self.start_date, self.end_date))
                 .select_related("pair")
-                .order_by("timestamp"))
+                .order_by("timestamp")
+                .values("pair__ticker", "pair__base_currency","pair__quote_currency", "timestamp", "open_price", "high_price", "low_price", "close_price", "volume"))
         
         for record in rows:
             bars_date = self.date_to_datetime(record["timestamp"])
             bars.append(Bar(
-                symbol = record["pair__symbol"],
+                symbol = record["pair__ticker"],
                 date = bars_date,
                 open = float(record["open_price"]),
                 high = float(record["high_price"]),
@@ -139,7 +140,7 @@ class DataLoader:
                 volume = record["volume"],
                 asset_type = "FOREX",
                 base_currency = record["pair__base_currency"],
-                quote_currency = record["pair__quote_currency"]
+                quote_currency = record["pair__quote_currency"],
             ))
         return bars
     

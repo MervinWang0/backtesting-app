@@ -99,11 +99,11 @@ class ForexPriceHistory(models.Model):
     pair = models.ForeignKey(ForexPair, on_delete=models.CASCADE, related_name="forex_price_history")
     timestamp = models.DateTimeField()
 
-    open = models.DecimalField(max_digits = 20, decimal_places= 4)
-    high = models.DecimalField(max_digits = 20, decimal_places= 4)
-    low = models.DecimalField(max_digits = 20, decimal_places= 4)
+    open_price = models.DecimalField(max_digits = 20, decimal_places= 4)
+    high_price = models.DecimalField(max_digits = 20, decimal_places= 4)
+    low_price = models.DecimalField(max_digits = 20, decimal_places= 4)
     volume = models.PositiveBigIntegerField(default=0, null = True, blank= True)
-    close = models.DecimalField(max_digits = 20, decimal_places= 4)
+    close_price = models.DecimalField(max_digits = 20, decimal_places= 4)
 
     class Meta:
         unique_together = ("pair", "timestamp")
@@ -221,7 +221,8 @@ class PortfolioPositionRecord(TimeStampedModel):
     backtest_run = models.ForeignKey(BacktestRun, on_delete=models.CASCADE, related_name="position_record")
     date = models.DateField()
     ticker = models.CharField(max_length=20)
-    stock = models.ForeignKey(Stock, on_delete=models.SET_NULL, blank=True, null=True)
+    stock = models.ForeignKey(Stock, on_delete=models.SET_NULL, blank = True, null = True)
+    forex = models.ForeignKey(ForexPair, on_delete= models.SET_NULL, blank = True, null = True)
 
     quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
     avg_price = models.DecimalField(max_digits = 20, decimal_places = 4)

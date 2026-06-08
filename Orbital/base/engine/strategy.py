@@ -27,7 +27,7 @@ class MovingAverageCross:
         try:
             long_window_bars = self.data_loader.get_past_bars(ticker, self.long_window)
         except ValueError:
-            #print(f"Not enough bars yet for {ticker}. Need {self.long_window}.")
+            print(f"Not enough bars yet for {ticker}. Need {self.long_window}.")
             return None
         short_window_bars = long_window_bars[-self.short_window:]
         long_SMA = self.calculate_SMA(long_window_bars)
