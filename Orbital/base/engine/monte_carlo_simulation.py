@@ -48,9 +48,8 @@ class MonteCarloSimulatior():
 
 current return = (close price today - close price yesterday) / close price yesterday.
     '''
-    def __init__(self, backtest: Backtest, volatility_regime):
+    def __init__(self, backtest: Backtest):
         self.backtest = backtest
-        self.volatility = self.get_volatility(volatility_regime)
 
     def GBM(self, stock_data: list[Bar]) -> list[Bar]:
         '''
@@ -134,9 +133,6 @@ current return = (close price today - close price yesterday) / close price yeste
                                    ))
         return random_data
 
-
-
-
     def transform_daily_logged(self, values: list[float]) -> pd.Series[float]:
         '''
         Takes in a list of values, representing prices and returns a list
@@ -145,7 +141,6 @@ current return = (close price today - close price yesterday) / close price yeste
         # First log price then obtains price diff (if log carried after may log a negative)
         logged = map(math.log, values)
         return pd.Series(logged).pct_change().dropna()
-
 
     def simulate(self, num):
         '''
@@ -183,38 +178,6 @@ current return = (close price today - close price yesterday) / close price yeste
             results.append(mcs_backtest.run())
         return results
 
-
-    def get_volatility(self, volatility_regime: str) -> float:
-        '''
-        Takes in a string representing a volatility regime and returns the scaling factor
-        '''
-        if volatility_regime == "LOW":
-            return 0.5
-        if volatility_regime == "MEDIUM":
-            return 1
-        if volatility_regime == "HIGH":
-            return 2
-        if volatility_regime == "CRISIS":
-            return 4
-        raise ValueError("Volatility regime should be of LOW/MEDIUM/HIGH/CRISIS")
-
-    def get_returns_std(self, stock_data: list[Bar]) -> list[float]:
-        '''
-        Descrpition
-        Helper method that transforms a list of historical stock data (bars)
-        Into a list of floats, representing the percentage change for each day
-        and then into a single float, representing std of the list.
-        '''
-        # store a list of returns in prices
-        prices = []
-        for bar_ in stock_data:
-            prices.append(bar_.close)
-
-        prices = pd.Series(prices)
-        # Gets returns. Drops the first element as it can't be calculated
-        prices = prices.pct_change().dropna()
-        return np.std(prices)
-
 if __name__ == "__main__":
     # Test obtaining og list historical data
     start_date = datetime.fromisoformat("2021-05-24").date()
@@ -237,7 +200,7 @@ if __name__ == "__main__":
     backtest.run()
     stock_data = backtest.data_loader.get_past_bars("AAPL",
                 len(backtest.data_loader.get_timeline()))
-    mcs = MonteCarloSimulatior(backtest, "LOW")
+    mcs = MonteCarloSimulatior(backtest)
 
     # Tests if the list of bars can be obtained via backtester
     # n = 1
@@ -254,7 +217,7 @@ if __name__ == "__main__":
     # print(f"This is the random stock data = {MonteCarloSimulatior(backtest,"LOW").simulate(3)}")
 
     # Attempt to make the list of equity records into a more readable format
-    for equity_record in MonteCarloSimulatior(backtest,"LOW").simulate(3):
+    for equity_record in MonteCarloSimulatior(backtest).simulate(1):
         print(pd.DataFrame(equity_record))
 
     # For testing of GBM
