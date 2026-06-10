@@ -49,14 +49,11 @@ class Backtest:
         self.strategy = MovingAverageCross(self.data_loader, self.events, self.tickers, self.strategy_params["short_window"], self.strategy_params["long_window"], self.strength)
         
     def run(self):
-        day = 0
         while self.data_loader.continue_bt:
-            print(day)
             self.data_loader.next_day()
             self.execute_events()
             self.portfolio.update_equity_record()
             self.portfolio.update_benchmark_record()
-            day += 1
 
         return self.portfolio.backtest_run
 

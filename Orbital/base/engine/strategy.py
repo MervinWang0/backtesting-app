@@ -58,4 +58,3 @@ class MovingAverageCross:
             signal_type= current_signal,
             strength= self.strength
         )
-        

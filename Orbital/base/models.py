@@ -1,6 +1,7 @@
 from django.db import models
 # from django.contrib.auth.models import User
 from django.conf import settings
+from decimal import Decimal
 
 
 #Time stamp model to track creation date/time and update date/time
@@ -55,28 +56,74 @@ class FuturesContract(models.Model):
     # contract_code = "ESZ23"
     # expiry_date = "2025-06-02"
 
-    root_symbol = models.CharField(max_length=10)
-    contract_code = models.CharField(max_length=50, unique=True)
-    name = models.CharField(max_length=100)
+    root_symbol = models.CharField(max_length = 10)
+    contract_code = models.CharField(max_length = 50, unique=True)
+    name = models.CharField(max_length = 100)
+
+    exchange = models.CharField(max_length = 30, blank=True)
+    currency = models.CharField(max_length = 10, default = "USD")
     expiry_date = models.DateField()
+
+    tick_multiplier = models.DecimalField(max_digits = 20, decimal_fields = 6, default = Decimal("1.0"))
+    tick_size = models.DecimalField(max_digits = 20, decimal_fields = 6, default = Decimal("0.01"))
+
+    is_active = models.BooleanField(default = True)
+
+    class Meta:
+        ordering = ["root_symbol", "expiry_date"]
+        indexes = [
+            models.Index(fields = ["root_symbol", "expiry_date"])
+        ]
 
     def __str__(self) -> str:
         return f"{self.contract_code} ({self.name}) expiring on {self.expiry_date}"
 
 class FuturesPriceHistory(models.Model):
-    contracts = models.ForeignKey(FuturesContract, on_delete=models.CASCADE, related_name="futures_price_history")
+    contract = models.ForeignKey(FuturesContract, on_delete=models.CASCADE, related_name="futures_price_history")
     date = models.DateField()
-    open_price = models.DecimalField(max_digits = 20, decimal_places=2)
-    High_price = models.DecimalField(max_digits = 20, decimal_places=2)
-    low_price = models.DecimalField(max_digits = 20, decimal_places=2)
+    open_price = models.DecimalField(max_digits = 20, decimal_places=6)
+    High_price = models.DecimalField(max_digits = 20, decimal_places=6)
+    low_price = models.DecimalField(max_digits = 20, decimal_places=6)
     volume = models.PositiveBigIntegerField(default=0)
-    close_price = models.DecimalField(max_digits = 20, decimal_places=2)
+    close_price = models.DecimalField(max_digits = 20, decimal_places=6)
+
+    #number of still active contracts 
+    active_contracts = models.BigIntegerField(default = 0)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["contracts", "date"], name="unique_contract_date")]
+        ordering = ["contract", "date"]
+        constraints = [models.UniqueConstraint(fields=["contract", "date"], name="unique_contract_date")]
+
+        indexes = [
+            models.Index(fields = ["contract", "date"]),
+            models.Index(fields = ["date"])
+        ]
 
     def __str__(self) -> str:
-        return f"{self.contracts.contract_code} - {self.date} expiring on {self.contracts.expiry_date}"
+        return f"{self.contract.contract_code} - {self.date} expiring on {self.contracts.expiry_date}"
+    
+class ContinuousFuturesSeries(models.Model):
+
+    #This defines what method to use to decide when to switch from one contract to the next
+    '''
+    Days_before_expiry : switch to the next contract when it is n days from the existing contract expiry date.
+    Volume : Switch when the next contract has a higher trading volume than the current contract
+    Active contracts : Switch when next contract has more contracts than current contract
+    Manual : Decided on rollover dates yourself
+    '''
+    class RollOverRule(models.TextChoices):
+        DAYS_BEFORE_EXPIRY = "DAYS_BEFORE_EXPIRY", "Days Before Expiry"
+        VOLUME = "VOLUME", "Volume"
+        ACTIVE_CONTRACTS = "ACTIVE_CONTRACTS", "Active Contracts"
+        MANUAL = "MANUAL", "Manual"
+
+    class AdjustmentMethod(models.TextChoices):
+        NONE = "NONE", "No adjustment"
+        BACK_ADJUSTED = "BACK_ADJUSTED","Back adjusted"
+        RATIO_ADJUSTED = "RATIO_ADJUSTED", "Ratio adjusted"
+
+    
+    
     
 class ForexPair(models.Model):
     ticker = models.CharField(max_length=20, unique = True)
