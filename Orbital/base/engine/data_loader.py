@@ -214,6 +214,13 @@ class DataLoader(ABC):
         '''
         return self.timeline
 
+    def get_stock_data(self) -> dict[str, list[Bar]]:
+        '''
+        Returns the universe of stock data from start to end
+        for interested tickers.
+        '''
+        return self.stock_data
+    
 class MCSDataLoader(DataLoader):
     '''
     This is a data laoder that initializes its attributes using a list of bars.

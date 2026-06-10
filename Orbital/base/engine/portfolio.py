@@ -361,3 +361,9 @@ class Portfolio:
                     "unrealised_pnl": to_decimal(unrealised_pnl),
                 }
             )
+
+    def get_fill_records(self):
+        return self.fill_record
+
+    def get_equity_records(self):
+        return self.equity_record

@@ -7,17 +7,22 @@ from base.engine.portfolio import Portfolio
 from base.engine.data_loader import DataLoader, DatabaseDataLoader
 from base.engine.strategy import MovingAverageCross
 
-@dataclass
 class BacktestResult:
     '''
     An instance of this class is the output of the a Backtest run
-    It contains all the data necessary to compute various metrics of the backtest
+    It contains all the data used to generate various metrics.
+    The methods are in performance.py
     '''
-    initial_capital: float
-    final_capital: float
-    metric: dict[str, any]
-    trade_log: list[dict]
+    def __init__(self, equity_records: list[dict[str, any]], fill_records: list[dict[str, any]]):
+        self.equity_records = equity_records
+        self.fill_records = fill_records
+        # self.trade_log = fill_to_trade_log(self.fill_records)
 
+    def get_fill_records(self):
+        return self.fill_records
+    
+    def get_equity_records(self):
+        return self.equity_records
 
 class Backtest:
     def __init__(self, events: Queue,
@@ -67,7 +72,8 @@ class Backtest:
             self.data_loader.next_day()
             self.execute_events()
             self.portfolio.update_equity_record()
-        return self.portfolio.equity_record.copy()
+        return BacktestResult(equity_records=self.portfolio.get_equity_records(),
+                              fill_records=self.portfolio.get_fill_records())
 
     def execute_events(self):
         '''
@@ -91,6 +97,7 @@ class Backtest:
                 self.portfolio.update_fill(event)
 
 
-
+if __name__ == "__main__":
+    pass
 
 

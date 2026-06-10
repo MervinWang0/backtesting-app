@@ -21,7 +21,7 @@ import pandas as pd
 
 def equity_graph(df: pd.DataFrame) -> px.Figure:
     '''
-    This function takes in a DataFrame with the columns of x
+    This function takes in a DataFrame with the columns of
     "date"
     "equity"
     Note that these columnsa are a min requirement, having more is acceptable
@@ -29,6 +29,22 @@ def equity_graph(df: pd.DataFrame) -> px.Figure:
     '''
     fig = px.line(data_frame=df, x="date", y="equity")
     return fig
+
+def show_price_graphs(prices: list[list[float]]) -> px.Figure:
+    df = pd.DataFrame(prices).T
+    print(df)
+    df = df.rename(columns={i: 'OG' if i == 0 else f"Sim {i}" for i in range(len(df))})
+    print(df)
+
+    # Label each column
+
+    highlight_col = "OG"
+    highlight_colour = "#d00325"
+    non_highlight_colour = "#837B7B"
+    color_map = {col : (highlight_colour if col == highlight_col else non_highlight_colour)
+                 for col in df}
+    
+    return px.line(df,color_discrete_map=color_map)
 
 if __name__ == "__main__":
     start_date = datetime.fromisoformat("2021-05-24").date()
@@ -56,6 +72,6 @@ if __name__ == "__main__":
     # Creates a dataframe for graph testing
     df = pd.DataFrame()
     for equity_record in mcs.simulate(1):
-        df = pd.DataFrame(equity_record)
+        df = pd.DataFrame(equity_record.get_equity_records())
     equity_graph(df).show()
 

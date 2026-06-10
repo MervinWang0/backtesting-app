@@ -27,7 +27,7 @@ class Distribution():
 
     Features
     1. Data is inserted at initialization and cannot be added to 
-    2. Methods should be able to analyse the data stored.
+    2. Methods to analyse the data stored.
     3. Data is treated as an empirical distribution (each value is
     equally likely to occur)
 
@@ -48,7 +48,7 @@ class Distribution():
 
     '''
 
-    def __init__(self, data: list):
+    def __init__(self, data: list[float]):
         self.data = np.sort(np.array(data))
 
     def get_median(self) -> float:
@@ -81,9 +81,7 @@ class Distribution():
         Takes in prob, returns number at percentile. Because empirical
         distribution is discrete, the case where the prob does not correspond
         to number has to be considered. In this case, the design choice
-        is to use interpolation of the two nearest points.
-
-        Note that the interpolation is the default method
+        is to use the nearest value in the distribution. 
         '''
         return np.percentile(self.data, probability * 100, method="nearest")
 
