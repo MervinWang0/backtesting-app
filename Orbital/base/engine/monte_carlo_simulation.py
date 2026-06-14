@@ -21,8 +21,11 @@ import numpy as np
 import pandas as pd
 import math
 from scipy.stats import t as student_t
+from scipy.stats import poisson as poisson
+from scipy.stats import norm as normal
 import base.engine.graph as graph
 from base.engine.distribution import Distribution
+from hmmlearn import hmm
 
 class MonteCarloSimulator():
     '''
@@ -99,6 +102,138 @@ class MonteCarloSimulator():
         # First log price then obtains price diff (if log carried after may log a negative)
         logged = map(math.log, prices)
         return pd.Series(logged).diff().dropna()
+
+    def jump_prices(self, prices: list[float], df: float,
+                    exp_jumps: int, mean_log_jump_size: float,
+                    std_log_jump_size: float) -> list[float]:
+        '''
+        This function is GBM prices with Jump diffusion
+        log returns becomes r_t = (μ - λk̄ - σ²/2)·Δt + sigma·√Δt·Z + Σ log(Jᵢ)
+        '''
+        # This is done otherwise scaling will return NaN
+        if df <= 2:
+            raise ValueError("Degree of freedom must be greater than 2")
+        lambda_j = exp_jumps
+        lambda_j = lambda_j / 252 # Make it daily
+        mu_j = mean_log_jump_size
+        sigma_j = std_log_jump_size
+
+        # Explicitly state dt as 1
+        dt = 1
+
+        # random price is computed from previous price so initialize
+        # With initial price
+        result = [prices[0]]
+        logged_returns = self.transform_daily_logged(prices)
+
+        # Obtain sigma and mu
+        # ddof=1 for sample std, by default is 1, but make explicit
+        sigma = logged_returns.std(ddof=1)
+        mu = logged_returns.mean()
+
+        # Obtain k in formula
+        expected_jump_size = math.exp(mu_j + sigma_j**2 / 2) - 1
+
+        # Calculate current regime
+        regimes = ["LOW", "HIGH"]
+        model = self.create_model(prices)
+        transition_matrix = self.obtain_sorted_transmat(model)
+        prob = self.obtain_sorted_startp(model)
+        curr_regime = np.random.choice(a=regimes, p=prob)
+
+        # Testing
+        low_regime_count = 0
+        high_regime_count = 0
+        for _ in range(1, len(prices)):
+            if curr_regime == "LOW":
+                reg_mod_mu = 1
+                reg_mod_sigma = 1
+                curr_regime = np.random.choice(a=regimes, p=transition_matrix[0])
+                # Testing
+                low_regime_count += 1
+            elif curr_regime == "HIGH":
+                reg_mod_mu = 1
+                reg_mod_sigma = 1
+                curr_regime = np.random.choice(a=regimes, p=transition_matrix[1])
+                # Testing
+                high_regime_count += 1
+            else:
+                raise ValueError("Should be of LOW/HIGH vol reg")
+            print(curr_regime)
+            # Calculate mu and sigma
+            mu *= reg_mod_mu
+            sigma *= reg_mod_sigma
+
+            # Apply ito correction to mu
+            ito_mu = mu - ((sigma**2) / 2)
+            # Apply jump correction to mu
+            jump_mu = ito_mu - lambda_j * expected_jump_size
+
+            # epsilon_raw has to be scaled as variance of t distribution is dependent on
+            # degree of freedom
+            epsilon_raw = student_t.rvs(df)
+            epsilon = epsilon_raw / np.sqrt(df / (df - 2))
+
+            # Calculate jump contribution
+            jump_contribution = 0
+            jumps = poisson.rvs(mu=lambda_j)
+            for _ in range(jumps):
+                jump_draw = normal.rvs(loc=mu_j, scale=sigma_j)
+                jump_contribution += jump_draw
+
+            # Calculate price and append it
+            log_return = jump_mu * dt + sigma * np.sqrt(dt) * epsilon + jump_contribution
+            random_price = round(result[-1] * math.exp(log_return), 2)
+            result.append(random_price)
+        print(f"Number of low regime days = {low_regime_count}")
+        print(f"Number of high regime days = {high_regime_count}")
+        # p prob stay in low, q prob stay in high
+        p = transition_matrix[0][0]
+        q = transition_matrix[1][1]
+        print(f"Transition matrix and days run = {transition_matrix, len(prices)- 1}")
+        print(f"Theoretical low days = {((1 - p) / (2 - p - q))}")
+        # print(f"Theoretical high days = {(1 - p)/ (2 - p - q)}")
+
+        return result
+
+    def create_model(self, prices: list[float]) -> hmm.GaussianHMM:
+        '''
+        Creates a model
+        random_state is set such that all transition matrixes, on the same data are the same.
+        '''
+        model = hmm.GaussianHMM(n_components=2, covariance_type="diag", n_iter=1000, random_state=1)
+        # Turn the prices into a 2D array, each row representing day, and value
+        # is log return
+        data = np.array(self.transform_daily_logged(prices)).reshape(-1,1)
+        model = model.fit(data)
+        return model
+
+    def obtain_sorted_transmat(self, model:hmm.GaussianHMM) -> list[list[float]]:
+        '''
+        Returns a transition matrix
+        '''
+        variances = [model.covars_[i][0][0] for i in range(len(model.covars_))]
+        # print(f"This is the variance {variances}")
+        # print(f"This is the covars, {model.covars_}")
+        low_reg  = np.argmin(variances)
+        high_reg = np.argmax(variances)
+
+        # Reorder rows and columns so row 0 = low vol, row 1 = high vol
+        order = [low_reg, high_reg]
+        sorted_transmat = model.transmat_[np.ix_(order, order)]
+        return sorted_transmat
+
+    def obtain_sorted_startp(self, model:hmm.GaussianHMM) -> list[float]:
+        '''
+        Returns the sorted starting probabilities
+        '''
+        variances = [model.covars_[i][0][0] for i in range(len(model.covars_))]
+        low_reg  = np.argmin(variances)
+        high_reg = np.argmax(variances)
+
+        # Reorder rows and columns so row 0 = low vol, row 1 = high vol
+        order = [low_reg, high_reg]
+        return model.startprob_[order]
 
     def gbm_prices(self, prices: list[float], df: float) -> list[float]:
         '''
@@ -183,7 +318,7 @@ class MonteCarloSimulator():
 if __name__ == "__main__":
     # Test obtaining og list historical data
     start_date = datetime.fromisoformat("2021-05-24").date()
-    end_date = datetime.fromisoformat("2021-07-07").date()
+    end_date = datetime.fromisoformat("2022-05-24").date()
     data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
                              end_date, "STOCK")
     backtest = Backtest(
@@ -202,69 +337,14 @@ if __name__ == "__main__":
     backtest.run()
     stock_data = backtest.data_loader.get_stock_data()
     mcs = MonteCarloSimulator(backtest)
+    # Testing the hmm model creation function
+    prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    test = mcs.create_model(prices)
 
-    # Tests if the list of bars can be obtained via backtester
-    # n = 1
-    # for bar in MonteCarloSimulatior(backtest,1).simulate(1):
-    #     print(f"This is the bar on Day {n} = {bar}\n")
-    #     n += 1
-    # Successfully tested that historical returns list is obtained
-    # print(f"This is the historical returns {MonteCarloSimulatior(backtest,"LOW").simulate(1)}")
+    # Test sort prob
 
-    # Testing to see if returns std works
-    # print(f"This is the returns std = {MonteCarloSimulatior(backtest,1).simulate(1)}")
+    # Test sorted transmat
+    t_m = mcs.obtain_sorted_transmat(test)
+    # print(test.startprob_[[1,0]])
+    # print(t_m)
 
-    # Testing to see if monte carlo simulation successfully runs the backtests
-    # print(f"This is the random stock data = {MonteCarloSimulatior(backtest,"LOW").simulate(3)}")
-
-    # Attempt to make the list of equity records into a more readable format
-    # for BackTestResult in MonteCarloSimulatior(backtest).simulate(4):
-        # print(type(BackTestResult))
-        # print(pd.DataFrame(BackTestResult.get_fill_records()))
-        # print("test")
-
-    # For testing of GBM
-    # print("This is the original stock data")
-    # for num in range(1, len(stock_data) + 1):
-    #     print(f"Day{num}: {stock_data[num-1]}")
-
-    # print("\nThis is the randomized stock data")
-    # random_data = mcs.GBM(stock_data)
-    # for num in range(1, len(random_data) + 1):
-    #     print(f"Day{num}: {random_data[num-1]}")
-
-    # Graphical testing of GBM
-    # Create a list of price data, with original price data being index 0
-    # and the other elemnents being randomized data, display on graph.
-    # test = [list(map(lambda bar: bar.open, stock_data["AAPL"]))]
-    # for _ in range(10):
-        # test.append(list(map(lambda bar: bar.open, mcs.gbm(stock_data["AAPL"], 5))))
-
-    # print(test)
-    # graph.show_price_graphs(test).show()
-
-    # Test alternate gbm
-    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
-    # print(prices)
-    # test = mcs.gbm_prices(prices, 5)
-
-    # test = [list(map(lambda bar: bar.open, stock_data))]
-    # for _ in range(5):
-    #     test.append(mcs.gbm(stock_data, 3))
-    # graph.show_price_graphs(test).show()
-
-    # Using this to generate a distribution of the total returns.
-    # results = mcs.simulate(100,6)
-    # for i in range(len(results)):
-    #     equity_record = pd.DataFrame(results[i].get_fill_records())
-    #     print(f"This is the equity record as a df \n{equity_record}")
-
-    # print(type(results[0]))
-    # total_returns = list(map(lambda btr : btr.get_total_return(), results))
-    # total_returns_dist = Distribution(total_returns)
-    # (total_returns_dist.distribution_graph().update_layout(title="Histogram of Total Return %")
-    #                                         .update_layout(yaxis_title='Frequency',
-    #                                                        xaxis_title='Total Return %')
-    #                                         .show()
-    #                                         )
-   

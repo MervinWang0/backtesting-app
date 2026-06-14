@@ -44,8 +44,10 @@ def show_price_graphs(prices: list[list[float]]) -> px.Figure:
     color_map = {col : (highlight_colour if col == highlight_col else "blue")
                  for col in df}
 
-    # return px.line(df).update_traces(line=dict(color='red', selector=dict(name='OG')))
-    return px.line(df,color_discrete_map=color_map)
+    fig = px.line(df,color_discrete_map=color_map)
+    fig.update_layout(xaxis_title="Date",
+                      yaxis_title="Price")
+    return fig
 
 if __name__ == "__main__":
     start_date = datetime.fromisoformat("2021-05-24").date()

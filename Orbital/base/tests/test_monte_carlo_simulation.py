@@ -58,11 +58,19 @@ def theoretical_median(mcs, prices: list[float]) -> list[float]:
         result.append(random_price)
     return result
 
+def test_jump_prices(mcs :MonteCarloSimulator, prices: list[float], df: float,
+                exp_jumps: int, mean_log_jump_size: float,
+                std_log_jump_size: float) -> list[float]:
+    '''
+    Check if jump diffusion is working as expected
+    '''
+    return mcs.jump_prices(prices, df, exp_jumps,
+                           mean_log_jump_size, std_log_jump_size)
 
 if __name__ == "__main__":
     # Test obtaining og list historical data
     start_date = datetime.fromisoformat("2021-05-24").date()
-    end_date = datetime.fromisoformat("2021-07-07").date()
+    end_date = datetime.fromisoformat("2022-05-24").date()
     data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
                              end_date, "STOCK")
     backtest = Backtest(
@@ -81,7 +89,59 @@ if __name__ == "__main__":
     backtest.run()
     stock_data = backtest.data_loader.get_stock_data()
     mcs = MonteCarloSimulator(backtest)
-    # Sanity check, graph check
+
+    # GBM Testing
+    # Check price path
+    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # test = [prices]
+    # for _ in range(10):
+    #     test.append(mcs.gbm_prices(prices, 5))
+    # graph.show_price_graphs(test).show()
+
+    # Sanity check, graph check in log space
     prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
     test_prices = test_gbm_prices(mcs, prices, 5, 100)
-    graph.show_price_graphs(test_prices).show()
+    fig = graph.show_price_graphs(test_prices)
+    for i in range(1, 101):
+        fig.data[i].line.color = "white"
+    fig.show()
+
+    # Jump Diffusion Testing
+    # Check price graph
+    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # test = [prices]
+    # for _ in range(10):
+    #     test.append(test_jump_prices(mcs, prices, 5, 1, 0.05, 0.01))
+    # graph.show_price_graphs(test).show()
+
+    # Graph check in log space
+    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # test = [prices]
+    # for _ in range(10):
+    #     test.append(test_jump_prices(mcs, prices, 5, 1, 0.05, 0.01))
+    # test = list(map(lambda prices: map(math.log, prices), test))
+    # graph.show_price_graphs(test).show()
+
+    # Creating comparison between GBM and Jump Diffusion
+    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # test = [prices]
+    # # Index 1 to 10 are GBM
+    # for _ in range(1):
+    #     test.append(mcs.gbm_prices(prices, 5))
+    # # Index 11 to 20 are Jump Diffusion
+    # for _ in range(1):
+    #     test.append(test_jump_prices(mcs, prices, 5, 2, 0.5, 0.01))
+    # fig = graph.show_price_graphs(test)
+    # for i in range(3):
+    #     if i == 0:
+    #         fig.data[i].line.color = "black"
+
+    #     elif i >= 1 and i <= 1:
+    #         fig.data[i].line.color = "red"
+    #     else:
+    #         fig.data[i].line.color = "green"
+    # fig.show()
+
+    # Test Regime Switching 
+
+
