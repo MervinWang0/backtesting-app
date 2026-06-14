@@ -16,6 +16,14 @@ class BacktestResult:
     def __init__(self, equity_records: list[dict[str, any]], fill_records: list[dict[str, any]]):
         self.equity_records = equity_records
         self.fill_records = fill_records
+
+    def get_total_return(self) -> float:
+        '''
+        Returns the total return as a percentage.
+        Final equity - initial equity / initial equity
+        '''
+        return ((self.equity_records[-1]["equity"] - self.equity_records[0]["equity"]) /
+                self.equity_records[0]["equity"]) * 100
         # self.trade_log = fill_to_trade_log(self.fill_records)
 
     def get_fill_records(self):

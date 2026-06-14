@@ -12,7 +12,6 @@ django.setup()
 
 import plotly.express as px
 from queue import Queue
-from base.engine.monte_carlo_simulation import MonteCarloSimulatior
 from datetime import datetime
 from base.engine.data_loader import DatabaseDataLoader
 from base.engine.backtest import Backtest
@@ -85,7 +84,9 @@ class Distribution():
         '''
         return np.percentile(self.data, probability * 100, method="nearest")
 
-
+    def distribution_graph(self) -> px.Figure:
+        df = pd.DataFrame(self.data)
+        return px.histogram(df)
 if __name__ == "__main__":
     test = Distribution([1,2,3,4,5,6,7,8,9,10,])
     print(f"mean = {test.get_mean()}")

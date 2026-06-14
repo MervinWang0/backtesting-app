@@ -16,14 +16,15 @@ from datetime import datetime
 from base.engine.data_loader import (DataLoader, Bar,
                                      DatabaseDataLoader,
                                      MCSDataLoader)
-from base.engine.backtest import Backtest
+from base.engine.backtest import Backtest, BacktestResult
 import numpy as np
 import pandas as pd
 import math
 from scipy.stats import t as student_t
 import base.engine.graph as graph
+from base.engine.distribution import Distribution
 
-class MonteCarloSimulatior():
+class MonteCarloSimulator():
     '''
     This class carries out simulated backtests and returns metrics computed from them.
 
@@ -88,8 +89,8 @@ class MonteCarloSimulatior():
                           )
             random_data.append(new_bar)
         # For testing
-        return random_open
-        # return random_data
+        # return random_open
+        return random_data
 
     def transform_daily_logged(self, prices: list[float]) -> pd.Series[float]:
         '''
@@ -106,68 +107,49 @@ class MonteCarloSimulatior():
 
         Implementation details
         Using GBM Formula
-        X(t) = X(0) * exp((mu - (sigma^2 / 2)) * t + sigma * B(t))
-        Uses mu, sigma, and t in terms of day
+        X(t) = X(t-1) * exp(ito_mu * dt + sigma * root(dt) * epsilon)
+        X(t), is the t-th randomized price
+        ito_mu = drift
+        dt = size time step (1 for daily)
+        epsilon = shock
+        root(dt) = multiplier for shock
+        Uses mu, sigma, and dt in terms of day
         '''
+        dt = 1
+        # This is done otherwise scaling will return NaN
+        if df <= 2:
+            raise ValueError("Degree of freedom must be greater than 2")
 
-        result = []
-        # Obtain X(0)
-        initial_price = prices[0]
+        result = [prices[0]]
         logged_returns = self.transform_daily_logged(prices)
 
         # Obtain sigma and mu
-        sigma = logged_returns.std()
+        # ddof=1 for sample std, by default is 1, but make explicit
+        sigma = logged_returns.std(ddof=1)
         mu = logged_returns.mean()
 
         # Apply ito correction to mu
         ito_mu = mu - ((sigma**2) / 2)
+        for _ in range(1, len(prices)):
 
-        # Obtain t
-        for t in range(1, len(prices) + 1):
-
-            # Obtain B(t) in formula, using t distribution
-            # variance has to be scaled as t distribution variance is dependent on df
-            draw = student_t.rvs(df)
-            brownian_t = draw / np.sqrt(df / (df - 2))
+            # epsilon_raw has to be scaled as variance of t distribution is dependent on
+            # degree of freedom
+            epsilon_raw = student_t.rvs(df)
+            epsilon = epsilon_raw / np.sqrt(df / (df - 2))
 
             # Calculate price and append it
-            random_price = round(initial_price * math.exp(ito_mu * t + sigma * brownian_t), 2)
+            random_price = round(result[-1] * math.exp(ito_mu * dt +
+                                                       sigma * math.sqrt(dt) * epsilon), 2)
             result.append(random_price)
-        # Testing alt gbm
-        # result = self.alt_gbm(mu,len(prices),1,1,initial_price,sigma)
-
         return result
-
-    def alt_gbm(self, mu: float, steps: int, time: int, sims: int,
-                initial_price: float, volatility: float) -> list[float]:
-        # Calculate each time step
-        dt = time / steps
-
-        # Simulation using numpy arrays
-        St = np.exp(
-            (mu - volatility**2/2) * dt
-            + volatility * np.random.normal(0,np.sqrt(dt), size=(sims, steps)).T
-        )
-
-        # Include array of 1s
-        St = np.vstack([np.ones(sims), St])
-
-        # Multiply through by initial value
-        St = initial_price * St.cumprod(axis=0)
-        return St
-
 
     def simulate(self, num: int, df: float):
         '''
         Takes in a number of simulations and a degree of freedom,
         and returns the result of the simulations.
         '''
-        # This is done otherwise scaling will return NaN
-        if df <= 2:
-            raise ValueError("Degree of freedom must be greater than 2")
-        
         stock_data: dict[str, list[Bar]] = self.backtest.data_loader.get_stock_data()
-        result = [] # Store BackTestResult of each simulation
+        result = [self.backtest.run()] # Store BackTestResult of each simulation
         
         # For each simulation
         for _ in range(num):
@@ -193,14 +175,15 @@ class MonteCarloSimulatior():
                                     strategy_name=self.backtest.strategy_name,
                                     data_loader=mcs_data_loader)
 
+
             # Stores BackTestResult instances in results
             result.append(mcs_backtest.run())
-        return result
 
+        return result
 if __name__ == "__main__":
     # Test obtaining og list historical data
     start_date = datetime.fromisoformat("2021-05-24").date()
-    end_date = datetime.fromisoformat("2021-09-07").date()
+    end_date = datetime.fromisoformat("2021-07-07").date()
     data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
                              end_date, "STOCK")
     backtest = Backtest(
@@ -218,7 +201,7 @@ if __name__ == "__main__":
                                                     asset_type="STOCK"))
     backtest.run()
     stock_data = backtest.data_loader.get_stock_data()
-    mcs = MonteCarloSimulatior(backtest)
+    mcs = MonteCarloSimulator(backtest)
 
     # Tests if the list of bars can be obtained via backtester
     # n = 1
@@ -253,10 +236,12 @@ if __name__ == "__main__":
     # Graphical testing of GBM
     # Create a list of price data, with original price data being index 0
     # and the other elemnents being randomized data, display on graph.
-    test = [list(map(lambda bar: bar.open, stock_data["AAPL"]))]
-    for _ in range(70):
-        test.append(mcs.gbm(stock_data["AAPL"], 5))
-    graph.show_price_graphs(test).show()
+    # test = [list(map(lambda bar: bar.open, stock_data["AAPL"]))]
+    # for _ in range(10):
+        # test.append(list(map(lambda bar: bar.open, mcs.gbm(stock_data["AAPL"], 5))))
+
+    # print(test)
+    # graph.show_price_graphs(test).show()
 
     # Test alternate gbm
     # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
@@ -267,3 +252,19 @@ if __name__ == "__main__":
     # for _ in range(5):
     #     test.append(mcs.gbm(stock_data, 3))
     # graph.show_price_graphs(test).show()
+
+    # Using this to generate a distribution of the total returns.
+    # results = mcs.simulate(100,6)
+    # for i in range(len(results)):
+    #     equity_record = pd.DataFrame(results[i].get_fill_records())
+    #     print(f"This is the equity record as a df \n{equity_record}")
+
+    # print(type(results[0]))
+    # total_returns = list(map(lambda btr : btr.get_total_return(), results))
+    # total_returns_dist = Distribution(total_returns)
+    # (total_returns_dist.distribution_graph().update_layout(title="Histogram of Total Return %")
+    #                                         .update_layout(yaxis_title='Frequency',
+    #                                                        xaxis_title='Total Return %')
+    #                                         .show()
+    #                                         )
+   

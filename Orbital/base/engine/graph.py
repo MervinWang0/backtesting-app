@@ -12,7 +12,7 @@ django.setup()
 
 import plotly.express as px
 from queue import Queue
-from base.engine.monte_carlo_simulation import MonteCarloSimulatior
+from base.engine.monte_carlo_simulation import MonteCarloSimulator
 from datetime import datetime
 from base.engine.data_loader import DatabaseDataLoader
 from base.engine.backtest import Backtest
@@ -32,18 +32,19 @@ def equity_graph(df: pd.DataFrame) -> px.Figure:
 
 def show_price_graphs(prices: list[list[float]]) -> px.Figure:
     df = pd.DataFrame(prices).T
-    print(df)
+    # print(df)
     df = df.rename(columns={i: 'OG' if i == 0 else f"Sim {i}" for i in range(len(df))})
-    print(df)
+    # print(df)
 
     # Label each column
 
     highlight_col = "OG"
-    highlight_colour = "#d00325"
+    highlight_colour = "black"
     non_highlight_colour = "#837B7B"
-    color_map = {col : (highlight_colour if col == highlight_col else non_highlight_colour)
+    color_map = {col : (highlight_colour if col == highlight_col else "blue")
                  for col in df}
-    
+
+    # return px.line(df).update_traces(line=dict(color='red', selector=dict(name='OG')))
     return px.line(df,color_discrete_map=color_map)
 
 if __name__ == "__main__":

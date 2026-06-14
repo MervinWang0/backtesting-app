@@ -220,7 +220,7 @@ class DataLoader(ABC):
         for interested tickers.
         '''
         return self.stock_data
-    
+
 class MCSDataLoader(DataLoader):
     '''
     This is a data laoder that initializes its attributes using a list of bars.
