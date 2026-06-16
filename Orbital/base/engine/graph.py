@@ -38,13 +38,13 @@ def show_price_graphs(prices: list[list[float]]) -> px.Figure:
 
     # Label each column
 
-    highlight_col = "OG"
-    highlight_colour = "black"
-    non_highlight_colour = "#837B7B"
-    color_map = {col : (highlight_colour if col == highlight_col else "blue")
-                 for col in df}
+    # highlight_col = "OG"
+    # highlight_colour = "black"
+    # non_highlight_colour = "#837B7B"
+    # color_map = {col : (highlight_colour if col == highlight_col else "blue")
+                #  for col in df}
 
-    fig = px.line(df,color_discrete_map=color_map)
+    fig = px.line(df)
     fig.update_layout(xaxis_title="Date",
                       yaxis_title="Price")
     return fig

@@ -48,10 +48,7 @@ def theoretical_median(mcs, prices: list[float]) -> list[float]:
 
     # Obtain sigma and mu
     sigma = logged_returns.std()
-    mu = logged_returns.mean()
-
-    # Apply ito correction to mu
-    ito_mu = mu - ((sigma**2) / 2)
+    ito_mu = logged_returns.mean()
     for _ in range(1, len(prices)):
         # Calculate price and append it
         random_price = round(result[-1] * math.exp(ito_mu), 2)
@@ -66,6 +63,13 @@ def test_jump_prices(mcs :MonteCarloSimulator, prices: list[float], df: float,
     '''
     return mcs.jump_prices(prices, df, exp_jumps,
                            mean_log_jump_size, std_log_jump_size)
+
+def test_logged_returns(mcs: MonteCarloSimulator, prices, sims):
+    test = []
+    for _ in range(sims):
+        sim_result = mcs.gbm_prices(prices, 100)
+        test.append(mcs.transform_daily_logged(sim_result))
+    return test
 
 if __name__ == "__main__":
     # Test obtaining og list historical data
@@ -89,29 +93,70 @@ if __name__ == "__main__":
     backtest.run()
     stock_data = backtest.data_loader.get_stock_data()
     mcs = MonteCarloSimulator(backtest)
+    # Graphical Test
+    # GBM Sanity Check
+    prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    sigma = mcs.transform_daily_logged(prices).std()
+    ito_mu = mcs.transform_daily_logged(prices).mean()
+    mu = ito_mu + (sigma ** 2 / 2)
+    test_prices = [np.log(theoretical_median(mcs, prices))]
+    for _ in range(100):
+        test_prices.append(np.log(mcs.gbm(og_price=prices,mu=mu,dt=1,sigma=sigma,
+                            epsilon_lst=mcs.get_normal_epsilon_lst(len(prices) - 1))))
+    fig = graph.show_price_graphs(test_prices)
+    fig.data[0].line.color = "black"
+    fig.show()
 
-    # GBM Testing
-    # Check price path
+
+    # # Analytical Tests
+    # # Check the mean of the simulated prices and std
+    # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
+    # total_log_return = []
+    # for _ in range(1000):
+    #     sigma = mcs.transform_daily_logged(prices).std()
+    #     ito_mu = mcs.transform_daily_logged(prices).mean()
+    #     mu = ito_mu + ((sigma ** 2) / 2)
+    #     rand_prices = mcs.gbm(og_price=prices, mu=mu, dt=1, sigma=sigma,
+    #             epsilon_lst=mcs.get_normal_epsilon_lst(len(prices) - 1))
+    #     # print(f"Initial price {rand_prices[0]}"
+    #     #       f"Final price = {rand_prices[-1]}")
+    #     total_log_return.append(mcs.transform_daily_logged([rand_prices[0], rand_prices[-1]]))
+    # # print(total_log_return)
+    # print(f"This is obtained mean = {np.mean(total_log_return)}."
+    #       f"This is expected mean = {ito_mu * (len(prices) - 1)}")
+    # print(f"This is obtained std = {np.std(total_log_return)}."
+    #       f"This is expected std = {sigma * np.sqrt(len(prices) - 1)}")
+    #     # assert np.isclose(np.mean(total_log_return), ito_mu * (len(prices) - 1), rtol=0.05)
+
+    # Test jump_gbm
     # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
     # test = [prices]
     # for _ in range(10):
-    #     test.append(mcs.gbm_prices(prices, 5))
-    # graph.show_price_graphs(test).show()
+    #     test.append(mcs.gbm(prices, 0.0003, 1, 0.01, mcs.get_t_epsilon_lst(len(prices) - 1, 5),
+    #                              3))
+    # fig = graph.show_price_graphs(test)
+    # fig.data[0].line.color = "black"
+    # fig.show()
 
-    # Sanity check, graph check in log space
-    prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
-    test_prices = test_gbm_prices(mcs, prices, 5, 100)
-    fig = graph.show_price_graphs(test_prices)
-    for i in range(1, 101):
-        fig.data[i].line.color = "white"
-    fig.show()
+    # Test logged returns
+    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # test = test_logged_returns(mcs, prices, 10)
+    # zero_list = [0] * len(test[0])
+    # for price in test:
+    #     price = np.array(price)
+    #     price = list(price.cumsum())
+    # test.insert(0, zero_list)
+    # fig = graph.show_price_graphs(test)
+    # fig.data[0].line.color = "black"
+    # fig.show()
+
 
     # Jump Diffusion Testing
     # Check price graph
     # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
     # test = [prices]
-    # for _ in range(10):
-    #     test.append(test_jump_prices(mcs, prices, 5, 1, 0.05, 0.01))
+    # for _ in range(0):
+    #     test.append(test_jump_prices(mcs, prices, 5, 0, 0.05, 0.01))
     # graph.show_price_graphs(test).show()
 
     # Graph check in log space
@@ -144,4 +189,24 @@ if __name__ == "__main__":
 
     # Test Regime Switching 
 
+    # Testing random price
+    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # test = [prices]
+    # for i in range(10):
+    #     test.append(mcs.randomize_price(prices, 0.05, 1, 0.01, 5))
+    # fig = graph.show_price_graphs(test)
+    # fig.data[0].line.color = "black"
+    # fig.show()
+
+    # Testing of model
+    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # test = mcs.get_model(prices)
+    # print(test)
+    # print(f"This is the variances {test.covars_[1][0][0]}")
+    # print(f"This is the means {test.means_}")
+    # covars and mean has form [[[x]], [[y]]]
+    # print(f"This is the shape of transmat{test.transmat_}")
+    # Shape is [[x1, x2], [y1, y2]]
+
+    
 
