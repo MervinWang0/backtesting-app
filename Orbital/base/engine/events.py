@@ -21,7 +21,6 @@ class AssetType(models.TextChoices):
     FUTURES = "FUTURES", "Futures"
     FOREX = "FOREX", "Forex"
 
-
 #dataclass to track whenever a new bar is generated
 @dataclass
 class MarketEvent:
@@ -31,7 +30,7 @@ class MarketEvent:
 #Tells what it wants to do EG: Long/Short/Exit
 #Note: Exit applies to a short position as well.
 @dataclass
-class SignalEvent:
+class SignalEvent:  
     ticker: str
     asset_type: str
     #strategy_id : str

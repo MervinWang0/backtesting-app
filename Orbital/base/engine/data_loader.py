@@ -1,7 +1,7 @@
 from typing import Optional
 
 from base.engine.events import MarketEvent
-from base.models import StockPriceHistory, FuturesPriceHistory, ForexPriceHistory
+from base.models import StockPriceHistory, FuturesPriceHistory, ForexPriceHistory, ContinuousFuturesPriceHistory, ContinuousFuturesSeries
 from dataclasses import dataclass
 import datetime
 from queue import Queue
@@ -145,21 +145,23 @@ class DataLoader:
         return bars
     
     
-    # def load_futures_data(self, contract_code: str) -> list[Bar]:
-    #     futures_history = FuturesPriceHistory.objects.filter(contracts__contract_code=contract_code, date__range=(self.start_date, self.end_date)).order_by("date")
-    #     bars = []
-    #     for record in futures_history:
-    #         bars.append(Bar(
-    #             Symbol = record.contracts.contract_code,
-    #             Date = record.date,
-    #             Open = float(record.open_price),
-    #             High = float(record.High_price),
-    #             Low = float(record.low_price),
-    #             Close = float(record.close_price),
-    #             Volume = record.volume,
-    #             Asset_type = "Futures"
-    #         ))
-    #     return bars
+    def load_futures_data(self, contract_code: str) -> list[Bar]:
+        futures_history = (ContinuousFuturesPriceHistory.objects.filter(series__contract_symbol=contract_code, series__contract_index = 1, series__date__range=(self.start_date, self.end_date),)
+                                                            .selected_related("series", "contract_symbol")
+                                                            .order_by("date"))
+        bars = []
+        for record in futures_history:
+            bars.append(Bar(
+                Symbol = record.contract.contract_code,
+                Date = record.date,
+                Open = float(record.open_price),
+                High = float(record.High_price),
+                Low = float(record.low_price),
+                Close = float(record.close_price),
+                Volume = record.volume,
+                Asset_type = "FUTURES"
+            ))
+        return bars
 
 
     
