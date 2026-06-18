@@ -1,4 +1,132 @@
-<!DOCTYPE html>
+{% extends "base/base.html" %}
+
+{% block title %}
+    U.S. Stock Market
+{% endblock %}
+
+{% block content %}
+
+<section class = "market-hero">
+    <div class =  "page-container market-hero__inner">
+        <div>
+            <p class = "eyebrow"> Market activity </p>
+
+            <h1>U.S. Stocks</h1>
+
+            <p class = "market-hero__description">
+                Heatmap for stocks
+            </p>
+        </div>
+        <div class = "market-status">
+            <span class = "market_status__dot"></span>
+
+            <span>
+                Latest close price:
+                {% if market_date %}
+                    {{ market_date|date : "M j, Y"}}
+                {% else %}
+                    No price data
+                {% endif %}
+            </span>
+        </div>
+    </div>
+</section>
+
+<section class = "page-container dashboard-section">
+    <div class = "section-heading">
+        <div>
+            <p class = "eyebrow">Heat map</p>
+            <h2>Most active stocks</h2>
+        </div>
+
+        <div class = "activity-values">
+            <div class = "activity-value">
+                <h3>Top 5 in Share volume</h3>
+                <table class = "activity-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <stock>Stock</stock>
+                            <th>Volume traded</th>
+                        </tr>
+                    </thead>
+                    <body>
+                        {% for stock in most_active_traded %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ stock.ticker }}</td>
+                                <td>{{ stock.volume }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan = "3">No price data available</td>
+                            </tr>
+                        {% endfor %}
+                    </body>
+                </table>
+            </div>
+            <div class = "activity-value">
+                <h3>Top 5 in Dollar Volume</h3>
+                <table class = "activity-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <stock>Stock</stock>
+                            <th>Volume traded</th>
+                        </tr>
+                    </thead>
+                    <body>
+                        {% for stock in most_active_traded %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ stock.ticker }}</td>
+                                <td>{{ stock.volume }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan = "3">No price data available</td>
+                            </tr>
+                        {% endfor %}
+                    </body>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class = "stock-search">
+    <div class = "page-container">
+        <div class = "section-heading">
+            <div>
+                <p class = "eyebrow">S&P 500 Stock search</p>
+                <h2>Search a stock</h2>
+            </div>
+
+            <p class = 
+        </div>
+    </div>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- <!DOCTYPE html>
 <html>
 <head>
     <title>Backtest Dashboard</title>
@@ -29,7 +157,7 @@
         </button>
     </form>
 
-</body>
+</body> -->
 
 
 
