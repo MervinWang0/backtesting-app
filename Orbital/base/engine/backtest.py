@@ -1,11 +1,15 @@
 from dataclasses import dataclass
 from datetime import datetime
 from queue import Queue
+import plotly.express as px
+import pandas as pd
 
 from base.engine.execution import ExecutionLoader
 from base.engine.portfolio import Portfolio
 from base.engine.data_loader import DataLoader, DatabaseDataLoader
 from base.engine.strategy import MovingAverageCross
+import base.engine.graph as graph
+import base.engine.performance as perf
 
 class BacktestResult:
     '''
@@ -26,11 +30,20 @@ class BacktestResult:
                 self.equity_records[0]["equity"]) * 100
         # self.trade_log = fill_to_trade_log(self.fill_records)
 
+    def get_equity_graph(self) -> px.Figure:
+        '''
+        Returns the equity graph of a backtest run
+        '''
+        df = pd.DataFrame(self.equity_records)
+        return graph.get_equity_graph(df)
     def get_fill_records(self):
         return self.fill_records
-    
+
     def get_equity_records(self):
         return self.equity_records
+
+    def get_trade_records(self):
+        return perf.fill_to_trade_log(self.fill_records)
 
 class Backtest:
     def __init__(self, events: Queue,
@@ -106,6 +119,29 @@ class Backtest:
 
 
 if __name__ == "__main__":
-    pass
+
+    start_date = datetime.fromisoformat("2021-05-24").date()
+    end_date = datetime.fromisoformat("2022-05-24").date()
+    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
+                             end_date, "STOCK")
+    backtest = Backtest(
+                        events=data_loader.events,
+                        tickers=["AAPL"],
+                        start_date=start_date,
+                        end_date=end_date,
+                        strategy_name="MovingAverageCross",
+                        strategy_params={"short_window": 5,
+                                        "long_window": 10},
+                        data_loader=data_loader
+                        )
+
+    backtest.run()
+    stock_data = backtest.data_loader.get_stock_data()
+    mcs = MonteCarloSimulator(backtest)
+    test = mcs.simulate(1, 0.05, 1, 0.01, 5)
+    # test is lit of backtest results
+    btr = test[0]
+    print(f"This is the closed trades = {btr[0]}")
+    print(f"This is the open trades = {btr[1]}")
 
 

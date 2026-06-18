@@ -11,10 +11,10 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Orbital.settings")
 django.setup()
 
 import plotly.express as px
-from queue import Queue
-from datetime import datetime
-from base.engine.data_loader import DatabaseDataLoader
-from base.engine.backtest import Backtest
+# from queue import Queue
+# from datetime import datetime
+# from base.engine.data_loader import DatabaseDataLoader
+# from base.engine.backtest import Backtest
 import pandas as pd
 import numpy as np
 

@@ -49,7 +49,9 @@ class Bar:
             close = stock_price_history.close_price,
             asset_type = "STOCK"
         )
-
+    def __str__(self):
+        return (f"open = {self.open},\nhigh = {self.high},\nlow = {self.low},\n" +
+                f"volume = {self.volume},\n close = {self.close}")
 
 
 class DataLoader(ABC):

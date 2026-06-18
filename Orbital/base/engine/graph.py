@@ -12,14 +12,15 @@ django.setup()
 
 import plotly.express as px
 from queue import Queue
-from base.engine.monte_carlo_simulation import MonteCarloSimulator
+# from base.engine.monte_carlo_simulation import MonteCarloSimulator
 from datetime import datetime
-from base.engine.data_loader import DatabaseDataLoader
-from base.engine.backtest import Backtest
+from base.engine.data_loader import DatabaseDataLoader, Bar
+# from base.engine.backtest import Backtest
 import pandas as pd
+import plotly.graph_objects as go
 
 
-def equity_graph(df: pd.DataFrame) -> px.Figure:
+def get_equity_graph(df: pd.DataFrame) -> px.Figure:
     '''
     This function takes in a DataFrame with the columns of
     "date"
@@ -29,6 +30,25 @@ def equity_graph(df: pd.DataFrame) -> px.Figure:
     '''
     fig = px.line(data_frame=df, x="date", y="equity")
     return fig
+
+def get_ohlv_graph(stock_data: list[Bar]) -> px.Figure:
+    data = {
+        'Date' : [bar.date for bar in stock_data],
+        'Open' : [bar.open for bar in stock_data],
+        'High' : [bar.high for bar in stock_data],
+        'Low' : [bar.low for bar in stock_data],
+        'Close' : [bar.close for bar in stock_data]
+    }
+    df = pd.DataFrame(data)
+    fig = go.Figure(data=[go.Ohlc(
+        x=df['Date'],
+        open=df['Open'],
+        high=df['High'],
+        low=df['Low'],
+        close=df['Close']
+    )])
+    return fig
+
 
 def show_price_graphs(prices: list[list[float]]) -> px.Figure:
     df = pd.DataFrame(prices).T
@@ -70,11 +90,5 @@ if __name__ == "__main__":
     backtest.run()
     stock_data = backtest.data_loader.get_past_bars("AAPL",
                 len(backtest.data_loader.get_timeline()))
-    mcs = MonteCarloSimulatior(backtest)
 
-    # Creates a dataframe for graph testing
-    df = pd.DataFrame()
-    for equity_record in mcs.simulate(1):
-        df = pd.DataFrame(equity_record.get_equity_records())
-    equity_graph(df).show()
 

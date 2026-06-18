@@ -19,9 +19,11 @@ from base.engine.backtest import Backtest, BacktestResult
 import numpy as np
 import pandas as pd
 import math
-from scipy.stats import t as student_t
-import base.engine.graph as graph
-from base.engine.distribution import Distribution
+import plotly.graph_objects as go
+# from scipy.stats import t as student_t
+# from scipy.stats import kurtosis
+# import base.engine.graph as graph
+# from base.engine.distribution import Distribution
 from base.engine.monte_carlo_simulation import MonteCarloSimulator
 
 def test_gbm_prices(mcs, prices: list[float], df, tests) -> list[list[float]]:
@@ -43,6 +45,7 @@ def theoretical_median(mcs, prices: list[float]) -> list[float]:
     generated. Which is equivalent to using GBM but without epsilon.
     Note this median refers to log space.
     '''
+
     result = [prices[0]]
     logged_returns = mcs.transform_daily_logged(prices)
 
@@ -78,41 +81,49 @@ if __name__ == "__main__":
     data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
                              end_date, "STOCK")
     backtest = Backtest(
-                        events=Queue(),
+                        events=data_loader.events,
                         tickers=["AAPL"],
                         start_date=start_date,
                         end_date=end_date,
                         strategy_name="MovingAverageCross",
                         strategy_params={"short_window": 5,
                                         "long_window": 10},
-                        data_loader=DatabaseDataLoader(events=Queue(),
-                                                    tickers=["AAPL"],
-                                                    start_date=start_date,
-                                                    end_date=end_date,
-                                                    asset_type="STOCK"))
+                        data_loader=data_loader)
     backtest.run()
     stock_data = backtest.data_loader.get_stock_data()
     mcs = MonteCarloSimulator(backtest)
     # Graphical Test
+    # GBM Price check
+    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # sigma = mcs.transform_daily_logged(prices).std()
+    # ito_mu = mcs.transform_daily_logged(prices).mean()
+    # mu = ito_mu + (sigma ** 2 / 2)
+    # test_prices = [prices]
+    # for _ in range(100):
+    #     test_prices.append(mcs.gbm(og_price=prices,mu=mu,dt=1,sigma=sigma,
+    #                         epsilon_lst=mcs.get_normal_epsilon_lst(len(prices) - 1)))
+    # fig = graph.show_price_graphs(test_prices)
+    # fig.data[0].line.color = "black"
+    # fig.show()
+
     # GBM Sanity Check
-    prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
-    sigma = mcs.transform_daily_logged(prices).std()
-    ito_mu = mcs.transform_daily_logged(prices).mean()
-    mu = ito_mu + (sigma ** 2 / 2)
-    test_prices = [np.log(theoretical_median(mcs, prices))]
-    for _ in range(100):
-        test_prices.append(np.log(mcs.gbm(og_price=prices,mu=mu,dt=1,sigma=sigma,
-                            epsilon_lst=mcs.get_normal_epsilon_lst(len(prices) - 1))))
-    fig = graph.show_price_graphs(test_prices)
-    fig.data[0].line.color = "black"
-    fig.show()
+    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # sigma = mcs.transform_daily_logged(prices).std()
+    # ito_mu = mcs.transform_daily_logged(prices).mean()
+    # mu = ito_mu + (sigma ** 2 / 2)
+    # test_prices = [np.log(theoretical_median(mcs, prices))]
+    # for _ in range(100):
+    #     test_prices.append(np.log(mcs.gbm(og_price=prices,mu=mu,dt=1,sigma=sigma,
+    #                         epsilon_lst=mcs.get_normal_epsilon_lst(len(prices) - 1))))
+    # fig = graph.show_price_graphs(test_prices)
+    # fig.data[0].line.color = "black"
+    # fig.show()
 
-
-    # # Analytical Tests
-    # # Check the mean of the simulated prices and std
+    # Analytical Tests
+    # Check the mean of the simulated prices and std
     # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
     # total_log_return = []
-    # for _ in range(1000):
+    # for _ in range(100):
     #     sigma = mcs.transform_daily_logged(prices).std()
     #     ito_mu = mcs.transform_daily_logged(prices).mean()
     #     mu = ito_mu + ((sigma ** 2) / 2)
@@ -152,12 +163,41 @@ if __name__ == "__main__":
 
 
     # Jump Diffusion Testing
-    # Check price graph
-    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
-    # test = [prices]
-    # for _ in range(0):
-    #     test.append(test_jump_prices(mcs, prices, 5, 0, 0.05, 0.01))
-    # graph.show_price_graphs(test).show()
+    # Checking if expected number of jumps is achieved
+    # Performs as expected, +/- 5% error at 100 sims
+    # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
+    # jump_counts = []
+    # for _ in range(100):
+    #     sigma = mcs.transform_daily_logged(prices).std()
+    #     ito_mu = mcs.transform_daily_logged(prices).mean()
+    #     mu = ito_mu + ((sigma ** 2) / 2)
+    #     jump_count = mcs.randomize_price(og_price=prices, mu=mu, dt=1, sigma=sigma,
+    #                                      exp_jumps=2, df=5)
+    #     jump_counts.append(jump_count)
+    # print(np.mean(jump_counts))
+        
+    # Kurtosis testing
+    # Note that kurtosis makes use of Fisher such that normal == 0
+    # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
+    # jump_kurtosis = []
+    # gbm_kurtosis = []
+    # for _ in range(100):
+    #     sigma = mcs.transform_daily_logged(prices).std()
+    #     ito_mu = mcs.transform_daily_logged(prices).mean()
+    #     mu = ito_mu + ((sigma ** 2) / 2)
+    #     jump_price = mcs.randomize_price(og_price=prices, mu=mu, dt=1, sigma=sigma,
+    #                                      exp_jumps=2, df=5, is_t=False,is_reg_switch=False)
+    #     gbm_price = mcs.randomize_price(og_price=prices, mu=mu, dt=1, sigma=sigma,
+    #                                      exp_jumps=0, df=5, is_t=False,is_reg_switch=False)     
+    #     # assert kurtosis(jump_price) > kurtosis(gbm_price), "Jump prices should have fatter tails"
+    #     jump_kurtosis.append(kurtosis(jump_price))
+    #     gbm_kurtosis.append(kurtosis(gbm_price))
+    # print(f"This is the jump kurtosis = {np.mean(jump_kurtosis)}")
+    # print(f"This is the gbm kurtosis = {np.mean(gbm_kurtosis)}")
+        
+
+
+
 
     # Graph check in log space
     # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
@@ -190,10 +230,10 @@ if __name__ == "__main__":
     # Test Regime Switching 
 
     # Testing random price
-    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # prices = list(map(lambda bar: bar.open, stock_data["CRWD"]))
     # test = [prices]
-    # for i in range(10):
-    #     test.append(mcs.randomize_price(prices, 0.05, 1, 0.01, 5))
+    # for i in range(100):
+    #     test.append(mcs.randomize_price(prices, 0.05, 1, 0.01, 5, 2))
     # fig = graph.show_price_graphs(test)
     # fig.data[0].line.color = "black"
     # fig.show()
@@ -208,5 +248,24 @@ if __name__ == "__main__":
     # print(f"This is the shape of transmat{test.transmat_}")
     # Shape is [[x1, x2], [y1, y2]]
 
+    # Test if simulate creates random stock prices
+    # random_prices = mcs.simulate(num_sims=3,mu=0.01,dt=1,sigma=0.01,df=5)
+    # graph.get_ohlv_graph(random_prices[0]["AAPL"]).show()
+    # graph.get_ohlv_graph(random_prices[1]["AAPL"]).show()
+    # graph.get_ohlv_graph(random_prices[2]["AAPL"]).show()
+
+    # Check if equity graphs are created for each simulated result
+    simulations = mcs.simulate(num_sims=3,mu=0.01,dt=1,sigma=0.01,df=5)
+    fig_lst = []
+    for backtestresult in simulations:
+        fig_lst.append(backtestresult.get_equity_graph())
     
+    overlay_fig = go.Figure()
+    for fig in fig_lst:
+        for trace in fig.data:
+            overlay_fig.add_trace(trace)
+    overlay_fig.show()
+
+
+
 
