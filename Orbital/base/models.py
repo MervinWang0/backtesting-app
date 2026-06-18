@@ -22,7 +22,7 @@ class TimeStampedModel(models.Model):
 #         return f"{self.user.username}'s profile with cash holdings: {self.cash_holdings}"
     
 class Stock(models.Model):
-    ticker = models.CharField(max_length=10, unique=True)
+    ticker = models.CharField(max_length=10, unique=True, db_index=True)
     name = models.CharField(max_length=100)
     industry = models.CharField(max_length=100, blank=True, null=True)
     is_active = models.BooleanField(default=True)
@@ -46,6 +46,7 @@ class StockPriceHistory(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=["stock", "date"], name="unique_stock_date")]
         ordering=["date"]
+        indexes = [models.Index(fields=["stock", "-date"], name = "Unique_stock_price_date")]
     
     def __str__(self) -> str:
         return f"{self.stock.ticker} price history on {self.date}: Open: {self.open_price}, High: {self.high_price}, Low: {self.low_price}, Close: {self.close_price}, Volume: {self.volume}"

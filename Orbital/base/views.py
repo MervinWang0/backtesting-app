@@ -10,6 +10,9 @@ from django.core.management import call_command
 
 from datetime import datetime
 from base.models import StockPriceHistory, Stock
+from decimal import Decimal
+from django.db.models import DateField, DecimalField, F, FloatField, OuterRef, Q, Subquery, Value, BigIntegerField, ExpressionWrapper
+from django.db.models.functions import Cast, NullIf
 
 
 from queue import Queue
@@ -17,8 +20,98 @@ from base.engine.backtest import Backtest
 from base.models import BacktestRun
 
 # Create your views here.
+PRICE_OUTPUT_FIELD = DecimalField(
+    max_digits = 20,
+    decimal_places = 2,
+)
+
+#Dashboard related
 def dashboard(request):
-    return render(request, "dashboard.html")
+    latest_price_rows = (StockPriceHistory.objects.filter(stock_id =OuterRef("pk")).order_by("-date", "pk"))
+    market_stocks = (Stock.objects.all().all().annotate(
+                                                latest_price = Subquery(
+                                                    latest_price_rows.values("close_price")[:1],
+                                                    output_field = PRICE_OUTPUT_FIELD,
+                                                ),
+
+                                                previous_close = Subquery(
+                                                    latest_price_rows.values("close_price")[1:2],
+                                                    output_field = PRICE_OUTPUT_FIELD,
+                                                ),
+
+                                                latest_volume = Subquery(
+                                                    latest_price_rows.values("volume")[:1],
+                                                    output_field = BigIntegerField(),
+                                                ),
+
+                                                latest_date = Subquery(
+                                                    latest_price_rows.values("date")[:1],
+                                                    output_field = DateField(),
+                                                ),
+                                                ).annotate(
+                                                    price_change = ExpressionWrapper(
+                                                        F("latest_price") - F("previous_close"),
+                                                        output_field= PRICE_OUTPUT_FIELD,
+                                                    ),
+                                                    percentage_change = ExpressionWrapper(
+                                                        (
+                                                            Cast(F("latest_price"), FloatField())
+                                                            - Cast(F("previous_price"), FloatField())
+                                                        )
+                                                        * 100.0
+                                                        / NullIf(
+                                                            Cast(F("previous_close"), FloatField()),
+                                                            0.0,
+                                                        ),
+                                                        output_field=FloatField(),
+                                                    ),
+                                                    dollar_volume = ExpressionWrapper(
+                                                        Cast(F("latest_price"), FloatField())
+                                                        * Cast(F("latest_volume"),FloatField()),
+                                                        output_field=FloatField(),
+                                                    ),
+                                                )
+    
+    )
+
+    most_active_traded = list(
+        market_stocks.exclude(latest_volume__isnull=True)
+        .order_by("-latest_volume")[:5]
+    )
+
+    most_active_dollar = list(
+        market_stocks.exclude(dollar_volume__isnull=True)
+        .order_by("-dollar_volume")[:5]
+    )
+
+    stocks = market_stocks
+
+    search_query = request.GET.get("q", "").strip()
+
+    if search_query:
+        stocks = stocks.filter(
+            Q(ticker__icontains = search_query) | Q(name__icontains = search_query)
+        )
+    
+    portfolio_summary = get_porfolio_summary(request)
+
+    context = {
+        "most_active_traded": most_active_traded,
+        "most_active_dollar" : most_active_dollar,
+        "US_Assets" : portfolio_summary["US_Assests"],
+        "today_pnl" : portfolio_summary["Today_pnl"],
+        "filters" : {
+            "q" : search_query,
+        },
+     }
+
+    return render(request, "dashboard.html", context)
+
+def get_porfolio_summary(user):
+    return {
+        "US_Assets" : Decimal("9999.99"),
+        "Today_pnl" : Decimal("999.99"),
+    }
 
 def get_yf_period(start_date, end_date):
     days = (end_date - start_date).days +1
@@ -51,10 +144,7 @@ def data_exists(symbol, start_date, end_date):
     if not bars.exists():
         return False
 
-    return True
-    
-
-
+    return True    
 
 def backtest_run(request):
     start_date = request.POST.get("start_date")
@@ -118,6 +208,7 @@ def backtest_run_records(request):
         "position_record": position_record,
         "fill_record": fill_record,
     })
+
 
 
 
