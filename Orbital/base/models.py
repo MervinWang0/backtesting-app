@@ -1,6 +1,7 @@
 from django.db import models
 # from django.contrib.auth.models import User
 from django.conf import settings
+from decimal import Decimal
 
 
 #Time stamp model to track creation date/time and update date/time
@@ -21,7 +22,7 @@ class TimeStampedModel(models.Model):
 #         return f"{self.user.username}'s profile with cash holdings: {self.cash_holdings}"
     
 class Stock(models.Model):
-    ticker = models.CharField(max_length=10, unique=True)
+    ticker = models.CharField(max_length=10, unique=True, db_index=True)
     name = models.CharField(max_length=100)
     industry = models.CharField(max_length=100, blank=True, null=True)
     is_active = models.BooleanField(default=True)
@@ -45,6 +46,7 @@ class StockPriceHistory(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=["stock", "date"], name="unique_stock_date")]
         ordering=["date"]
+        indexes = [models.Index(fields=["stock", "-date"], name = "Unique_stock_price_date")]
     
     def __str__(self) -> str:
         return f"{self.stock.ticker} price history on {self.date}: Open: {self.open_price}, High: {self.high_price}, Low: {self.low_price}, Close: {self.close_price}, Volume: {self.volume}"
@@ -55,29 +57,182 @@ class FuturesContract(models.Model):
     # contract_code = "ESZ23"
     # expiry_date = "2025-06-02"
 
-    root_symbol = models.CharField(max_length=10)
-    contract_code = models.CharField(max_length=50, unique=True)
-    name = models.CharField(max_length=100)
+    root_symbol = models.CharField(max_length = 10)
+    contract_code = models.CharField(max_length = 50, unique=True)
+    name = models.CharField(max_length = 100)
+
+    exchange = models.CharField(max_length = 30, blank=True)
+    currency = models.CharField(max_length = 10, default = "USD")
     expiry_date = models.DateField()
+
+    tick_multiplier = models.DecimalField(max_digits = 20, decimal_places = 6, default = Decimal("1.0"))
+    tick_size = models.DecimalField(max_digits = 20, decimal_places = 6, default = Decimal("0.01"))
+
+    is_active = models.BooleanField(default = True)
+
+    class Meta:
+        ordering = ["root_symbol", "expiry_date"]
+        indexes = [
+            models.Index(fields = ["root_symbol", "expiry_date"])
+        ]
 
     def __str__(self) -> str:
         return f"{self.contract_code} ({self.name}) expiring on {self.expiry_date}"
 
 class FuturesPriceHistory(models.Model):
-    contracts = models.ForeignKey(FuturesContract, on_delete=models.CASCADE, related_name="futures_price_history")
+    contract = models.ForeignKey(FuturesContract, on_delete=models.CASCADE, related_name="futures_price_history")
     date = models.DateField()
-    open_price = models.DecimalField(max_digits = 20, decimal_places=2)
-    High_price = models.DecimalField(max_digits = 20, decimal_places=2)
-    low_price = models.DecimalField(max_digits = 20, decimal_places=2)
+    open_price = models.DecimalField(max_digits = 20, decimal_places=6)
+    high_price = models.DecimalField(max_digits = 20, decimal_places=6)
+    low_price = models.DecimalField(max_digits = 20, decimal_places=6)
     volume = models.PositiveBigIntegerField(default=0)
-    close_price = models.DecimalField(max_digits = 20, decimal_places=2)
+    close_price = models.DecimalField(max_digits = 20, decimal_places=6)
+
+    #number of still active contracts 
+    active_contracts = models.BigIntegerField(default = 0)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["contracts", "date"], name="unique_contract_date")]
+        ordering = ["contract", "date"]
+        constraints = [models.UniqueConstraint(fields=["contract", "date"], name="unique_contract_date")]
+
+        indexes = [
+            models.Index(fields = ["contract", "date"]),
+            models.Index(fields = ["date"])
+        ]
 
     def __str__(self) -> str:
-        return f"{self.contracts.contract_code} - {self.date} expiring on {self.contracts.expiry_date}"
+        return f"{self.contract.contract_code} - {self.date} expiring on {self.contract.expiry_date}"
     
+class ContinuousFuturesSeries(models.Model):
+
+    #This defines what method to use to decide when to switch from one contract to the next
+    '''
+    Days_before_expiry : switch to the next contract when it is n days from the existing contract expiry date.
+    Volume : Switch when the next contract has a higher trading volume than the current contract
+    Active contracts : Switch when next contract has more contracts than current contract
+    Manual : Decided on rollover dates yourself
+    '''
+    class RollOverRule(models.TextChoices):
+        DAYS_BEFORE_EXPIRY = "DAYS_BEFORE_EXPIRY", "Days Before Expiry"
+        VOLUME = "VOLUME", "Volume"
+        ACTIVE_CONTRACTS = "ACTIVE_CONTRACTS", "Active Contracts"
+        MANUAL = "MANUAL", "Manual"
+
+    class AdjustmentMethod(models.TextChoices):
+        NONE = "NONE", "No adjustment"
+        BACK_ADJUSTED = "BACK_ADJUSTED","Back adjusted"
+        RATIO_ADJUSTED = "RATIO_ADJUSTED", "Ratio adjusted"
+    
+    contract_symbol = models.CharField(max_length=20)
+    #index stores where this contract is currently stitched into the entire series
+    #eg: contract_index = 1 is the head of the series
+    contract_index = models.PositiveSmallIntegerField(default=1)
+
+    rollover_rule = models.CharField(max_length=30, choices=RollOverRule.choices, default=RollOverRule.DAYS_BEFORE_EXPIRY)
+    roll_days = models.PositiveSmallIntegerField(default=5)
+
+    adjustment_method = models.CharField(max_length=30, choices = AdjustmentMethod.choices, default=AdjustmentMethod.BACK_ADJUSTED)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now = True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields = [
+                    "contract_symbol",
+                    "contract_index",
+                    "rollover_rule",
+                    "roll_days",
+                    "adjustment_method"
+                ],
+                name = "unique_continuous_futures_series",
+            )
+        ]
+    def __str__(self):
+        return f"{self.contract_symbol} at #{self.contract_index}"
+
+class ContinuousFuturesPriceHistory(models.Model):
+    series = models.ForeignKey(ContinuousFuturesSeries, on_delete=models.CASCADE, related_name="series")
+    source_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="source_contract")
+
+    date = models.DateTimeField()
+    open_price = models.DecimalField(max_digits = 20, decimal_places=6)
+    high_price = models.DecimalField(max_digits = 20, decimal_places=6)
+    low_price = models.DecimalField(max_digits = 20, decimal_places=6)
+    volume = models.PositiveBigIntegerField(default=0)
+    close_price = models.DecimalField(max_digits = 20, decimal_places=6)
+
+    active_contracts = models.BigIntegerField(default = 0)
+
+    adjustment_val = models.DecimalField(max_digits = 20, decimal_places = 6, default = Decimal("0.0"))
+
+    is_rolled = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields = ["series", "date"], name="Unique_continuous_series_date")]
+        ordering = ["series", "date"]
+    
+    def __str__(self):
+        return f"{self.series.contract_symbol} continuous from {self.date}"
+
+class FuturesRollEvent(models.Model):
+    series = models.ForeignKey(ContinuousFuturesSeries, on_delete=models.CASCADE, related_name= "roll_events")
+    roll_date = models.DateTimeField()
+    from_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="roll_from")
+    to_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="roll_to")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields = ["series", "roll_date"], name = "unique_futures_roll_event")]
+        ordering = ["series", "roll_date"]
+
+    def __str__(self):
+        return (
+            f"{self.series.contract_symbol} rolled on {self.roll_date}"
+            f"{self.from_contract.contract_code} to {self.to_contract.contract_code}"
+        )    
+    
+    
+class ForexPair(models.Model):
+    ticker = models.CharField(max_length=20, unique = True)
+    #USDEUR
+
+    name = models.CharField(max_length=20)
+
+    base_currency = models.CharField(max_length=10)
+    quote_currency = models.CharField(max_length=10)
+
+    pip_value = models.FloatField(default = 0.0001)
+    lot_size = models.IntegerField(default = 100000)
+
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self) -> str:
+        return self.ticker
+
+class ForexPriceHistory(models.Model):
+    pair = models.ForeignKey(ForexPair, on_delete=models.CASCADE, related_name="forex_price_history")
+    timestamp = models.DateTimeField()
+
+    open_price = models.DecimalField(max_digits = 20, decimal_places= 4)
+    high_price = models.DecimalField(max_digits = 20, decimal_places= 4)
+    low_price = models.DecimalField(max_digits = 20, decimal_places= 4)
+    volume = models.PositiveBigIntegerField(default=0, null = True, blank= True)
+    close_price = models.DecimalField(max_digits = 20, decimal_places= 4)
+
+    class Meta:
+        unique_together = ("pair", "timestamp")
+        ordering = ["timestamp"]
+        indexes = [
+            models.Index(fields=["pair", "timestamp"], name="forex_pair_timestamp_idx")
+        ]
+    
+    def __str__(self) -> str:
+        return f"{self.pair.ticker} on {self.timestamp}"
+
+
+
+
 
 #This is to store results of each backtest
 #Backtest contains final result of a backtest run, mainly storing performance metrics
@@ -86,6 +241,7 @@ class BacktestRun(TimeStampedModel):
     class AssetType(models.TextChoices):
         STOCK = "STOCK", "Stock"
         FUTURES = "FUTURES", "Futures"
+        FOREX = "FOREX", "Forex"
 
     #name of backtest run
     run_name = models.CharField(max_length=255, blank=True)
@@ -100,6 +256,7 @@ class BacktestRun(TimeStampedModel):
 
     stock = models.ForeignKey(Stock, on_delete=models.CASCADE, null=True, blank=True)
     futures = models.ForeignKey(FuturesContract, on_delete=models.CASCADE, null=True, blank= True)
+    forex = models.ForeignKey(ForexPair, on_delete=models.CASCADE, null=True, blank=True)
 
     start_date = models.DateField()
     end_date = models.DateField()
@@ -179,7 +336,8 @@ class PortfolioPositionRecord(TimeStampedModel):
     backtest_run = models.ForeignKey(BacktestRun, on_delete=models.CASCADE, related_name="position_record")
     date = models.DateField()
     ticker = models.CharField(max_length=20)
-    stock = models.ForeignKey(Stock, on_delete=models.SET_NULL, blank=True, null=True)
+    stock = models.ForeignKey(Stock, on_delete=models.SET_NULL, blank = True, null = True)
+    forex = models.ForeignKey(ForexPair, on_delete= models.SET_NULL, blank = True, null = True)
 
     quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
     avg_price = models.DecimalField(max_digits = 20, decimal_places = 4)
@@ -195,6 +353,26 @@ class PortfolioPositionRecord(TimeStampedModel):
     def __str__(self):
         return (f"{self.backtest_run}: "
                 f"{self.ticker} : {self.quantity} on {self.date}" )
+    
+class BenchmarkRecord(TimeStampedModel):
+    backtest_run = models.ForeignKey(BacktestRun, on_delete=models.CASCADE, related_name = "benchmark_record")
+    date = models.DateField()
+    ticker = models.CharField(max_length=20)
+    close_price = models.DecimalField(max_digits = 20, decimal_places = 4)
+    quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
+    market_value = models.DecimalField(max_digits = 20, decimal_places = 4)
+    unrealised_pnl = models.DecimalField(max_digits = 20, decimal_places = 4)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields = ["backtest_run", "date"],
+                                                name = "unique_benchmark_record")]
+        ordering = ["date"]
+    
+    def __str__(self):
+        return (f"{self.backtest_run}: "
+                f"{self.ticker} with market value {self.market_value} on {self.date}" )
+
+
             
 
 

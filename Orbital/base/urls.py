@@ -1,9 +1,13 @@
 from django.urls import path
-from . import views
+
+import base.views as views
 
 urlpatterns = [
     # path("", views.home, name="home"),
-    #path("dashboard/", views.dashboard, name="dashboard"),
+    path("", views.dashboard, name="dashboard"),
+    # path("run_backtest/", dashboard.backtest_run, name = "run_backtest"),
+    # path("backtestrunrecords/", dashboard.backtest_run_records, name = "backtest_run_records"),
+    path("backtest/", views.get_backtest, name="backtest")
 
     # #Authentication wrapped under accounts
     # path("accounts/Login/", views.Login, name = "Login"),

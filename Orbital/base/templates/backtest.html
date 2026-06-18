@@ -1,0 +1,13 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{%block content%}
+<link rel='stylesheet' href="{% static 'base/backtest.css' %}">
+<script src="{% static 'base/backtest.js' %}" defer></script>
+
+<label for="strategy">Choose a Strategy</label>
+<select name="strategy" id="strategy">
+    <option value="moving_average_crossover">Moving Average Crossover</option>
+</select>
+
+{%endblock%}
