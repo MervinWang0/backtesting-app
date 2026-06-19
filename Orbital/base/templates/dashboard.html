@@ -1,4 +1,279 @@
-<!DOCTYPE html>
+
+
+{% block title %}
+    U.S. Stock Market
+{% endblock %}
+
+{% block content %}
+
+<section class = "market-hero">
+    <div class =  "page-container market-hero__inner">
+        <div>
+            <p class = "eyebrow"> Market activity </p>
+
+            <h1>U.S. Stocks</h1>
+
+            <p class = "market-hero__description">
+                Heatmap for stocks
+            </p>
+        </div>
+        <div class = "market-status">
+            <span class = "market_status__dot"></span>
+
+            <span>
+                Latest close price:
+                {% if market_date %}
+                    {{ market_date|date:"M j, Y" }}
+                {% else %}
+                    No price data
+                {% endif %}
+            </span>
+        </div>
+    </div>
+</section>
+
+<section class = "page-container dashboard-section">
+    <div class = "section-heading">
+        <div>
+            <p class = "eyebrow">Heat map</p>
+            <h2>Most active stocks</h2>
+        </div>
+
+        <div class = "activity-values">
+            <div class = "activity-value">
+                <h3>Top 5 in Share volume</h3>
+                <table class = "activity-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <stock>Stock</stock>
+                            <th>Volume traded</th>
+                        </tr>
+                    </thead>
+                    <body>
+                        {% for stock in most_active_traded %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ stock.ticker }}</td>
+                                <td>{{ stock.volume }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan = "3">No price data available</td>
+                            </tr>
+                        {% endfor %}
+                    </body>
+                </table>
+            </div>
+            <div class = "activity-value">
+                <h3>Top 5 in Dollar Volume</h3>
+                <table class = "activity-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <stock>Stock</stock>
+                            <th>Volume traded</th>
+                        </tr>
+                    </thead>
+                    <body>
+                        {% for stock in most_active_traded %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ stock.ticker }}</td>
+                                <td>{{ stock.volume }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan = "3">No price data available</td>
+                            </tr>
+                        {% endfor %}
+                    </body>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class = "stock-search">
+    <div class = "page-container">
+        <div class = "section-heading">
+            <div>
+                <p class = "eyebrow">S&P 500 Stock search</p>
+                <h2>Search a stock</h2>
+            </div>
+        </div>
+
+        <form method = "get" class = "stock-search">
+            <div class = "stock-search__primary">
+                <label for= "stock-search-input" class = "symbol-only">
+                    Search by ticker
+                </label>
+
+                <div class = "search-input-wrapper">
+                    <svg
+                        viewBox = "0 0 24 24"
+                        aria-hidden = "true"
+                        class = "search-symbol">
+                        <path
+                            d = "m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"
+                            ></path>
+                    </svg>
+                    <input 
+                        id = "stock-search-input"
+                        type="search"
+                        name="q"
+                        value = "{{ filters.q }}"
+                        placeholder="Search by ticker"
+                        >
+                </div>
+                <button type = "submit" class = "primary-button">
+                    Search
+                </button>
+
+                <button
+                    type = "button"
+                    class = "secondary-button"
+                    data-filter-toggle
+                    aria-expanded = "false"
+                    >
+                    Advanced Search
+                </button>
+            </div>
+        </form>
+
+        <div class="stock-table-wrapper">
+            <table class = "stock-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Symbol</th>
+                        <th scope="col">Company</th>
+                        <th scope="col" class="price-column">Price</th>
+                        <th scope="col" class="change-column">Change</th>
+                        <th scope="col" class="percantage-column">Percentage Change</th>
+                        <th scope="col" class="volume-column">Volume</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for stock in page %}
+                    <tr>
+                        <td>
+                            <div class = "stock-symbol">
+                                {{ stock.symbol }}
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="company-name">
+                                {{ stock.name }}
+                            </div>
+                        </td>
+
+                        <td class ="price-column">
+                            {% if stock.latest_price is not None %}
+                                ${{ stock.latest_price }}
+                            {% endif %}
+                        </td>
+
+                        <td class= "change-column">
+                            {% if stock.price_change is not None %}
+                                {% if stock.price_change > 0 %}
+                                    +
+                                {% else %}
+                                    -
+                                {% endif %}
+                                {{ stock.price_change }}
+                            {% endif %}
+                        </td>
+
+                        <td class = "percentage-column">
+                            {% if stock.percentage_change is not None %}
+                                {% if stock.percentage_change > 0 %}
+                                    +
+                                {% else %}
+                                    -
+                                {% endif %}
+                                {{ stock.percentage_change }}
+                            {% endif %}
+                        </td>
+
+                        <td class = "volume-column">
+                            {% if stock.latest_volume is not None %}
+                                {{ stock.latest_volume }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6">
+                            <div class = "empty">
+                                No stocks matched your filters
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+            <nav class = "paginator" aria-label = "Stock results pages">
+                {% if page.has_previous %}
+                    <a
+                        class = "pagination__button"
+                        href = "?page={{ page.previous_page_number }}&q={{ filters.q}}"
+                        >
+                        Previous
+                    </a>
+                {% else %}
+                    <span class="pagination__button pagination__button--diabled">
+                        Previous
+                    </span>
+                {% endif %}
+
+                <span class = "pagination_status">
+                    Page {{ page.number }}
+                    of {{ page.paginator.num_pages }}
+                </span>
+
+                {% if page.has_next %}
+                    <a
+                        class = "pagination__current"
+                        href = "?page={{ page.next_page_number }}&q={{ filters.q }}"
+                        >
+                        Next
+                    </a>
+                </span>
+                {% else %}
+                    <span class="pagination__button pagination__button--diabled">
+                        Next
+                    </span>
+                {% endif %}
+            </nav>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- <!DOCTYPE html>
 <html>
 <head>
     <title>Backtest Dashboard</title>
@@ -29,7 +304,7 @@
         </button>
     </form>
 
-</body>
+</body> -->
 
 
 

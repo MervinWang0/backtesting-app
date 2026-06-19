@@ -5,7 +5,8 @@ import base.views as views
 urlpatterns = [
     # path("", views.home, name="home"),
     path("", views.dashboard, name="dashboard"),
-    # path("run_backtest/", dashboard.backtest_run, name = "run_backtest"),
+    path("run_backtest/", views.backtest_run, name = "run_backtest"),
+    path("backtest_graph/", views.backtest_graph, name="backtest_graph"),
     # path("backtestrunrecords/", dashboard.backtest_run_records, name = "backtest_run_records"),
     path("backtest/", views.get_backtest, name="backtest")
 

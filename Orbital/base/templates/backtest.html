@@ -2,12 +2,59 @@
 {% load static %}
 
 {%block content%}
-<link rel='stylesheet' href="{% static 'base/backtest.css' %}">
-<script src="{% static 'base/backtest.js' %}" defer></script>
 
-<label for="strategy">Choose a Strategy</label>
-<select name="strategy" id="strategy">
-    <option value="moving_average_crossover">Moving Average Crossover</option>
-</select>
+<div name="input_container" id="input_container">
+    {% comment %} Create strategy dropdown button {% endcomment %}
+    <label for="strategy">Choose a Strategy</label>
+    <select name="strategy" id="strategy">
+        <option value="none">--Select--</option>
+        <option value="moving_average_crossover">Moving Average Crossover</option>
+        <option value="mean_reversion">Mean Reversion</option>
+    </select>
 
-{%endblock%}
+    {% comment %} Each specific strategy has parameters {% endcomment %}
+    {% comment %} None strategy {% endcomment %}
+    <div class='strategy_parameters' id='none' style="display:none;">
+    </div>
+
+    {% comment %} SMA strategy {% endcomment %}
+    <div class='strategy_parameters' id='moving_average_crossover' style="display:none;">
+        <label>Short Window:</label>
+        <input type="number" name="short_window">
+        <label>Long Window:</label>
+        <input type="number" name="long_window">
+        <label>Asset Type:</label>
+        <input type="text" name="asset_type">
+        <label>Ticker:</label>
+        <input type="text" name="ticker">
+        <label>Strength:</label>
+        <input type="number" name="strength">
+        <label>Slippage:</label>
+        <input type="number" name="slippage">
+        <label>Initial Capital:</label>
+        <input type="number" name="initial_capital">
+        <label>Commission:</label>
+        <input type="number" name="commission">
+        <label>Start Date:</label>
+        <input type="date" name="start_date">
+        <label>End Date:</label>
+        <input type="date" name="end_date">
+    </div>
+
+    {% comment %} mean reversion strategy  {% endcomment %}
+    <div class='strategy_parameters' id='mean_reversion' style="display:none;">
+        <label>Rolling Window:</label>
+        <input type="number" name="rolling_window">
+        <label>Ticker:</label>
+        <input type="text" name="ticker">
+        <label>Start Date:</label>
+        <input type="date" name="start_date">
+        <label>End Date:</label>
+        <input type="date" name="end_date">
+    </div>
+    <div>
+    {% comment %} Button to submit strategy params and run backtest {% endcomment %}
+    <button type="button" id="run_backtest"> Run Backtest </button>
+    </div>
+</div>
+{% endblock%}

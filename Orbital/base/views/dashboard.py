@@ -11,9 +11,9 @@ from django.core.management import call_command
 from datetime import datetime
 from base.models import StockPriceHistory, Stock
 from decimal import Decimal
-from django.db.models import (DateField, DecimalField, 
-F, FloatField, OuterRef, Q, Subquery, Value, BigIntegerField, ExpressionWrapper)
+from django.db.models import DateField, DecimalField, F, FloatField, OuterRef, Q, Subquery, Value, BigIntegerField, ExpressionWrapper
 from django.db.models.functions import Cast, NullIf
+from django.core.paginator import Paginator
 
 
 from queue import Queue
@@ -57,7 +57,7 @@ def dashboard(request):
                                                     percentage_change = ExpressionWrapper(
                                                         (
                                                             Cast(F("latest_price"), FloatField())
-                                                            - Cast(F("previous_price"), FloatField())
+                                                            - Cast(F("previous_close"), FloatField())
                                                         )
                                                         * 100.0
                                                         / NullIf(
@@ -93,13 +93,17 @@ def dashboard(request):
         stocks = stocks.filter(
             Q(ticker__icontains = search_query) | Q(name__icontains = search_query)
         )
-
+    
     portfolio_summary = get_porfolio_summary(request)
 
+    paginator = Paginator(stocks, 30)
+    page = paginator.get_page(request.GET.get("page"))
+
     context = {
+        "page" : page,
         "most_active_traded": most_active_traded,
         "most_active_dollar" : most_active_dollar,
-        "US_Assets" : portfolio_summary["US_Assests"],
+        "US_Assets" : portfolio_summary["US_Assets"],
         "today_pnl" : portfolio_summary["Today_pnl"],
         "filters" : {
             "q" : search_query,
@@ -173,7 +177,6 @@ def backtest_run(request):
         start_date = start_date_fixed,
         end_date = end_date_fixed,
         strategy_name= "MAC",
-        data_loader= DataBaseDataloa
     )
 
     backtest_run = backtest.run()
