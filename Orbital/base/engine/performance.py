@@ -13,13 +13,63 @@ django.setup()
 # import plotly.express as px
 # from queue import Queue
 # from datetime import datetime
-# from base.engine.data_loader import DatabaseDataLoader
-# import pandas as pd
+import pandas as pd
+import numpy as np
 # from base.engine.distribution import Distribution
-# from base.engine.backtest import Backtes
 # from base.engine.monte_carlo_simulation import MonteCarloSimulator
 from collections import deque
 
+
+def get_total_return(equity_record: pd.DataFrame) -> float:
+    '''
+    Returns the total return as a percentage. Uses equity to calculate.
+    '''
+    return (equity_record['equity'].iloc[-1] / equity_record['equity'].iloc[0]) - 1
+
+def get_daily_returns(equity_record: pd.DataFrame) -> float:
+    return equity_record['equity'].pct_change()
+
+def get_mean_daily_returns(equity_record: pd.DataFrame) -> float:
+    return np.mean(get_daily_returns(equity_record))
+
+def get_cagr(equity_record: pd.DataFrame) -> float:
+    num_days = equity_record['date'].iloc[-1] - equity_record['date'].iloc[0]
+    years = num_days.days / 365.25
+    return (equity_record['equity'].iloc[-1] / equity_record['equity'].iloc[0]) ** (1 / years) - 1
+
+def get_volatility(equity_record: pd.DataFrame) -> float:
+    daily_vol = get_daily_returns(equity_record).std()
+    annualized_vol = daily_vol * np.sqrt(252)
+    return annualized_vol
+
+def get_sharpe_ratio(equity_record: pd.DataFrame, risk_free_rate: float) -> float:
+    excess_daily_return = get_mean_daily_returns(equity_record) - (risk_free_rate / 252)
+    sharpe_ratio = (excess_daily_return / get_daily_returns(equity_record).std()) * np.sqrt(252)
+    return sharpe_ratio
+
+def get_max_drawdown(equity_record: pd.DataFrame) -> float:
+    equity_record['cumulative_max'] = equity_record['equity'].cummax()
+    equity_record['drawdown'] = ((equity_record['equity'] - equity_record['cumulative_max'])
+                                / equity_record['cumulative_max'])
+    max_drawdown = equity_record['drawdown'].min()
+    return max_drawdown
+
+def get_metrics(equity_record: pd.DataFrame, risk_free_rate: float) -> dict[str, float]:
+    total_return = get_total_return(equity_record)
+    mean_daily_return = get_mean_daily_returns(equity_record)
+    cagr = get_cagr(equity_record)
+    volatility = get_volatility(equity_record)
+    sharpe_ratio = get_sharpe_ratio(equity_record, risk_free_rate)
+    max_drawdown = get_max_drawdown(equity_record)
+    metrics = {
+        "Total Return" : total_return,
+        "Mean Daily Return" : mean_daily_return,
+        "CAGR" : cagr,
+        "Volatility" : volatility,
+        "Sharpe Ratio" : sharpe_ratio,
+        "Max Drawdown" : max_drawdown,
+    }
+    return metrics
 
 def fill_to_trade_log(arg_fill_records: list[dict[str, any]]) -> tuple[list[dict[str, any]],
                                                                     dict[str, list[any]]]:
@@ -339,9 +389,7 @@ if __name__ == "__main__":
     # closed_trades = handle_full_close(open_trades, record)
 
     # Test the whole fn
-    fill_records = [record1, record2]
-    test = fill_to_trade_log(fill_records)
-    print(f"This is the closed trades {test[0]}\n,"
-          f"This is the open trades {test[1]}")
-
-
+    # fill_records = [record1, record2]
+    # test = fill_to_trade_log(fill_records)
+    # print(f"This is the closed trades {test[0]}\n,"
+    #       f"This is the open trades {test[1]}")

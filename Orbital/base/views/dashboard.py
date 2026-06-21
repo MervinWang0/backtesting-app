@@ -11,7 +11,9 @@ from django.core.management import call_command
 from datetime import datetime
 from base.models import StockPriceHistory, Stock
 from decimal import Decimal
-from django.db.models import DateField, DecimalField, F, FloatField, OuterRef, Q, Subquery, Value, BigIntegerField, ExpressionWrapper
+from django.db.models import (DateField, DecimalField, F,
+FloatField, OuterRef, Q, Subquery, Value,
+BigIntegerField, ExpressionWrapper)
 from django.db.models.functions import Cast, NullIf
 from django.core.paginator import Paginator
 

@@ -2,6 +2,8 @@ from django.db import models
 # from django.contrib.auth.models import User
 from django.conf import settings
 from decimal import Decimal
+from django.core.serializers.json import DjangoJSONEncoder
+from django.utils.translation import gettext_lazy as _
 
 
 #Time stamp model to track creation date/time and update date/time
@@ -270,6 +272,14 @@ class BacktestRun(TimeStampedModel):
     #Stores list of tickers used in the backtest
     tickers = models.JSONField(default=list, blank=True)
 
+    # Additional parameters necessary
+    strength = models.IntegerField(default=1)
+    commission = models.DecimalField(max_digits=10, decimal_places=2,default=0)
+    slippage = models.IntegerField(default=0)
+    # Encodes strategy params in a dict
+    strategy_params = models.JSONField(_("Strategy specific parameters"),
+                                       encoder=DjangoJSONEncoder,
+                                       default=dict)
     # #Trade performance metrics 
     # total_return = models.FloatField()
     # cagr = models.FloatField()

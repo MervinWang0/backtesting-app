@@ -176,6 +176,8 @@ class DataLoader(ABC):
         Takes in a ticker and a number, returns the past num bars of the
         ticker in a list, sorted from oldest to latest
         '''
+        # print(len(self.latest_stock_data[ticker]))
+        # print(f"This should be a number {num}")
         if ticker not in self.latest_stock_data or len(self.latest_stock_data[ticker]) < num:
             raise ValueError(f"Not enough data available for ticker: {ticker} at the current time index.")
         return self.latest_stock_data[ticker][-num:]

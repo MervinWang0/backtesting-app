@@ -3,6 +3,7 @@
 
 {%block content%}
 
+{% comment %} Using Main and Block to arrange stuff {% endcomment %}
 <div name="input_container" id="input_container">
     {% comment %} Create strategy dropdown button {% endcomment %}
     <label for="strategy">Choose a Strategy</label>
@@ -52,9 +53,29 @@
         <label>End Date:</label>
         <input type="date" name="end_date">
     </div>
-    <div>
+
     {% comment %} Button to submit strategy params and run backtest {% endcomment %}
-    <button type="button" id="run_backtest"> Run Backtest </button>
+    <div>
+    <button type="button" id="run_backtest">Run Backtest</button>
     </div>
+
+    {% comment %} Button to access Monte Carlo Sim {% endcomment %}
+    <div>
+    <button type="button" id="view_mcs_btn" disabled>View MCS</button>
+    </div>
+</div>
+
+{% comment %} New div to store graph {% endcomment %}
+<div name="equity_graph_container" id="equity_graph_container">
+</div>
+
+{% comment %} Div to store metrics {% endcomment %}
+<div class="metrics_container" id="metrics_container">
+    <p class="metric" id="Total Return" style="display:none;"> </p>
+    <p class="metric" id="Mean Daily Return" style="display:none;"></p>
+    <p class="metric" id="CAGR" style="display:none;"></p>
+    <p class="metric" id="Volatility" style="display:none;"></p>
+    <p class="metric" id="Sharpe Ratio" style="display:none;"></p>
+    <p class="metric" id="Max Drawdown" style="display:none;"></p>
 </div>
 {% endblock%}

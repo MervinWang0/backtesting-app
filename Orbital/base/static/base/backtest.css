@@ -1,3 +1,20 @@
+/* Change background colour */
+body {
+  background: linear-gradient(rgb(217, 249, 223), rgb(174, 226, 255));
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+#view_mcs_button:disabled {
+  pointer-events: none;
+  color: grey;
+}
+#input_container {
+  /* border-width: thin; */
+  /* border-style: solid; */
+  /* border-color: rgb(181, 186, 255); */
+  /* background-color: radial-gradient(rgb(181, 186, 255), rgb(159, 161, 255)) */
+}
 /* Modify Strategy */
 #strategy {
   margin: 10px;
@@ -5,6 +22,12 @@
 #run_backtest {
   position: absolute;
   top: 8px;
+  left: 320px;
+}
+
+#view_mcs_btn {
+  position: absolute;
+  top: 35px;
   left: 320px;
 }
 
@@ -24,5 +47,10 @@
 }
 
 .strategy_parameters input {
-  max-width: 200px;
+  max-width: 150px;
+}
+
+/* Style the output container of metrics */
+.metrics_container{
+
 }

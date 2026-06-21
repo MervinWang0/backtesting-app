@@ -5,14 +5,17 @@ function getCookie(name) {
     if (parts.length === 2) return parts.pop().split(';').shift();
 }
 
-
-
-
-// This is to handle the function that displays / hides strategy params
-//  Whenever the strategy select is used
+// This defines some buttons that call functions
 const strategy_btn = document.getElementById("strategy")
-strategy_btn.addEventListener("change", show_params)
+const run_backtest_btn = document.getElementById("run_backtest")
+const view_mcs_btn = document.getElementById("view_mcs_btn")
 
+// The trigger of the buttons calling the function
+strategy_btn.addEventListener("change", show_params)
+run_backtest_btn.addEventListener("click", run_backtest)
+view_mcs_btn.addEventListener("click", view_mcs)
+
+// Shows strategy specific params and hides others
 function show_params(){
     //  Turns chosen strategy's param visible and others invisible
     const all_strategy_params = document.querySelectorAll(".strategy_parameters");
@@ -28,12 +31,10 @@ function show_params(){
 }
 
 // Runs backtest when run button is clicked and input passed
-const run_backtest_btn = document.getElementById("run_backtest")
-run_backtest_btn.addEventListener("click", run_backtest)
 function run_backtest(){
     if (!validate()) {return;}
-    console.log("Validate passed")
     graph_backtest()
+    view_mcs_btn.disabled = false
 }
 
 // Checks if all the inputs of a strategy is passed
@@ -64,16 +65,17 @@ function graph_backtest() {
     const strategy_div = document.getElementById(chosen_strategy_id);
     const strategy_params = strategy_div.querySelectorAll('input');
     const cleaned_params = {};
-    const ticker_lst = []
+    const ticker_lst = [];
     for(const input of strategy_params) {
         if (input.name.includes("ticker")){
-            ticker_lst.push(input.value)
+            ticker_lst.push(input.value);
         }
         else {
-            cleaned_params[input.name] = input.value
+            cleaned_params[input.name] = input.value;
         }
     }
-    cleaned_params["tickers"] = ticker_lst
+    cleaned_params["tickers"] = ticker_lst;
+    cleaned_params['strategy_name'] = chosen_strategy_id;
     // alert(`These are the cleaned parameters to be passed ${cleaned_params}`)
 
     // Pass data to views function
@@ -85,4 +87,41 @@ function graph_backtest() {
         },
         body: JSON.stringify(cleaned_params)
     })
+    // Turns string into JS object
+    .then(response => response.json())
+    .then(data => {
+        //  For graph
+        const equity_graph_container = document.getElementById('equity_graph_container');
+        // Clear data
+        equity_graph_container.innerHTML = '';
+        const range = document.createRange();
+        const fragment = range.createContextualFragment(data["equity_graph_html"]);
+        equity_graph_container.append(fragment);
+
+        // For metrics
+        const metrics_container_div = document.getElementById("metrics_container");
+        const paragraphs = metrics_container_div.querySelectorAll("p");
+
+        // Turn all metric paragraphs blank first
+        for(const para of paragraphs) {
+            para.style.display = "none";
+        }
+        // For each metric calculated
+        console.log(data["metrics"])
+        for(const [key, value] of Object.entries(data["metrics"])) {
+            console.log(key)
+            let paragraph = document.getElementById(key);
+            console.log(paragraph)
+            paragraph.innerHTML = `${key}: ${value}`;
+            paragraph.style.display = '';
+        }
+    })
+}
+
+// Simple function to open MCS link when mcs button clicked
+function view_mcs() {
+    // The disabled is set to false when run_backtest is executed
+    if (!view_mcs_btn.disabled) {
+        window.open("monte_carlo_simulation/", '_blank').focus()
+    }
 }

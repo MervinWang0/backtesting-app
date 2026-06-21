@@ -8,7 +8,9 @@ urlpatterns = [
     path("run_backtest/", views.backtest_run, name = "run_backtest"),
     path("backtest_graph/", views.backtest_graph, name="backtest_graph"),
     # path("backtestrunrecords/", dashboard.backtest_run_records, name = "backtest_run_records"),
-    path("backtest/", views.get_backtest, name="backtest")
+    path("backtest/", views.get_backtest, name="backtest"),
+    path("backtest/monte_carlo_simulation/", views.monte_carlo_simulation,
+         name="monte_carlo_simulation")
 
     # #Authentication wrapped under accounts
     # path("accounts/Login/", views.Login, name = "Login"),

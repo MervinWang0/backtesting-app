@@ -22,7 +22,7 @@ import math
 import plotly.graph_objects as go
 # from scipy.stats import t as student_t
 # from scipy.stats import kurtosis
-# import base.engine.graph as graph
+import base.engine.graph as graph
 # from base.engine.distribution import Distribution
 from base.engine.monte_carlo_simulation import MonteCarloSimulator
 
@@ -67,12 +67,12 @@ def test_jump_prices(mcs :MonteCarloSimulator, prices: list[float], df: float,
     return mcs.jump_prices(prices, df, exp_jumps,
                            mean_log_jump_size, std_log_jump_size)
 
-def test_logged_returns(mcs: MonteCarloSimulator, prices, sims):
-    test = []
-    for _ in range(sims):
-        sim_result = mcs.gbm_prices(prices, 100)
-        test.append(mcs.transform_daily_logged(sim_result))
-    return test
+# def test_logged_returns(mcs: MonteCarloSimulator, prices, sims):
+#     test = []
+#     for _ in range(sims):
+#         sim_result = mcs.gbm_prices(prices, 100)
+#         test.append(mcs.transform_daily_logged(sim_result))
+#     return test
 
 if __name__ == "__main__":
     # Test obtaining og list historical data
@@ -86,8 +86,8 @@ if __name__ == "__main__":
                         start_date=start_date,
                         end_date=end_date,
                         strategy_name="MovingAverageCross",
-                        strategy_params={"short_window": 5,
-                                        "long_window": 10},
+                        short_window=5,
+                        long_window=10,
                         data_loader=data_loader)
     backtest.run()
     stock_data = backtest.data_loader.get_stock_data()
@@ -148,19 +148,6 @@ if __name__ == "__main__":
     # fig = graph.show_price_graphs(test)
     # fig.data[0].line.color = "black"
     # fig.show()
-
-    # Test logged returns
-    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
-    # test = test_logged_returns(mcs, prices, 10)
-    # zero_list = [0] * len(test[0])
-    # for price in test:
-    #     price = np.array(price)
-    #     price = list(price.cumsum())
-    # test.insert(0, zero_list)
-    # fig = graph.show_price_graphs(test)
-    # fig.data[0].line.color = "black"
-    # fig.show()
-
 
     # Jump Diffusion Testing
     # Checking if expected number of jumps is achieved
@@ -255,17 +242,20 @@ if __name__ == "__main__":
     # graph.get_ohlv_graph(random_prices[2]["AAPL"]).show()
 
     # Check if equity graphs are created for each simulated result
-    simulations = mcs.simulate(num_sims=3,mu=0.01,dt=1,sigma=0.01,df=5)
-    fig_lst = []
-    for backtestresult in simulations:
-        fig_lst.append(backtestresult.get_equity_graph())
+    # simulations = mcs.simulate(num_sims=3,mu=0.01,dt=1,sigma=0.01,df=5)
+    # fig_lst = []
+    # for backtestresult in simulations:
+    #     fig_lst.append(backtestresult.get_equity_graph())
     
-    overlay_fig = go.Figure()
-    for fig in fig_lst:
-        for trace in fig.data:
-            overlay_fig.add_trace(trace)
-    overlay_fig.show()
+    # overlay_fig = go.Figure()
+    # for fig in fig_lst:
+    #     for trace in fig.data:
+    #         overlay_fig.add_trace(trace)
+    # overlay_fig.show()
 
+    # Some random testing
+    test = mcs.backtest.data_loader.get_past_bars("AAPL", 100)
+    print(test)
 
 
 
