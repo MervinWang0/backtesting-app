@@ -15,7 +15,6 @@ from queue import Queue
 # from base.engine.monte_carlo_simulation import MonteCarloSimulator
 from datetime import datetime
 from base.engine.data_loader import DatabaseDataLoader, Bar
-# from base.engine.backtest import Backtest
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -32,7 +31,11 @@ def get_equity_graph(equity_record: list[dict[str, any]]) -> px.Figure:
     fig = px.line(data_frame=data_frame, x="date", y="equity")
     return fig
 
-def get_ohlv_graph(stock_data: list[Bar]) -> px.Figure:
+def get_stock_graph(stock_data: list[Bar]) -> px.Figure:
+    '''
+    Returns a figure that stores OHLC data.
+    '''
+    
     data = {
         'Date' : [bar.date for bar in stock_data],
         'Open' : [bar.open for bar in stock_data],
@@ -71,25 +74,6 @@ def show_price_graphs(prices: list[list[float]]) -> px.Figure:
     return fig
 
 if __name__ == "__main__":
-    start_date = datetime.fromisoformat("2021-05-24").date()
-    end_date = datetime.fromisoformat("2023-06-07").date()
-    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
-                             end_date, "STOCK")
-    backtest = Backtest(
-                        events=Queue(),
-                        tickers=["AAPL"],
-                        start_date=start_date,
-                        end_date=end_date,
-                        strategy_name="MovingAverageCross",
-                        strategy_params={"short_window": 5,
-                                        "long_window": 10},
-                        data_loader=DatabaseDataLoader(events=Queue(),
-                                                    tickers=["AAPL"],
-                                                    start_date=start_date,
-                                                    end_date=end_date,
-                                                    asset_type="STOCK"))
-    backtest.run()
-    stock_data = backtest.data_loader.get_past_bars("AAPL",
-                len(backtest.data_loader.get_timeline()))
+    pass
 
 
