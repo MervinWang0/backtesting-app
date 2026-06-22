@@ -2,7 +2,9 @@
 {% load static %}
 
 {%block content%}
-
+<link rel = 'stylesheet' href = "{% static 'base/backtest.css' %}">
+<script src = "{% static 'base/backtest.js' %}"  defer></script>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 {% comment %} Using Main and Block to arrange stuff {% endcomment %}
 <div name="input_container" id="input_container">
     {% comment %} Create strategy dropdown button {% endcomment %}
@@ -71,7 +73,7 @@
 
 {% comment %} Div to store metrics {% endcomment %}
 <div class="metrics_container" id="metrics_container">
-    <p class="metric" id="Total Return" style="display:none;"> </p>
+    <p class="metric" id="Total Return" style="display:none;"></p>
     <p class="metric" id="Mean Daily Return" style="display:none;"></p>
     <p class="metric" id="CAGR" style="display:none;"></p>
     <p class="metric" id="Volatility" style="display:none;"></p>

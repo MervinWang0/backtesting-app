@@ -65,5 +65,5 @@ def backtest_graph(request) -> HttpResponse:
         # Also pass in the performance metrics.
         metrics = btr.get_metrics()
         return JsonResponse({"equity_graph_html" : equity_graph_html,
-                             "metrics" : metrics})
+                             "metrics" : metrics, "run_id" : backtest.get_backtest_run_id()})
         

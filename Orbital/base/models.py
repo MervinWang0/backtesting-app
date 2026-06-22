@@ -276,6 +276,7 @@ class BacktestRun(TimeStampedModel):
     strength = models.IntegerField(default=1)
     commission = models.DecimalField(max_digits=10, decimal_places=2,default=0)
     slippage = models.IntegerField(default=0)
+    risk_free_rate = models.DecimalField(max_digits=10, decimal_places=4,default=0)
     # Encodes strategy params in a dict
     strategy_params = models.JSONField(_("Strategy specific parameters"),
                                        encoder=DjangoJSONEncoder,

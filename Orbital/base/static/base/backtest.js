@@ -59,6 +59,8 @@ function validate(){
 }
 
 // Convert input params into suitable format and pass to views function
+// Stores the run_id too. As an obj
+let run_id = {}
 function graph_backtest() {
     // Clean the data
     const chosen_strategy_id = strategy_btn.value;
@@ -107,13 +109,15 @@ function graph_backtest() {
             para.style.display = "none";
         }
         // For each metric calculated
-        console.log(data["metrics"])
+        // console.log(data["metrics"])
         for(const [key, value] of Object.entries(data["metrics"])) {
-            console.log(key)
+            // console.log(key)
             let paragraph = document.getElementById(key);
-            console.log(paragraph)
+            // console.log(paragraph)
             paragraph.innerHTML = `${key}: ${value}`;
             paragraph.style.display = '';
+        // Makes run_id a dict as needed by URLSearchParams
+        run_id = {"run_id" : data["run_id"]};
         }
     })
 }
@@ -122,6 +126,13 @@ function graph_backtest() {
 function view_mcs() {
     // The disabled is set to false when run_backtest is executed
     if (!view_mcs_btn.disabled) {
-        window.open("monte_carlo_simulation/", '_blank').focus()
+        let url = "monte_carlo_simulation/"
+        // console.log(run_id)
+        const params = new URLSearchParams(run_id)
+        const querystring = params.toString()
+        url += "?" + querystring
+        // console.log(querystring)
+        // console.log(url)
+        window.open(url, '_blank').focus()
     }
 }

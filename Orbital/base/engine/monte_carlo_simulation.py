@@ -213,22 +213,26 @@ class MonteCarloSimulator():
         model.transmat_ = model.transmat_[np.ix_(order, order)]
         return model
     
-    def simulate(self, num_sims: int, mu: float, dt: float, sigma: float,
-                 df: float, exp_jumps: int = 0, mean_log_jump_size: float = 0.05,
-                 std_log_jump_size: float = 0.01, is_t: bool = True, is_reg_switch: bool = True):
+    def simulate(self, num_sims: int, mu: float = 0, dt: float = 1, sigma: float = 0,
+                 df: float = 5, exp_jumps: int = 0, mean_log_jump_size: float = 0.05,
+                 std_log_jump_size: float = 0.01, is_t: bool = True, is_regime_switching: bool = True,
+                 is_jump_diffusion: bool = True, **kwargs):
         '''
         Takes in a number of simulations and a degree of freedom,
         and returns the result of the simulations.
         '''
-        # Test Randomized prices
-        # test_random_stock_data: list[dict[str, list[Bar]]] = []
+        if not is_jump_diffusion:
+            exp_jumps = 0
+        
         # Stock data holds each ticker's stock info for backtest's tickers
         stock_data: dict[str, list[Bar]] = self.backtest.data_loader.get_stock_data()
+        
         # Store BackTestResult of each simulation
         result = [self.backtest.run()]
 
         # For each stock, create arrays to compute OHL prices
         price_calc: dict[str, dict[str, np.array]] = {}
+
         for ticker in stock_data:
             close_price = np.array([bar.close for bar in stock_data[ticker]])
             price_calc[ticker] = {"open_diff" : np.array([bar.open for bar in stock_data[ticker]]) -
@@ -246,7 +250,7 @@ class MonteCarloSimulator():
             # Populate each ticker with random stock data
             for ticker in stock_data:
                 random_close = self.randomize_price(og_price=list(map(lambda bar:
-                                                                      bar.close, stock_data[ticker])),
+                                                                    bar.close, stock_data[ticker])),
                                                     mu=mu,
                                                     dt=dt,
                                                     sigma=sigma,
@@ -255,7 +259,7 @@ class MonteCarloSimulator():
                                                     mean_log_jump_size=mean_log_jump_size,
                                                     std_log_jump_size=std_log_jump_size,
                                                     is_t=is_t,
-                                                    is_reg_switch=is_reg_switch)
+                                                    is_reg_switch=is_regime_switching)
                 np_random_close = np.array(random_close)
                 np_random_open = price_calc[ticker]["open_diff"] + np_random_close
                 np_random_high = price_calc[ticker]["high_diff"] + np_random_close
@@ -288,33 +292,18 @@ class MonteCarloSimulator():
                                     start_date=self.backtest.start_date,
                                     end_date=self.backtest.end_date,
                                     strategy_name=self.backtest.strategy_name,
-                                    data_loader=mcs_data_loader)
+                                    data_loader=mcs_data_loader,
+                                    asset_type=self.backtest.asset_type,
+                                    strength=self.backtest.strength,
+                                    slippage=self.backtest.slippage,
+                                    initial_capital=self.backtest.initial_capital,
+                                    commission=self.backtest.commission,
+                                    risk_free_rate=self.backtest.risk_free_rate,
+                                    **self.backtest.strategy_params)
             # Stores BackTestResult instances in results
             result.append(mcs_backtest.run())
         # Testing
         # return test_random_stock_data
         return result
 
-if __name__ == "__main__":
-    # Test obtaining og list historical data
-    start_date = datetime.fromisoformat("2021-05-24").date()
-    end_date = datetime.fromisoformat("2022-05-24").date()
-    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
-                             end_date, "STOCK")
-    backtest = Backtest(
-                        events=Queue(),
-                        tickers=["AAPL"],
-                        start_date=start_date,
-                        end_date=end_date,
-                        strategy_name="MovingAverageCross",
-                        strategy_params={"short_window": 5,
-                                        "long_window": 10},
-                        data_loader=DatabaseDataLoader(events=Queue(),
-                                                    tickers=["AAPL"],
-                                                    start_date=start_date,
-                                                    end_date=end_date,
-                                                    asset_type="STOCK"))
-    backtest.run()
-    stock_data = backtest.data_loader.get_stock_data()
-    mcs = MonteCarloSimulator(backtest)
 

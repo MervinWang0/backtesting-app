@@ -51,6 +51,6 @@ body {
 }
 
 /* Style the output container of metrics */
-.metrics_container{
-
+.metrics_container p{
+  color: aqua;
 }

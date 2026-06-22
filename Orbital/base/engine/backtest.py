@@ -95,6 +95,7 @@ class Backtest:
             strategy_name=self.strategy_name,
             asset_type = self.asset_type,
             fixed_quantity = 0,
+            risk_free_rate = self.risk_free_rate,
 
             stock = None,
             futures = None,
@@ -118,6 +119,12 @@ class Backtest:
             # Encodes strategy params in a dict
             strategy_params = strategy_params,
         )
+
+    def get_backtest_run_id(self) -> int:
+        '''
+        Returns the id of the run
+        '''
+        return self.run_model.id
 
     def run(self):
         '''

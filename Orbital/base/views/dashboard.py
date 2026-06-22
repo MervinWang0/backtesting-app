@@ -74,7 +74,6 @@ def dashboard(request):
                                                         output_field=FloatField(),
                                                     ),
                                                 )
-    
     )
 
     most_active_traded = list(
@@ -95,7 +94,7 @@ def dashboard(request):
         stocks = stocks.filter(
             Q(ticker__icontains = search_query) | Q(name__icontains = search_query)
         )
-    
+
     portfolio_summary = get_porfolio_summary(request)
 
     paginator = Paginator(stocks, 30)

@@ -35,7 +35,7 @@ def get_stock_graph(stock_data: list[Bar]) -> px.Figure:
     '''
     Returns a figure that stores OHLC data.
     '''
-    
+
     data = {
         'Date' : [bar.date for bar in stock_data],
         'Open' : [bar.open for bar in stock_data],
@@ -53,6 +53,20 @@ def get_stock_graph(stock_data: list[Bar]) -> px.Figure:
     )])
     return fig
 
+def get_monte_graph(btr_lst: list[BacktestResult]) -> px.Figure:
+    '''
+    This function takes in a list of backtest results, basically the ouput of MCS simulate,
+    and plots their equity graphs
+    '''
+    # Each figure has multiple traces, each trace has to be added seperately
+    figs = list(map(lambda btr: btr.get_equity_graph(), btr_lst))
+    og_fig = figs.pop(0)
+    for fig in figs:
+        traces = fig.select_traces()
+        for trace in traces:
+            og_fig.add_traces(trace) 
+    og_fig.data[0].line.color = "black"
+    return og_fig
 
 def show_price_graphs(prices: list[list[float]]) -> px.Figure:
     df = pd.DataFrame(prices).T

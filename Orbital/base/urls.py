@@ -10,7 +10,8 @@ urlpatterns = [
     # path("backtestrunrecords/", dashboard.backtest_run_records, name = "backtest_run_records"),
     path("backtest/", views.get_backtest, name="backtest"),
     path("backtest/monte_carlo_simulation/", views.monte_carlo_simulation,
-         name="monte_carlo_simulation")
+         name="monte_carlo_simulation"),
+    path("mcs_graph/", views.mcs_graph, name="mcs_graph"),
 
     # #Authentication wrapped under accounts
     # path("accounts/Login/", views.Login, name = "Login"),

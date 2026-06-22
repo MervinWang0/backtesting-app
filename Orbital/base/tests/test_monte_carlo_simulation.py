@@ -86,12 +86,20 @@ if __name__ == "__main__":
                         start_date=start_date,
                         end_date=end_date,
                         strategy_name="MovingAverageCross",
+                        asset_type="STOCK",
                         short_window=5,
                         long_window=10,
                         data_loader=data_loader)
     backtest.run()
     stock_data = backtest.data_loader.get_stock_data()
     mcs = MonteCarloSimulator(backtest)
+    test = mcs.simulate(num_sims=10,
+                 mu=0,
+                 dt=1,
+                 sigma=0,
+                 df=5,
+                 exp_jumps=2,)
+    graph.get_monte_graph(test).show()
     # Graphical Test
     # GBM Price check
     # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
@@ -123,7 +131,7 @@ if __name__ == "__main__":
     # Check the mean of the simulated prices and std
     # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
     # total_log_return = []
-    # for _ in range(100):
+    # for _ in range(10000):
     #     sigma = mcs.transform_daily_logged(prices).std()
     #     ito_mu = mcs.transform_daily_logged(prices).mean()
     #     mu = ito_mu + ((sigma ** 2) / 2)
@@ -137,7 +145,7 @@ if __name__ == "__main__":
     #       f"This is expected mean = {ito_mu * (len(prices) - 1)}")
     # print(f"This is obtained std = {np.std(total_log_return)}."
     #       f"This is expected std = {sigma * np.sqrt(len(prices) - 1)}")
-    #     # assert np.isclose(np.mean(total_log_return), ito_mu * (len(prices) - 1), rtol=0.05)
+        # assert np.isclose(np.mean(total_log_return), ito_mu * (len(prices) - 1), rtol=0.05)
 
     # Test jump_gbm
     # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
@@ -254,8 +262,8 @@ if __name__ == "__main__":
     # overlay_fig.show()
 
     # Some random testing
-    test = mcs.backtest.data_loader.get_past_bars("AAPL", 100)
-    print(test)
+    # test = mcs.backtest.data_loader.get_past_bars("AAPL", 100)
+    # print(test)
 
 
 
