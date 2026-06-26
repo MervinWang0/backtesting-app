@@ -21,38 +21,17 @@
         src = "{% static 'base/js/dashboard.js' %}"
         defer
     ></script>
+
+    <script
+        src = "{% static 'base/js/stock.js' %}"
+        defer
+    ></script>
 </head>
 
 <body>
-    <header class = "site-header">
-        <div class = "site-header__inner">
-            <a href = "{% url 'dashboard' %}" class = "brand">
-                PennyWise
-            </a>
-
-            <nav class = "main-navigation" aria-label = "Main Navigation">
-                <a
-                    href = "{% url 'dashboard' %}"
-                    class = "main-navigation__link main-navigation__link--active"
-                > 
-                Market
-            </a>
-
-            <a href = "{% url 'Backtest' %}" class = "main-navigation__link">
-                Backtest
-            </a>
-
-            <a href = "{% url 'Porfolio' %}" class = "main-navigatioon__link">
-                Portfolio
-            </a>
-            </nav>
-        </div>
-    </heaader>
-
-    <main>
     {% block content %}
     {% endblock %}
-</main>
 </body>
+
 </html>
 

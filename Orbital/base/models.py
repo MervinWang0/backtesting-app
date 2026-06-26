@@ -371,6 +371,119 @@ class BenchmarkRecord(TimeStampedModel):
     def __str__(self):
         return (f"{self.backtest_run}: "
                 f"{self.ticker} with market value {self.market_value} on {self.date}" )
+    
+#paper account 
+class PaperAccount(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name = "paper_accounts",
+    )
+
+    name = models.CharField(max_length=10, default = "Paper Account",)
+    base_currency = models.CharField(max_length=3, default = "USD",)
+    initial_capital = models.DecimalField(max_digits=20, decimal_places=2, default=Decimal("100000"),)
+    cash_balance = models.DecimalField(max_digits = 20, decimal_places=2, default=Decimal("100000"),)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields = ["user", "name"],
+            name = "Unique_paper_account",
+        )]
+    
+    def __str__(self):
+        return f"{self.user} created"
+
+class PaperPositions(models.Model):
+    account = models.ForeignKey(PaperAccount, on_delete=models.CASCADE, related_name = "positions")
+    stock = models.ForeignKey(Stock, on_delete=models.PROTECT, related_name="stock_positions")
+    forex = models.ForeignKey(ForexPair, on_delete=models.PROTECT, related_name = "forex_positions")
+    futures = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="futures_positions")
+
+    #stock 
+    stock_quantity = models.DecimalField(max_digits=10, decimal_places=4, default=Decimal("0"))
+    avg_cost = models.DecimalField(max_digits = 20, decimal_places=4, default=Decimal("0"))
+    #for short positions 
+    accum_borrowed = models.DecimalField(max_digits=20, decimal_places=4, default=Decimal("0"))
+    
+    realised_pnl = models.DecimalField(max_digits=20, decimal_places=4, default=Decimal("0"))
+
+    updated_at = models.DateTimeField(auto_now = True)
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields= ["account", "stock", "forex", "futures"],
+                name = "paper_positions",
+            )
+        ]
+    
+    def __str__(self):
+        return f"{self.account}"
+    
+class PaperOrder(models.Model):
+    class Order(models.TextChoices):
+        BUY = "BUY", "Buy"
+        SELL = "SELL", "Sell"
+    
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        FILLED = "FILLED", "Filled"
+        REJECTED = "REJECTED", "Rejected"
+        CANCELLED = "CANCELLED", "Cancelled"
+
+    class OrderType(models.TextChoices):
+        MARKET = "MARKET", "Market"
+        LMT = "LMT", "Limit"
+    
+    account = models.ForeignKey(PaperAccount, on_delete=models.CASCADE, related_name = "positions")
+    stock = models.ForeignKey(Stock, on_delete=models.PROTECT, related_name="stock_positions")
+    forex = models.ForeignKey(ForexPair, on_delete=models.PROTECT, related_name = "forex_positions")
+    futures = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="futures_positions")
+
+    order = models.CharField(max_length=10, choices=Order.choices,)
+    order_type = models.CharField(max_length=10, choices = OrderType.choices , default = OrderType.MARKET,)
+    status = models.CharField(max_length=10, choices = Status.choices, default = Status.PENDING, db_index = True,)
+    quantity = models.DecimalField(max_digits=20, decimal_places=4)
+    
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    filled_at = models.DateTimeField(null=True, blank=True,)
+    updated_at = models.DateTimeField(auto_now = True)
+
+    class Meta:
+        ordering = ["-submitted_at"]
+        indexes = [models.Index(
+            fields = ["account", "status", "submitted_at"]
+        )]
+
+    def __str__(self):
+        f"{self.account}"
+
+class PaperTrade(models.Model):
+    order = models.OneToOneField(PaperOrder, on_delete=models.PROTECT, related_name="trade",)
+    date = models.DateField()
+    fulfilled_price = models.DecimalField(max_digits = 20, decimal_places=4)
+    quantity = models.DecimalField(max_digits = 20, decimal_places=4)
+
+    closed_quantity = models.DecimalField(max_digits=20, decimal_places=4)
+    open_quantity = models.DecimalField(max_digits=20, decimal_places=4)
+
+    gross_amount = models.DecimalField(max_digits=20, decimal_places=4)
+    commission = models.DecimalField(max_digits=10, decimal_places=4)
+    realised_pnl = models.DecimalField(max_digits=20, decimal_places=4)
+    cash_change = models.DecimalField(max_digits=20, decimal_places=4)
+
+    executed_at = models.DateField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-executed_at"]
+    
+    def __str__(self):
+        return f"{self.order.side} {self.quantity} fulfilled"
+
+
 
 
             

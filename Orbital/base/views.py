@@ -118,6 +118,22 @@ def get_porfolio_summary(user):
         "Today_pnl" : Decimal("999.99"),
     }
 
+def stock(request):
+    symbol = request.GET.get("symbol")
+    stock = Stock.objects.filter(ticker = symbol).first()
+    latest_price = (
+        StockPriceHistory.objects.filter(stock=stock).order_by("-date").first()
+    )
+
+    context = {
+        "stock": stock,
+        "latest_price": latest_price,
+    }
+    
+    return render(request, "stock.html", context)
+
+
+
 def get_yf_period(start_date, end_date):
     days = (end_date - start_date).days +1
 

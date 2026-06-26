@@ -6,6 +6,7 @@ urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("run_backtest/", views.backtest_run, name = "run_backtest"),
     path("backtestrunrecords/", views.backtest_run_records, name = "backtest_run_records"),
+    path("stocks/", views.stock, name = "stock"),
 
     # #Authentication wrapped under accounts
     # path("accounts/Login/", views.Login, name = "Login"),
