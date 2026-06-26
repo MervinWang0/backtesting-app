@@ -58,4 +58,4 @@ COPY . .
 EXPOSE 8000
 
 # Run the application.
-CMD gunicorn Orbital.wsgi
+CMD ["python", "-m", "gunicorn", "Orbital.wsgi:application", "--bind", "0.0.0.0:8000"]
