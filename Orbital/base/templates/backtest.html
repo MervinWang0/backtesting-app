@@ -5,11 +5,12 @@
 <link rel = 'stylesheet' href = "{% static 'base/backtest.css' %}">
 <script src = "{% static 'base/backtest.js' %}"  defer></script>
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-{% comment %} Using Main and Block to arrange stuff {% endcomment %}
-<div name="input_container" id="input_container">
+
+{% comment %} container is parent flex {% endcomment %}
+<div class="container" name="input_container" id="input_container">
     {% comment %} Create strategy dropdown button {% endcomment %}
     <label for="strategy">Choose a Strategy</label>
-    <select name="strategy" id="strategy">
+    <select class="flex_item" name="strategy" id="strategy">
         <option value="none">--Select--</option>
         <option value="moving_average_crossover">Moving Average Crossover</option>
         <option value="mean_reversion">Mean Reversion</option>
@@ -17,35 +18,35 @@
 
     {% comment %} Each specific strategy has parameters {% endcomment %}
     {% comment %} None strategy {% endcomment %}
-    <div class='strategy_parameters' id='none' style="display:none;">
+    <div class='strategy_parameters flex_item' id='none' style="display:none;">
     </div>
 
     {% comment %} SMA strategy {% endcomment %}
-    <div class='strategy_parameters' id='moving_average_crossover' style="display:none;">
-        <label>Short Window:</label>
+    <div class='strategy_parameters flex_item' id='moving_average_crossover' style="display:none;">
+        <label class="label1">Short Window:</label>
         <input type="number" name="short_window">
-        <label>Long Window:</label>
+        <label class="label1">Long Window:</label>
         <input type="number" name="long_window">
-        <label>Asset Type:</label>
+        <label class="label1">Asset Type:</label>
         <input type="text" name="asset_type">
-        <label>Ticker:</label>
+        <label class="label1">Ticker:</label>
         <input type="text" name="ticker">
-        <label>Strength:</label>
+        <label class="label1">Strength:</label>
         <input type="number" name="strength">
-        <label>Slippage:</label>
+        <label class="label1">Slippage:</label>
         <input type="number" name="slippage">
-        <label>Initial Capital:</label>
+        <label class="label1">Initial Capital:</label>
         <input type="number" name="initial_capital">
-        <label>Commission:</label>
+        <label class="label1">Commission:</label>
         <input type="number" name="commission">
-        <label>Start Date:</label>
+        <label class="label1">Start Date:</label>
         <input type="date" name="start_date">
-        <label>End Date:</label>
+        <label class="label1">End Date:</label>
         <input type="date" name="end_date">
     </div>
 
     {% comment %} mean reversion strategy  {% endcomment %}
-    <div class='strategy_parameters' id='mean_reversion' style="display:none;">
+    <div class='strategy_parameters flex_item' id='mean_reversion' style="display:none;">
         <label>Rolling Window:</label>
         <input type="number" name="rolling_window">
         <label>Ticker:</label>
@@ -58,21 +59,21 @@
 
     {% comment %} Button to submit strategy params and run backtest {% endcomment %}
     <div>
-    <button type="button" id="run_backtest">Run Backtest</button>
+    <button class="flex_item" type="button" id="run_backtest">Run Backtest</button>
     </div>
 
     {% comment %} Button to access Monte Carlo Sim {% endcomment %}
     <div>
-    <button type="button" id="view_mcs_btn" disabled>View MCS</button>
+    <button class="flex_item" type="button" id="view_mcs_btn" disabled>View MCS</button>
     </div>
 </div>
 
 {% comment %} New div to store graph {% endcomment %}
-<div name="equity_graph_container" id="equity_graph_container">
+<div class="flex_item" name="equity_graph_container" id="equity_graph_container">
 </div>
 
 {% comment %} Div to store metrics {% endcomment %}
-<div class="metrics_container" id="metrics_container">
+<div class="metrics_container flex_item" id="metrics_container">
     <p class="metric" id="Total Return" style="display:none;"></p>
     <p class="metric" id="Mean Daily Return" style="display:none;"></p>
     <p class="metric" id="CAGR" style="display:none;"></p>

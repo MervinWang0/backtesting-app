@@ -36,6 +36,27 @@ body {
 }
 
 /* Style input parameter boxes */
+
+.container {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+}
+
+.flex_item {
+
+}
+
+/* Label1 is for Text informing user of input to type in */
+.label1 {
+  background-image: radial-gradient(circle at center, rgb(245, 235, 235), pink);
+  border-width: 0.5rem;
+  /* border-radius: 10%/20%; */
+  border-radius: 0.5rem;
+  border-color: aliceblue;
+  text-align: center;
+}
+
 .strategy_parameters {
   display: grid;
   grid-template-columns: 120px 100px;

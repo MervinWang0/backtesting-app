@@ -9,9 +9,13 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+import os
+import dj_database_url
+from dotenv import load_dotenv
 from pathlib import Path
 
+# Loads environemnt variables
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -31,6 +35,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "whitenoise.runserver_nostatic",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,6 +47,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -72,18 +78,26 @@ WSGI_APPLICATION = 'Orbital.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# Needed to get password from file 
+def get_secret(secret_name, default="password"):
+    path = f"/run/secrets/{secret_name}"
+    if os.path.exists(path):
+        with open(path) as f:
+            return f.read().strip()
+    return default
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "Stock_price_db",
-        "USER": "postgres",
-        "PASSWORD": "1",
-        "HOST": "localhost",
-        "PORT": "5432",
-    }
+    'default' : dj_database_url.config(
+        default=os.environ.get("DATABASE_URL"))
+    
+        # Old native way of setting database params
+        # 'ENGINE': 'django.db.backends.postgresql',
+        # 'NAME': os.environ.get('DB_NAME', 'Stock_price_db'),
+        # 'USER': os.environ.get('DB_USER', 'postgres'),
+        # 'PASSWORD': os.environ.get('DB_PASSWORD', 'password'),
+        # 'HOST': os.environ.get('DB_HOST', 'localhost'),
+        # 'PORT': os.environ.get('DB_PORT', '5432'),
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -115,8 +129,18 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Adds cacheing behaviour to the static files
+STORAGES = {
+    # ...
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# For deployment, whitenoise requires the static root to be defined
+STATIC_ROOT = BASE_DIR / "staticfiles"
