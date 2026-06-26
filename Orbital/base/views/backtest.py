@@ -22,6 +22,7 @@ def backtest_graph(request) -> HttpResponse:
     plots the equity curve of the backtest
     '''
     if request.method == "POST":
+        print("Entered backtest_graph")
         data: dict[str: any] = json.loads(request.body)
         # Cleaning data
         # Extra conversion, during debugging short/long window being float causes

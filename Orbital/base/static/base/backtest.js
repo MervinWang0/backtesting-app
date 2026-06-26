@@ -78,7 +78,7 @@ function graph_backtest() {
     }
     cleaned_params["tickers"] = ticker_lst;
     cleaned_params['strategy_name'] = chosen_strategy_id;
-    // alert(`These are the cleaned parameters to be passed ${cleaned_params}`)
+    alert(`These are the cleaned parameters to be passed ${cleaned_params}`)
 
     // Pass data to views function
     fetch("/backtest_graph/", {

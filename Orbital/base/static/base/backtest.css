@@ -20,19 +20,23 @@ body {
   margin: 10px;
 }
 #run_backtest {
-  position: absolute;
+  margin: 10px;
+
+  /* position: absolute;
   top: 8px;
-  left: 320px;
+  left: 320px; */
 }
 
 #view_mcs_btn {
-  position: absolute;
+  margin: 10px;
+  /* position: absolute;
   top: 35px;
-  left: 320px;
+  left: 320px; */
 }
 
 #input_container {
   position: relative;
+  gap:10px;
 }
 
 /* Style input parameter boxes */

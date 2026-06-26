@@ -54,6 +54,9 @@ USER appuser
 # Copy the source code into the container.
 COPY . .
 
+# Used to arrange static files
+RUN python manage.py collectstatic --noinput
+
 # Expose the port that the application listens on.
 EXPOSE 8000
 

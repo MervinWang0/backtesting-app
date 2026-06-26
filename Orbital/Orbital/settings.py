@@ -90,13 +90,16 @@ DATABASES = {
     'default' : dj_database_url.config(
         default=os.environ.get("DATABASE_URL"))
     
+
         # Old native way of setting database params
-        # 'ENGINE': 'django.db.backends.postgresql',
-        # 'NAME': os.environ.get('DB_NAME', 'Stock_price_db'),
-        # 'USER': os.environ.get('DB_USER', 'postgres'),
-        # 'PASSWORD': os.environ.get('DB_PASSWORD', 'password'),
-        # 'HOST': os.environ.get('DB_HOST', 'localhost'),
-        # 'PORT': os.environ.get('DB_PORT', '5432'),
+        # 'default' : {
+        #     'ENGINE': 'django.db.backends.postgresql',
+        #     'NAME': os.environ.get('DB_NAME', 'Stock_price_db'),
+        #     'USER': os.environ.get('DB_USER', 'postgres'),
+        #     'PASSWORD': os.environ.get('DB_PASSWORD', 'password'),
+        #     'HOST': os.environ.get('DB_HOST', 'localhost'),
+        #     'PORT': os.environ.get('DB_PORT', '5432'),
+        # }
 }
 
 # Password validation
