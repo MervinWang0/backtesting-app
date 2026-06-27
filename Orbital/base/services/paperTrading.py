@@ -11,25 +11,26 @@ from django.utils import timezone
 User = get_user_model()
 zero = Decimal("0")
 
-def load_stock_data(self, ticker: str):
+def load_stock_data(ticker: str):
         rows = (StockPriceHistory.objects.filter(stock__ticker=ticker).order_by('-date').first())
         return rows.date, rows.close_price
 
 def calc_cash(type: str, qty : Decimal, entry_price : Decimal, commission: Decimal):
         gross = (qty * entry_price)
         
-        if type == PaperOrder.order.BUY:
+        if type == PaperOrder.Order.BUY:
             cash = -(gross + commission)
         else:
             cash = gross - commission
         
         return gross, cash
 
-def execute_order(user : User, account_id: int, ticker : str, type : str, qty : Decimal):
+def execute_order(user , account_id: int, ticker : str, type : str, qty : Decimal):
+    qty = Decimal(str(qty))
     try: 
         account_ref = PaperAccount.objects.get(id = account_id, user=user)
     except PaperAccount.DoesNotExist as e:
-         raise "paper account not found" from e
+         raise ValueError("paper account not found") from e
     
     stock = Stock.objects.get(ticker = ticker)
 
@@ -52,6 +53,7 @@ def execute_order(user : User, account_id: int, ticker : str, type : str, qty : 
                                     .get(id = order.id))
 
             date, price = load_stock_data(ticker)  
+            price = Decimal(str(price))
 
             position = (PaperPositions.objects.select_for_update()
                         .filter(
@@ -68,7 +70,7 @@ def execute_order(user : User, account_id: int, ticker : str, type : str, qty : 
                     realised_pnl = zero,
                  )
             
-            prev_qty = position.stock_quantityquantity
+            prev_qty = position.stock_quantity
             prev_entry_price = position.avg_cost
 
             position_update = updatePosition(
@@ -90,7 +92,7 @@ def execute_order(user : User, account_id: int, ticker : str, type : str, qty : 
             position.realised_pnl = position.realised_pnl + position_update.realised_pnl
 
             account.save(update_fields=[
-                 "cash",
+                 "cash_balance",
                  "updated_at",
             ])
 
@@ -112,10 +114,11 @@ def execute_order(user : User, account_id: int, ticker : str, type : str, qty : 
                 opened_quantity = position_update.opened_quantity,
                 gross_amount = gross,
                 commission = commission,
-                cash_change = cash
+                realised_pnl = realised_pnl,
+                cash_change = cash,
             )
 
-            final_order.status = PaperOrder.order.FILLED
+            final_order.status = PaperOrder.Status.FILLED
             final_order.filled_at = timezone.now()
             
             final_order.save(

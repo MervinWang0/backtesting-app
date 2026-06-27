@@ -444,7 +444,7 @@ class PaperOrder(models.Model):
     futures = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="futures_order", null=True, blank=True)
 
     order = models.CharField(max_length=10, choices=Order.choices,)
-    order_type = models.CharField(max_length=10, choices = OrderType.choices , default = OrderType.MARKET,)
+    type = models.CharField(max_length=10, choices = OrderType.choices , default = OrderType.MARKET,)
     status = models.CharField(max_length=10, choices = Status.choices, default = Status.PENDING, db_index = True,)
     quantity = models.DecimalField(max_digits=20, decimal_places=4)
     
@@ -481,7 +481,7 @@ class PaperTrade(models.Model):
         ordering = ["-executed_at"]
     
     def __str__(self):
-        return f"{self.order.side} {self.quantity} fulfilled"
+        return f"{self.order.type} {self.quantity} fulfilled"
 
 
 

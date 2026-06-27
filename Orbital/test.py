@@ -73,9 +73,8 @@ def run_backtest(start_date, end_date):
     )
 
     print("\nRunning backtest...")
-    result = backtest.run()
+    result, benchmark = backtest.run()
     print("Backtest finished.")
-
     return result
 
 

@@ -100,10 +100,10 @@ class Command(BaseCommand):
                         pair = forex_pair,
                         timestamp = candle_time,
                         defaults = {
-                            "open": row["Open"],
-                            "high": row["High"],
-                            "low": row["Low"],
-                            "close": row["Close"],
+                            "open_price": row["Open"],
+                            "high_price": row["High"],
+                            "low_price": row["Low"],
+                            "close_price": row["Close"],
                             "volume": row["Volume"] if row["Volume"] else None,
                         },
                     )
@@ -145,4 +145,3 @@ class Command(BaseCommand):
         else:
             ts = ts.tz_convert("UTC")
         return ts.to_pydatetime()
-    

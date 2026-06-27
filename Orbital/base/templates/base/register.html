@@ -1,0 +1,63 @@
+{% extends 'base/base.html' %}
+{% block title %}
+    Register
+{% endblock %}
+
+{% block content %}
+    <section class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>Create an account</h1>
+            </div>
+
+            <form method="POST" class="auth-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}">
+                        Username
+                    </label>
+
+                    {{ form.username }}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.password1.id_for_label }}">
+                        Password
+                    </label>
+
+                    {{ form.password1 }}
+
+                    {% for error in form.password1.errors %}
+                    <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.password2.id_for_label }}">
+                        Confirm Password
+                    </label>
+
+                    {{ form.password2 }}
+                    
+                    {% for error in form.password2.errors %}
+                    <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="primary-button">
+                    Create account
+                </button>
+            </form>
+
+            <div class="auth-login">
+                <p>
+                    Already have an account?
+
+                    <a href="{% url 'login' %}">
+                        Log in
+                    </a>
+                </p>
+            </div>
+        </div>
+    </section>
+{% endblock %}

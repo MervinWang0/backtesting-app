@@ -1,0 +1,53 @@
+{% extends "base/base.html" %}
+
+{% block title %}
+    Log In
+{% endblock %}
+
+{% block content %}
+    <section class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <p class="auth-eyebrow"> Welcome </p>
+
+                <h1>Log in</h1>
+
+            </div>
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="form-alert">
+                    </div>
+                {% endif %}
+                <div class="login-form">
+                    <label for="{{ form.username.id_for_label }}">
+                        Username
+                    </label>
+                    {{ form.username }}
+                </div>
+
+                <div class="login-form">
+                    <label for="{{ form.password.id_for_label }}">
+                        Password
+                    </label>
+
+                    {{ form.password }}
+                </div>
+
+                <button type="submit" class="primary-button">
+                    Log in
+                </button>
+            </form>
+
+            <div class="auth-register">
+                <p>
+                    Don't have an account?
+                    <a href="{% url 'register' %}">
+                        Create one
+                    </a>
+                </p>
+            </div>
+        </div>
+    </section>
+{% endblock %}

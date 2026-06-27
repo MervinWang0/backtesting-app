@@ -273,11 +273,13 @@ class Portfolio:
     def update_cash(self, fill: FillEvent) -> None:
         fill_cost = fill.quantity * fill.fill_cost
         if fill.direction == "BUY":
-            self.current_capital -= fill_cost + fill.commission
+            cash_chng = -(fill_cost + fill.commission)
         elif fill.direction == "SELL":
-            self.current_capital += fill_cost - fill.commission
+            cash_chng = (fill_cost - fill.commission)
         else:
             raise ValueError(f"Invalid fill direction {fill.direction} in cash update. Expected 'BUY' or 'SELL'.")
+        self.cash_reserves[self.account_currency] += cash_chng
+        self.current_capital = self.cash_reserves[self.account_currency]
         self.total_commission += fill.commission
     
     def end_equity(self):
