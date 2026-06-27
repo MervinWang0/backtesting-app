@@ -4,7 +4,7 @@ from queue import Queue
 import plotly.express as px
 import pandas as pd
 
-from base.engine.execution import ExecutionLoader
+from base.engine.execution import executionLoader
 from base.engine.portfolio import Portfolio
 from base.engine.data_loader import DataLoader, DatabaseDataLoader
 from base.engine.strategy import MovingAverageCross
@@ -26,7 +26,19 @@ class BacktestResult:
 
     def get_end_equity(self) -> float:
         '''
-        Returns end equity used to update model
+        Returns end equity used to update mode
+document.querySelectorAll(".link-to-stock").forEach((row) => {
+    row.addEventListener("click", () => {
+        window.location.href = row.dataset.href;
+    });
+
+    row.addEventListener("keydown", (event) => {
+        if (event.key == "Enter" || event.key == " ") {
+            event.preventDefault();
+            window.location.href = row.dataset.href;
+        }
+    });
+});
         '''
         return self.equity_records['equity'].iloc[-1]
 
@@ -83,7 +95,7 @@ class Backtest:
                                    run_name="test", strategy_name="Moving Average Cross",
                                    start_date=self.start_date, end_date=self.end_date,
                                    initial_capital=self.initial_capital, quantity=5)
-        self.execute = ExecutionLoader(self.events, self.data_loader, commission=self.commission,
+        self.execute = executionLoader(self.events, self.data_loader, commission=self.commission,
                                        slippage=self.slippage)
         self.strategy = MovingAverageCross(self.data_loader, self.events, self.tickers,
                                            self.strategy_params["short_window"],
@@ -134,6 +146,7 @@ class Backtest:
             self.data_loader.next_day()
             self.execute_events()
             self.portfolio.update_equity_record()
+            self.portfolio.update_benchmark_record()
         result = BacktestResult(equity_records=self.portfolio.get_equity_records(),
                               fill_records=self.portfolio.get_fill_records(),
                               risk_free_rate=self.risk_free_rate)
@@ -176,40 +189,5 @@ class Backtest:
             f"This is strategy params = {self.strategy_params}"
             f"This is commission = {self.commission}"
             f"This is slippage = {self.slippage}")
-
-if __name__ == "__main__":
-    data = {'short_window': int(5.0),
-            'long_window': int(10.0),
-            'asset_type': 'STOCK',
-            'strength': 1.0,
-            'slippage': 0.0,
-            'initial_capital': 100000.0,
-            'commission': 0.0,
-            'start_date': datetime.fromisoformat("2024-01-01").date(),
-            'end_date': datetime.fromisoformat("2025-01-01").date(),
-            'tickers': ['AAPL'],
-            'strategy_name': 'moving_average_crossover'}
-    start_date = datetime.fromisoformat("2024-01-01").date()
-    end_date = datetime.fromisoformat("2025-01-01").date()
-    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
-                             end_date, "STOCK")
-    backtest1 = Backtest(
-                        events=data_loader.events,
-                        data_loader=data_loader,
-                        **data
-                        )
-    backtest2 = Backtest(events=data_loader.events,
-                        tickers=['AAPL'],
-                        start_date=start_date,
-                        end_date=end_date,
-                        strategy_name="moving_average_crossover",
-                        data_loader=data_loader,
-                        short_window=10,
-                        long_window=15
-                        )
-    # print(backtest1)
-    # print(backtest2)
-    btr = backtest1.run()
-    btr.get_equity_graph().show()
 
 

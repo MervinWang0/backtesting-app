@@ -1,6 +1,5 @@
 from base.engine.events import SignalEvent
 from base.engine.data_loader import DataLoader, Bar
-from base.engine.execution import ExecutionLoader
 from queue import Queue
 
 

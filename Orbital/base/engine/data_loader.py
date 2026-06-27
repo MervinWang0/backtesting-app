@@ -11,11 +11,13 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Orbital.settings")
 django.setup()
 
 from base.engine.events import MarketEvent
-from base.models import StockPriceHistory, FuturesPriceHistory
+from base.models import (StockPriceHistory, FuturesPriceHistory, ForexPriceHistory
+                        ,ContinuousFuturesPriceHistory)
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from queue import Queue
 from abc import ABC, abstractmethod
+from typing import Optional
 
 
 #Dataclass to represent a single bar of data, each data contains
@@ -34,21 +36,9 @@ class Bar:
     volume: int
     asset_type: str
 
-    @staticmethod
-    def to_bar(stock_price_history):
-        '''
-        Converts a stock price history instance to a Bar
-        '''
-        return Bar(
-            symbol= stock_price_history.stock.ticker,
-            date = stock_price_history.date,
-            open = stock_price_history.open_price,
-            high = stock_price_history.high_price,
-            low = stock_price_history.low_price,
-            volume = stock_price_history.volume,
-            close = stock_price_history.close_price,
-            asset_type = "STOCK"
-        )
+    base_currency: Optional[str] = None
+    quote_currency: Optional[str] = None
+
     def __str__(self):
         return (f"open = {self.open},\nhigh = {self.high},\nlow = {self.low},\n" +
                 f"volume = {self.volume},\n close = {self.close}")
@@ -107,6 +97,10 @@ class DataLoader(ABC):
         self.continue_bt = True
 
         self.load_data()
+        
+    @staticmethod
+    def date_to_datetime(date: datetime.date) -> datetime.datetime:
+        return datetime.combine(date, datetime.time.min)
 
     @abstractmethod
     def load_data(self) -> None:
@@ -328,6 +322,8 @@ class DatabaseDataLoader(DataLoader):
                 main_bar = self.load_stock_data(ticker)
             elif self.asset_type == "FUTURES":
                 main_bar = self.load_futures_data(ticker)
+            elif self.asset_type == "FOREX":
+                main_bar = self.load_forex_date(ticker)
             else:
                 raise ValueError(f"Unsupported asset type: {self.asset_type}")
             
@@ -344,6 +340,53 @@ class DatabaseDataLoader(DataLoader):
                 date_times_visited.add(bar.date)
 
         self.timeline = sorted(date_times_visited)
+
+    def load_forex_date(self, forex_pair_code: str) -> list[Bar]:
+        bars: list[Bar] = []
+        rows = (ForexPriceHistory.objects.filter(pair__ticker =forex_pair_code,
+                                                 timestamp__range=(self.start_date, self.end_date))
+                .select_related("pair")
+                .order_by("timestamp")
+                .values("pair__ticker", "pair__base_currency",
+                        "pair__quote_currency", "timestamp",
+                        "open_price", "high_price", "low_price",
+                        "close_price", "volume"))
+
+        for record in rows:
+            bars_date = self.date_to_datetime(record["timestamp"])
+            bars.append(Bar(
+                symbol = record["pair__ticker"],
+                date = bars_date,
+                open = float(record["open_price"]),
+                high = float(record["high_price"]),
+                low = float(record["low_price"]),
+                close = float(record["close_price"]),
+                volume = record["volume"],
+                asset_type = "FOREX",
+                base_currency = record["pair__base_currency"],
+                quote_currency = record["pair__quote_currency"],
+            ))
+        return bars
+
+    def load_futures_data(self, contract_code: str) -> list[Bar]:
+        futures_history = (ContinuousFuturesPriceHistory.objects.filter(series__contract_symbol=contract_code,
+                                                                        series__contract_index = 1,
+                                                                        series__date__range=(self.start_date, self.end_date))
+                                                            .selected_related("series", "contract_symbol")
+                                                            .order_by("date"))
+        bars = []
+        for record in futures_history:
+            bars.append(Bar(
+                symbol = record.contract.contract_code,
+                date = record.date,
+                open = float(record.open_price),
+                high = float(record.High_price),
+                low = float(record.low_price),
+                close = float(record.close_price),
+                volume = record.volume,
+                asset_type = "FUTURES"
+            ))
+        return bars
 
 if __name__ == "__main__":
     start_date = datetime.fromisoformat("2021-05-24").date()

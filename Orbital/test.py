@@ -63,10 +63,8 @@ def run_backtest(start_date, end_date):
         strength=1.0,
         slippage=0.0,
         initial_capital=100000.0,
-        strategy_params={
             "short_window": 20,
-            "long_window": 100,
-        },
+            "long_window": 100,,
         data_loader=DatabaseDataLoader(events=Queue(),
                                                     tickers=["AAPL"],
                                                     start_date=start_date,
