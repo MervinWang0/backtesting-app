@@ -274,22 +274,22 @@ class Portfolio:
                 "new_quantity": new_quantity,
                 "realised_pnl_day": realised_pnl_day,
             }
-        print(record)
+        # print(record)
         self.fill_record.append(record)
-        stock = Stock.objects.filter(ticker = fill.ticker).first()
+        # stock = Stock.objects.filter(ticker = fill.ticker).first()
 
-        PortfolioFillRecord.objects.create(
-            backtest_run = self.backtest_run,
-            date = fill.datetime,
-            ticker = fill.ticker,
-            quantity = to_decimal(fill.quantity),
-            fill_price = to_decimal(fill.fill_cost),
-            direction = fill.direction,
-            commission = to_decimal(self.commission),
-            previous_quantity = to_decimal(prev_quantity),
-            new_quantity = to_decimal(new_quantity),
-            realised_pnl_day = to_decimal(realised_pnl_day),
-        )
+        # PortfolioFillRecord.objects.create(
+        #     backtest_run = self.backtest_run,
+        #     date = fill.datetime,
+        #     ticker = fill.ticker,
+        #     quantity = to_decimal(fill.quantity),
+        #     fill_price = to_decimal(fill.fill_cost),
+        #     direction = fill.direction,
+        #     commission = to_decimal(self.commission),
+        #     previous_quantity = to_decimal(prev_quantity),
+        #     new_quantity = to_decimal(new_quantity),
+        #     realised_pnl_day = to_decimal(realised_pnl_day),
+        # )
 
 
     #Updates equity record for each day, should be called whenever .next_day() is called
@@ -326,42 +326,42 @@ class Portfolio:
 
         self.equity_record.append(record)
 
-        PortfolioEquityRecord.objects.update_or_create(
-            backtest_run = self.backtest_run,
-            date = date,
-            defaults = {
-                "cash": to_decimal(self.current_capital),  
-                "holdings_value": to_decimal(holdings_value),
-                "equity": to_decimal(total_equity),
-                "realised_pnl": to_decimal(self.realised_pnl),
-                "unrealised_pnl": to_decimal(unrealised_pnl),
-                "total_commission": to_decimal(self.total_commission),
-                "gross_exposure": to_decimal(gross_exposure),
-                "net_exposure": to_decimal(net_exposure),
-                "gross_exposure_leverage": to_decimal(gross_exposure_leverage),
-            }
-        )
+        # PortfolioEquityRecord.objects.update_or_create(
+        #     backtest_run = self.backtest_run,
+        #     date = date,
+        #     defaults = {
+        #         "cash": to_decimal(self.current_capital),  
+        #         "holdings_value": to_decimal(holdings_value),
+        #         "equity": to_decimal(total_equity),
+        #         "realised_pnl": to_decimal(self.realised_pnl),
+        #         "unrealised_pnl": to_decimal(unrealised_pnl),
+        #         "total_commission": to_decimal(self.total_commission),
+        #         "gross_exposure": to_decimal(gross_exposure),
+        #         "net_exposure": to_decimal(net_exposure),
+        #         "gross_exposure_leverage": to_decimal(gross_exposure_leverage),
+        #     }
+        # )
 
-        for ticker, quantity in self.holdings.items():
-            market_price = self.get_latest_price(ticker)
-            market_value = market_price * quantity
-            unrealised_pnl = self.calculate_unrealised_pnl_ticker(ticker)
+        # for ticker, quantity in self.holdings.items():
+        #     market_price = self.get_latest_price(ticker)
+        #     market_value = market_price * quantity
+        #     unrealised_pnl = self.calculate_unrealised_pnl_ticker(ticker)
 
-            stock = Stock.objects.filter(ticker=ticker).first()
+        #     stock = Stock.objects.filter(ticker=ticker).first()
 
-            PortfolioPositionRecord.objects.update_or_create(
-                backtest_run = self.backtest_run,
-                date = date,
-                ticker = ticker,
-                defaults = {
-                    "stock": stock,
-                    "quantity": to_decimal(quantity),
-                    "avg_price": to_decimal(self.avg_price[ticker]),
-                    "market_price": to_decimal(market_price),
-                    "market_value": to_decimal(market_value),
-                    "unrealised_pnl": to_decimal(unrealised_pnl),
-                }
-            )
+        #     PortfolioPositionRecord.objects.update_or_create(
+        #         backtest_run = self.backtest_run,
+        #         date = date,
+        #         ticker = ticker,
+        #         defaults = {
+        #             "stock": stock,
+        #             "quantity": to_decimal(quantity),
+        #             "avg_price": to_decimal(self.avg_price[ticker]),
+        #             "market_price": to_decimal(market_price),
+        #             "market_value": to_decimal(market_value),
+        #             "unrealised_pnl": to_decimal(unrealised_pnl),
+        #         }
+        #     )
 
     def get_fill_records(self):
         return self.fill_record
