@@ -11,12 +11,13 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Orbital.settings")
 django.setup()
 
 from base.engine.events import MarketEvent
-from base.models import StockPriceHistory, FuturesPriceHistory
+from base.models import (StockPriceHistory, FuturesPriceHistory,
+                         ForexPriceHistory, ContinuousFuturesPriceHistory)
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from queue import Queue
 from abc import ABC, abstractmethod
-
+from typing import Optional
 
 #Dataclass to represent a single bar of data, each data contains
 #  the ticker, date, open, high, low, close, volume and asset type
@@ -33,6 +34,10 @@ class Bar:
     close: float
     volume: int
     asset_type: str
+    
+    # For Forex
+    base_currency: Optional[str] = None
+    quote_currency: Optional[str] = None
 
     @staticmethod
     def to_bar(stock_price_history):
@@ -114,24 +119,52 @@ class DataLoader(ABC):
         initializes the variables necessary for the data loader to operate
         '''
 
-    # def load_futures_data(self, contract_code: str) -> list[Bar]:
-    #     futures_history = FuturesPriceHistory.objects.filter
-    # (contracts__contract_code=contract_code,
-    #  date__range=(self.start_date, self.end_date)).order_by("date")
-    #     bars = []
-    #     for record in futures_history:
-    #         bars.append(Bar(
-    #             Symbol = record.contracts.contract_code,
-    #             Date = record.date,
-    #             Open = float(record.open_price),
-    #             High = float(record.High_price),
-    #             Low = float(record.low_price),
-    #             Close = float(record.close_price),
-    #             Volume = record.volume,
-    #             Asset_type = "Futures"
-    #         ))
-    #     return bars
+    @staticmethod
+    def date_to_datetime(date: datetime.date) -> datetime.datetime:
+        return datetime.combine(date, datetime.min.time())
 
+    def load_forex_date(self, forex_pair_code: str) -> list[Bar]:
+        bars: list[Bar] = []
+        rows = (ForexPriceHistory.objects.filter(pair__ticker =forex_pair_code, timestamp__range=(self.start_date, self.end_date))
+                .select_related("pair")
+                .order_by("timestamp")
+                .values("pair__ticker", "pair__base_currency","pair__quote_currency", "timestamp", "open_price", "high_price", "low_price", "close_price", "volume"))
+        
+        for record in rows:
+            bars_date = self.date_to_datetime(record["timestamp"])
+            bars.append(Bar(
+                symbol = record["pair__ticker"],
+                date = bars_date,
+                open = float(record["open_price"]),
+                high = float(record["high_price"]),
+                low = float(record["low_price"]),
+                close = float(record["close_price"]),
+                volume = record["volume"],
+                asset_type = "FOREX",
+                base_currency = record["pair__base_currency"],
+                quote_currency = record["pair__quote_currency"],
+            ))
+        return bars
+
+    def load_futures_data(self, contract_code: str) -> list[Bar]:
+        futures_history = (ContinuousFuturesPriceHistory.objects.filter(series__contract_symbol=contract_code,
+                                                                        series__contract_index = 1,
+                                                                        series__date__range=(self.start_date, self.end_date),)
+                                                            .selected_related("series", "contract_symbol")
+                                                            .order_by("date"))
+        bars = []
+        for record in futures_history:
+            bars.append(Bar(
+                symbol = record.contract.contract_code,
+                date = record.date,
+                open = float(record.open_price),
+                high = float(record.High_price),
+                low = float(record.low_price),
+                close = float(record.close_price),
+                volume = record.volume,
+                asset_type = "FUTURES"
+            ))
+        return bars
 
     def next_day(self) -> None:
         '''
