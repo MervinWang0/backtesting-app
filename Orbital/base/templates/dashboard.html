@@ -1,11 +1,12 @@
-
-
+{% extends "base/base.html" %}
+{% load static %}
 {% block title %}
     U.S. Stock Market
 {% endblock %}
 
 {% block content %}
-
+<link rel = "stylesheet" href = "{% static 'base/css/dashboard.css' %}">
+<script src = "{% static 'base/js/dashboard.js' %}" defer></script>
 <section class = "market-hero">
     <div class =  "page-container market-hero__inner">
         <div>
@@ -18,7 +19,7 @@
             </p>
         </div>
         <div class = "market-status">
-            <span class = "market_status__dot"></span>
+            <span class = "market-status__dot"></span>
 
             <span>
                 Latest close price:
@@ -32,7 +33,21 @@
     </div>
 </section>
 
-<section class = "page-container dashboard-section">
+<section class = "portfolio-summary-section">
+    <div class = "section-heading">
+        <div>
+            <h2>Margin Account</h2>
+        </div>
+        <div class = "total-assests">
+            <h3>Total Assets . </h3>
+        </div>
+        <div class = "todays-pnl">
+            Today's PnL
+        </div>
+    </div>
+</section>
+
+<section class = "page-container heatmap-section">
     <div class = "section-heading">
         <div>
             <p class = "eyebrow">Heat map</p>
@@ -46,23 +61,23 @@
                     <thead>
                         <tr>
                             <th>Rank</th>
-                            <stock>Stock</stock>
+                            <th>Stock</th>
                             <th>Volume traded</th>
                         </tr>
                     </thead>
-                    <body>
+                    <tbody>
                         {% for stock in most_active_traded %}
                             <tr>
                                 <td>{{ forloop.counter }}</td>
                                 <td>{{ stock.ticker }}</td>
-                                <td>{{ stock.volume }}</td>
+                                <td>{{ stock.latest_volume }}</td>
                             </tr>
                         {% empty %}
                             <tr>
                                 <td colspan = "3">No price data available</td>
                             </tr>
                         {% endfor %}
-                    </body>
+                    </tbody>
                 </table>
             </div>
             <div class = "activity-value">
@@ -71,7 +86,7 @@
                     <thead>
                         <tr>
                             <th>Rank</th>
-                            <stock>Stock</stock>
+                            <th>Stock</th>
                             <th>Volume traded</th>
                         </tr>
                     </thead>
@@ -80,7 +95,7 @@
                             <tr>
                                 <td>{{ forloop.counter }}</td>
                                 <td>{{ stock.ticker }}</td>
-                                <td>{{ stock.volume }}</td>
+                                <td>{{ stock.latest_volume }}</td>
                             </tr>
                         {% empty %}
                             <tr>
@@ -94,7 +109,7 @@
     </div>
 </section>
 
-<section class = "stock-search">
+<section class = "stock-search-section">
     <div class = "page-container">
         <div class = "section-heading">
             <div>
@@ -103,7 +118,7 @@
             </div>
         </div>
 
-        <form method = "get" class = "stock-search">
+        <form method = "get" class = "stock-search-form">
             <div class = "stock-search__primary">
                 <label for= "stock-search-input" class = "symbol-only">
                     Search by ticker
@@ -149,17 +164,22 @@
                         <th scope="col">Company</th>
                         <th scope="col" class="price-column">Price</th>
                         <th scope="col" class="change-column">Change</th>
-                        <th scope="col" class="percantage-column">Percentage Change</th>
+                        <th scope="col" class="percentage-column">Percentage Change</th>
                         <th scope="col" class="volume-column">Volume</th>
                     </tr>
                 </thead>
 
                 <tbody>
                     {% for stock in page %}
-                    <tr>
+                    <tr
+                        class = "link-to-stock"
+                        data-href = "{% url 'stock' %}?symbol={{ stock.ticker|urlencode }}"
+                        tabindex="0"
+                        role="link"
+                        aria-label="view details for {{ stock.ticker }}">
                         <td>
-                            <div class = "stock-symbol">
-                                {{ stock.symbol }}
+                            <div class = "stock-ticker">
+                                {{ stock.ticker }}
                             </div>
                         </td>
 
@@ -243,7 +263,6 @@
                         >
                         Next
                     </a>
-                </span>
                 {% else %}
                     <span class="pagination__button pagination__button--diabled">
                         Next

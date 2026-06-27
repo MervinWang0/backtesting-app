@@ -1,0 +1,38 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<script src = "{% static 'base/js/stock.js' %}" defer></script>
+<div class = "stock-details">
+    <h1>
+        {{ stock.ticker }} - {{ stock.name }}
+    </h1>
+
+    {% if latest_price %}
+    <table class="stock-detail-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Open</th>
+                <th>High</th>
+                <th>Low</th>
+                <th>Close</th>
+                <th>Volume</th>
+            </tr>
+        </thead>
+
+        <body>
+            <tr>
+                <td>{{ latest_price.date }}</td>
+                <td>{{ latest_price.open_price }}</td>
+                <td>{{ latest_price.high_price }}</td>
+                <td>{{ latest_price.low_price }}</td>
+                <td>{{ latest_price.close_price }}</td>
+                <td>{{ latest_price.volume }}</td>
+            </tr>
+        </body>
+    </table>
+    {% else %}
+        <p>No price data available for {{ stock.ticker }}</p>
+    {% endif %}
+</div>
+{% endblock %}
