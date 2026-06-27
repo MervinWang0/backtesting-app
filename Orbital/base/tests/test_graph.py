@@ -10,20 +10,17 @@ if __name__ == "__main__":
     data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
                              end_date, "STOCK")
     backtest = Backtest(
-                        events=Queue(),
+                        events=data_loader.events,
                         tickers=["AAPL"],
                         start_date=start_date,
                         end_date=end_date,
                         asset_type="STOCK",
                         strategy_name="MovingAverageCross",
-                        short_window= 5,
-                        long_window= 10,
-                        data_loader=DatabaseDataLoader(events=Queue(),
-                                                    tickers=["AAPL"],
-                                                    start_date=start_date,
-                                                    end_date=end_date,
-                                                    asset_type="STOCK"))
-    backtest.run()
+                        short_window= 10,
+                        long_window= 100,
+                        data_loader=data_loader
+                        )
+    test = backtest.run()
     stock_data = backtest.data_loader.get_past_bars("AAPL",
                 len(backtest.data_loader.get_timeline()))
-    graph.get_ohlv_graph(stock_data).show()
+    test.get_equity_graph().show()

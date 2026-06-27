@@ -274,6 +274,7 @@ class Portfolio:
                 "new_quantity": new_quantity,
                 "realised_pnl_day": realised_pnl_day,
             }
+        print(record)
         self.fill_record.append(record)
         stock = Stock.objects.filter(ticker = fill.ticker).first()
 
