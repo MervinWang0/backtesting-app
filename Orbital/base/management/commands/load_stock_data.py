@@ -52,7 +52,7 @@ class Command(BaseCommand):
                 return
         
         for symbol,name in stocks:
-            stock, created = Stock.objects.get_or_create(ticker =symbol,defaults={'name':name})
+            stock, created = Stock.objects.get_or_create(ticker =symbol,defaults ={'name':name})
             if created:
                 print(f'created new stock: {symbol} - {name}')
             try:
