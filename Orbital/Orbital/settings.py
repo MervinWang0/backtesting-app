@@ -72,6 +72,8 @@ TEMPLATES = [
         },
     },
 ]
+# Necessary to prevent 403 error of CSRF token being sent but rejected
+CSRF_TRUSTED_ORIGINS = ["https://backtesting-app-production.up.railway.app"]
 
 WSGI_APPLICATION = 'Orbital.wsgi.application'
 
