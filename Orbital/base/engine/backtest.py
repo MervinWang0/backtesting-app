@@ -143,10 +143,12 @@ class Backtest:
         Function that executes the backtest.
         '''
         while self.data_loader.continue_bt:
+            print("A Backtest day is executed")
             self.data_loader.next_day()
+            # print(f"This is the events {list(self.events)}")
             self.execute_events()
             self.portfolio.update_equity_record()
-            self.portfolio.update_benchmark_record()
+            # self.portfolio.update_benchmark_record()
         result = BacktestResult(equity_records=self.portfolio.get_equity_records(),
                               fill_records=self.portfolio.get_fill_records(),
                               risk_free_rate=self.risk_free_rate)
@@ -160,20 +162,26 @@ class Backtest:
         Helper function for run, represents the handling of each bar,
         from signal generation to orders to fill update
         '''
+        print("executes an event")
         while not self.events.empty():
             event = self.events.get()
+            print(f"event is {event}")
             if event is None:
                 continue
             if event.type == "MARKET":
+                print("executed a market event")
                 for ticker in self.tickers:
                     signal_event = self.strategy.generate_signal(ticker)
                     self.events.put(signal_event)
             elif event.type == "SIGNAL":
+                print("executed a SIGNAL event")
                 order_event = self.portfolio.generate_order(event)
                 self.events.put(order_event)
             elif event.type == "ORDER":
                 self.execute.execute(event)
+                print("executed a ORDER event")
             elif event.type == "FILL":
+                print("executed a FILL event")
                 self.portfolio.update_fill(event)
 
     def __str__(self):

@@ -8,9 +8,9 @@ from io import StringIO
 
 
 class Command(BaseCommand):
-    
+
     help = 'Loads historical data for a list of stocks through yfinance'
-    
+
     def add_arguments(self, parser):
         parser.add_argument(
             '--symbol',
@@ -31,6 +31,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        print("Starts stock download")
         symbol = options.get('symbol')
         period = options.get('period')
         interval = options.get('interval')
@@ -38,6 +39,7 @@ class Command(BaseCommand):
         stocks = [] 
         
         if symbol:
+            print("Enters the append stock")
             stocks.append((symbol.upper(),symbol.upper()))
         else:
             url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
@@ -52,7 +54,9 @@ class Command(BaseCommand):
                 return
         
         for symbol,name in stocks:
+            print(f"Each iteration symbol is {symbol}, name is {name}")
             stock, created = Stock.objects.get_or_create(ticker =symbol,defaults ={'name':name})
+            print(f"created a stock={created}")
             if created:
                 print(f'created new stock: {symbol} - {name}')
             try:

@@ -465,30 +465,30 @@ class Portfolio:
                 },
             )
 
-
-    
-    def update_benchmark_record(self) -> None:
-        date = self.data_loader.get_current_datetime()
-        benchmark_price = (StockPriceHistory.objects.filter(stock__ticker=self.benchmark_ticker,
-                                                            date__lte=date).order_by("-date").first()).close
-        if benchmark_price is None:
-            raise ValueError(f"No price data available for benchmark ticker {self.benchmark_ticker} on date {date}.")
-        if self.benchmark_quantity is None:
-            self.benchmark_initial_price = benchmark_price
-            self.benchmark_quantity = to_decimal(self.initial_capital) / to_decimal(self.benchmark_initial_price)
-        benchmark_unrealised_pnl = self.benchmark_quantity * (benchmark_price - self.benchmark_initial_price)
-        market_value = self.benchmark_quantity * benchmark_price
-        BenchmarkRecord.objects.update_or_create(
-            backtest_run = self.backtest_run,
-            date = date,
-            defaults = {
-                "ticker": self.benchmark_ticker,
-                "close_price": to_decimal(benchmark_price),
-                "quantity": to_decimal(self.benchmark_quantity),
-                "market_value": to_decimal(market_value),
-                "unrealised_pnl": to_decimal(benchmark_unrealised_pnl),
-            }
-        )
+    # def update_benchmark_record(self) -> None:
+        
+    #     date = self.data_loader.get_current_datetime()
+    #     print()
+    #     benchmark_price = (StockPriceHistory.objects.filter(stock__ticker=self.benchmark_ticker,
+    #                                                         date__lte=date).order_by("-date").first()).close_price
+    #     if benchmark_price is None:
+    #         raise ValueError(f"No price data available for benchmark ticker {self.benchmark_ticker} on date {date}.")
+    #     if self.benchmark_quantity is None:
+    #         self.benchmark_initial_price = benchmark_price
+    #         self.benchmark_quantity = to_decimal(self.initial_capital) / to_decimal(self.benchmark_initial_price)
+    #     benchmark_unrealised_pnl = self.benchmark_quantity * (benchmark_price - self.benchmark_initial_price)
+    #     market_value = self.benchmark_quantity * benchmark_price
+    #     BenchmarkRecord.objects.update_or_create(
+    #         backtest_run = self.backtest_run,
+    #         date = date,
+    #         defaults = {
+    #             "ticker": self.benchmark_ticker,
+    #             "close_price": to_decimal(benchmark_price),
+    #             "quantity": to_decimal(self.benchmark_quantity),
+    #             "market_value": to_decimal(market_value),
+    #             "unrealised_pnl": to_decimal(benchmark_unrealised_pnl),
+    #         }
+    #     )
         #print(f"Updated benchmark record for {self.benchmark_ticker} on
         # {date}: price {benchmark_price}, quantity {self.benchmark_quantity},
         # market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")

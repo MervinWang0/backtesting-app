@@ -1,11 +1,6 @@
-from django.db import models
-# from django.contrib.auth.models import User
 from django.conf import settings
 from decimal import Decimal
 from django.db import models
-# from django.contrib.auth.models import User
-from django.conf import settings
-from decimal import Decimal
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.translation import gettext_lazy as _
 
@@ -243,6 +238,9 @@ class ForexPriceHistory(models.Model):
 #This is to store results of each backtest
 #Backtest contains final result of a backtest run, mainly storing performance metrics
 
+#This is to store results of each backtest
+#Backtest contains final result of a backtest run, mainly storing performance metrics
+
 class BacktestRun(TimeStampedModel): 
     class AssetType(models.TextChoices):
         STOCK = "STOCK", "Stock"
@@ -301,6 +299,7 @@ class BacktestRun(TimeStampedModel):
 
     def __str__(self):
         return f"BacktestRun {self.run_name} using {self.strategy_name}"
+
 
 
 class PortfolioEquityRecord(TimeStampedModel):
