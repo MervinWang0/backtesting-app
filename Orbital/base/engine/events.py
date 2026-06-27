@@ -15,6 +15,10 @@ class DirectionType(models.TextChoices):
     BUY = "BUY", "Buy"
     SELL = "SELL", "Sell"
 
+class AssetType(models.TextChoices):
+    STOCK = "STOCK", "Stock"
+    FUTURES = "FUTURES", "Futures"
+    FOREX = "FOREX", "Forex"
 
 #dataclass to track whenever a new bar is generated
 @dataclass

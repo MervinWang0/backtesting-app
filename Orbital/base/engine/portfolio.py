@@ -3,9 +3,9 @@ from datetime import datetime
 from decimal import Decimal
 
 from base.engine.data_loader import DataLoader
-from base.engine.events import SignalEvent, OrderEvent, FillEvent
+from base.engine.events import SignalEvent, OrderEvent, FillEvent, AssetType
 from base.models import (BacktestRun, PortfolioEquityRecord,
-PortfolioPositionRecord, PortfolioFillRecord, Stock)
+PortfolioPositionRecord, PortfolioFillRecord, Stock, BenchmarkRecord, StockPriceHistory)
 
 def to_decimal(val) -> Decimal:
     '''
@@ -17,18 +17,24 @@ def to_decimal(val) -> Decimal:
 class Portfolio:
     def __init__(self, data_loader: DataLoader, events: Queue, 
                  run_name: str, strategy_name: str, start_date: datetime, end_date: datetime,
-                 initial_capital: float =  100000.0, quantity =  5 ):#, User = None):
+                 btr_model: BacktestRun, initial_capital: float =  100000.0, quantity =  5,):#, User = None):
         self.data_loader = data_loader
         self.events = events
         self.initial_capital = initial_capital
         self.current_capital = initial_capital
-
+        self.account_currency = "USD"
+        self.cash_reserves: dict[str, float] = {
+            self.account_currency: initial_capital
+        }
         self.fixed_quantity = quantity
 
         self.holdings : dict[str, float] = {
             ticker: 0 for ticker in self.data_loader.tickers
         }
 
+        self.asset_type_by_ticker :dict[str, AssetType] = {
+            ticker : getattr(self.data_loader, "asset_type", AssetType.STOCK) for ticker in self.data_loader.tickers
+        }
         self.commission = 0.0
         self.total_commission = 0.0
 
@@ -44,24 +50,79 @@ class Portfolio:
         #Stores portfolio state for each day
         self.equity_record: list[dict] = []
 
+        #Stores benchmark record for each day
+        self.benchmark_ticker = "VOO"
+        self.benchmark_quantity = None
+        self.benchmark_initial_price = 0.0
+        self.benchmark_record: list[dict] = []
+        
+        # Adds backtest run model instance as attribute
+        self.btr_model = btr_model
+
         #creates database for this backtest run when portfolio is intialised
-        self.backtest_run = BacktestRun.objects.create(
-            #user = User,
-            run_name = run_name,
-            strategy_name= strategy_name,
-            start_date = start_date,
-            end_date = end_date,
-            initial_capital = to_decimal(self.initial_capital),
-            end_equity = to_decimal(self.initial_capital),
-            fixed_quantity = self.fixed_quantity,
-            tickers = list(self.data_loader.tickers),
-        )
+        #  I did this creation in backtest
+        # self.backtest_run = BacktestRun.objects.create(
+        #     #user = User,
+        #     run_name = run_name,
+        #     strategy_name= strategy_name,
+        #     start_date = start_date,
+        #     end_date = end_date,
+        #     initial_capital = to_decimal(self.initial_capital),
+        #     end_equity = to_decimal(self.initial_capital),
+        #     fixed_quantity = self.fixed_quantity,
+        #     tickers = list(self.data_loader.tickers),
+        # )
 
     def complete_bt(self) -> None:
         BacktestRun.objects.filter(BacktestRun = self.backtest_run).update(
             is_completed = True,
             completed_at = self.data_loader.get_current_datetime()
         )
+
+    def add_cash(self, amount: float, currency: str) -> None:
+        if currency not in self.cash_reserves:
+            self.cash_reserves[currency] = 0.0
+        self.cash_reserves[currency] += amount
+        self.current_capital = self.cash_reserves.get(self.account_currency, 0.0)
+    
+    def convert_currency(self, amount: float, from_currency: str, to_currency: str) -> float:
+        '''
+        Example:
+        Direct conversion: USD -> EUR using USDEUR price
+        Inverse conversion: EUR -> USD using USDEUR price by taking reciprocal
+        '''
+        direct_conversion = f"{from_currency}{to_currency}=X"
+        inverse_conversion = f"{to_currency}{from_currency}=X"
+
+        try: 
+            direct_price = self.data_loader.get_current_bar_value(direct_conversion, "close")
+            return amount * direct_price
+        except KeyError:
+            pass
+
+        try:
+            inverse_price = self.data_loader.get_current_bar_value(inverse_conversion, "close")
+            return amount / inverse_price
+        except KeyError:
+            pass
+
+        raise ValueError(f"No exchange rate data available for {from_currency} to {to_currency} conversion.")
+
+    def convert_to_account_currency(self, amount: float, currency: str) -> float:
+        if currency == self.account_currency:
+            return amount
+        return self.convert_currency(amount, from_currency=currency, to_currency=self.account_currency)   
+
+    def calculate_cash_value(self) -> float:
+        '''
+        converts all cash balance into account currency
+        ''' 
+        cash_value= 0.0
+        for curreny, amount in self.cash_reserves.items():
+            cash_value += self.convert_to_account_currency(amount, curreny)
+        return cash_value
+
+
 
 
     def get_latest_price(self, ticker: str) -> float:
@@ -213,7 +274,6 @@ class Portfolio:
             raise ValueError(f"Invalid fill direction {fill.direction} "
                              f"in cash update. Expected 'BUY' or 'SELL'.")
         self.total_commission += fill.commission
-
 
     #Updates average price and realized PnL for the ticker based on the new fill
     #Note: Returns -commission as a negative cost to the trade
@@ -368,3 +428,27 @@ class Portfolio:
 
     def get_equity_records(self):
         return self.equity_record
+    
+    def update_benchmark_record(self) -> None:
+        date = self.data_loader.get_current_datetime()
+        benchmark_price = (StockPriceHistory.objects.filter(stock__ticker=self.benchmark_ticker, date__lte=date).order_by("-date").first()).close_price
+        if benchmark_price is None:
+            raise ValueError(f"No price data available for benchmark ticker {self.benchmark_ticker} on date {date}.")
+        if self.benchmark_quantity is None:
+            self.benchmark_initial_price = benchmark_price
+            self.benchmark_quantity = to_decimal(self.initial_capital) / to_decimal(self.benchmark_initial_price)
+        benchmark_unrealised_pnl = self.benchmark_quantity * (benchmark_price - self.benchmark_initial_price)
+        market_value = self.benchmark_quantity * benchmark_price
+        BenchmarkRecord.objects.update_or_create(
+            backtest_run = self.btr_model,
+            date = date,
+            defaults = {
+                "ticker": self.benchmark_ticker,
+                "close_price": to_decimal(benchmark_price),
+                "quantity": to_decimal(self.benchmark_quantity),
+                "market_value": to_decimal(market_value),
+                "unrealised_pnl": to_decimal(benchmark_unrealised_pnl),
+            }
+        )
+        #print(f"Updated benchmark record for {self.benchmark_ticker} on {date}: price {benchmark_price}, quantity {self.benchmark_quantity}, market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")
+

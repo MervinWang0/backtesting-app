@@ -79,10 +79,7 @@ class Backtest:
         self.risk_free_rate = risk_free_rate / 100
 
         self.events = events
-        self.portfolio = Portfolio(self.data_loader, self.events,
-                                   run_name="test", strategy_name="Moving Average Cross",
-                                   start_date=self.start_date, end_date=self.end_date,
-                                   initial_capital=self.initial_capital, quantity=5)
+
         self.execute = ExecutionLoader(self.events, self.data_loader, commission=self.commission,
                                        slippage=self.slippage)
         self.strategy = MovingAverageCross(self.data_loader, self.events, self.tickers,
@@ -119,6 +116,10 @@ class Backtest:
             # Encodes strategy params in a dict
             strategy_params = strategy_params,
         )
+        self.portfolio = Portfolio(self.data_loader, self.events,
+                                run_name="test", strategy_name="Moving Average Cross",
+                                start_date=self.start_date, end_date=self.end_date,
+                                initial_capital=self.initial_capital, quantity=5, btr_model=self.run_model)       
 
     def get_backtest_run_id(self) -> int:
         '''
