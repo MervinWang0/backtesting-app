@@ -409,9 +409,9 @@ class PaperAccount(models.Model):
 
 class PaperPositions(models.Model):
     account = models.ForeignKey(PaperAccount, on_delete=models.CASCADE, related_name = "positions")
-    stock = models.ForeignKey(Stock, on_delete=models.PROTECT, related_name="stock_positions")
-    forex = models.ForeignKey(ForexPair, on_delete=models.PROTECT, related_name = "forex_positions")
-    futures = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="futures_positions")
+    stock = models.ForeignKey(Stock, on_delete=models.PROTECT, related_name="stock_positions", null=True, blank=True)
+    forex = models.ForeignKey(ForexPair, on_delete=models.PROTECT, related_name = "forex_positions", null=True, blank=True)
+    futures = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="futures_positions", null=True, blank=True)
 
     #stock 
     stock_quantity = models.DecimalField(max_digits=10, decimal_places=4, default=Decimal("0"))
@@ -449,10 +449,10 @@ class PaperOrder(models.Model):
         MARKET = "MARKET", "Market"
         LMT = "LMT", "Limit"
     
-    account = models.ForeignKey(PaperAccount, on_delete=models.CASCADE, related_name = "positions")
-    stock = models.ForeignKey(Stock, on_delete=models.PROTECT, related_name="stock_positions")
-    forex = models.ForeignKey(ForexPair, on_delete=models.PROTECT, related_name = "forex_positions")
-    futures = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="futures_positions")
+    account = models.ForeignKey(PaperAccount, on_delete=models.CASCADE)
+    stock = models.ForeignKey(Stock, on_delete=models.PROTECT, related_name="stock_order", null=True, blank=True)
+    forex = models.ForeignKey(ForexPair, on_delete=models.PROTECT, related_name = "forex_order", null=True, blank=True)
+    futures = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="futures_order", null=True, blank=True)
 
     order = models.CharField(max_length=10, choices=Order.choices,)
     order_type = models.CharField(max_length=10, choices = OrderType.choices , default = OrderType.MARKET,)
@@ -479,7 +479,7 @@ class PaperTrade(models.Model):
     quantity = models.DecimalField(max_digits = 20, decimal_places=4)
 
     closed_quantity = models.DecimalField(max_digits=20, decimal_places=4)
-    open_quantity = models.DecimalField(max_digits=20, decimal_places=4)
+    opened_quantity = models.DecimalField(max_digits=20, decimal_places=4)
 
     gross_amount = models.DecimalField(max_digits=20, decimal_places=4)
     commission = models.DecimalField(max_digits=10, decimal_places=4)

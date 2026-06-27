@@ -5,7 +5,7 @@ import base.views as views
 urlpatterns = [
     # path("", views.home, name="home"),
     path("", views.dashboard, name="dashboard"),
-    path("run_backtest/", views.backtest_run, name = "run_backtest"),
+    # path("run_backtest/", views.backtest_run, name = "run_backtest"),
     path("backtest_graph/", views.backtest_graph, name="backtest_graph"),
     # path("backtestrunrecords/", dashboard.backtest_run_records, name = "backtest_run_records"),
     path("backtest/", views.get_backtest, name="backtest"),
@@ -13,6 +13,8 @@ urlpatterns = [
          name="monte_carlo_simulation"),
     path("mcs_graph/", views.mcs_graph, name="mcs_graph"),
 
+    path("backtestrunrecords/", views.backtest_run_records, name = "backtest_run_records"),
+    path("stocks/", views.stock, name = "stock"),
     # #Authentication wrapped under accounts
     # path("accounts/Login/", views.Login, name = "Login"),
     # path("accounts/Logout/", views.Logout, name = "Logout"),

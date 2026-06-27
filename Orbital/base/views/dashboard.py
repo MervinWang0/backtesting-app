@@ -11,9 +11,8 @@ from django.core.management import call_command
 from datetime import datetime
 from base.models import StockPriceHistory, Stock
 from decimal import Decimal
-from django.db.models import (DateField, DecimalField, F,
-FloatField, OuterRef, Q, Subquery, Value,
-BigIntegerField, ExpressionWrapper)
+from django.db.models import (DateField, DecimalField,
+F, FloatField, OuterRef, Q, Subquery, Value, BigIntegerField, ExpressionWrapper)
 from django.db.models.functions import Cast, NullIf
 from django.core.paginator import Paginator
 
@@ -21,6 +20,7 @@ from django.core.paginator import Paginator
 from queue import Queue
 from base.engine.backtest import Backtest
 from base.models import BacktestRun
+from base.engine.data_loader import DatabaseDataLoader
 
 # Create your views here.
 PRICE_OUTPUT_FIELD = DecimalField(
@@ -74,6 +74,7 @@ def dashboard(request):
                                                         output_field=FloatField(),
                                                     ),
                                                 )
+    
     )
 
     most_active_traded = list(
@@ -94,7 +95,7 @@ def dashboard(request):
         stocks = stocks.filter(
             Q(ticker__icontains = search_query) | Q(name__icontains = search_query)
         )
-
+    
     portfolio_summary = get_porfolio_summary(request)
 
     paginator = Paginator(stocks, 30)
@@ -118,6 +119,22 @@ def get_porfolio_summary(user):
         "US_Assets" : Decimal("9999.99"),
         "Today_pnl" : Decimal("999.99"),
     }
+
+def stock(request):
+    symbol = request.GET.get("symbol")
+    stock = Stock.objects.filter(ticker = symbol).first()
+    latest_price = (
+        StockPriceHistory.objects.filter(stock=stock).order_by("-date").first()
+    )
+
+    context = {
+        "stock": stock,
+        "latest_price": latest_price,
+    }
+    
+    return render(request, "stock.html", context)
+
+
 
 def get_yf_period(start_date, end_date):
     days = (end_date - start_date).days +1
@@ -152,36 +169,42 @@ def data_exists(symbol, start_date, end_date):
 
     return True    
 
-def backtest_run(request):
-    start_date = request.POST.get("start_date")
-    end_date = request.POST.get("end_date")
-    ticker = request.POST.get("ticker","").upper().strip()
+#  I don't understand this code I'm going to comment it out
+# def backtest_run(request):
+#     start_date = request.POST.get("start_date")
+#     end_date = request.POST.get("end_date")
+#     ticker = request.POST.get("ticker","").upper().strip()
 
-    start_date_fixed = datetime.strptime(start_date, "%Y-%m-%d").date()
-    end_date_fixed = datetime.strptime(end_date, "%Y-%m-%d").date()
+#     start_date_fixed = datetime.strptime(start_date, "%Y-%m-%d").date()
+#     end_date_fixed = datetime.strptime(end_date, "%Y-%m-%d").date()
 
-    period = get_yf_period(start_date_fixed, end_date_fixed)
+#     period = get_yf_period(start_date_fixed, end_date_fixed)
 
-    if not data_exists(ticker, start_date_fixed, end_date_fixed):
-        call_command(
-            "load_stock_data",
-            symbol = ticker,
-            period = period,
-            interval = "1d",
-        )
+#     if not data_exists(ticker, start_date_fixed, end_date_fixed):
+#         call_command(
+#             "load_stock_data",
+#             symbol = ticker,
+#             period = period,
+#             interval = "1d",
+#         )
 
-    events = Queue()
+#     events = Queue()
+#     # I'm placing asset_type as "STOCK" for now, because I don't understand
+#     # the post method of this function well enough to pass asset_type in
+#     data_loader = DatabaseDataLoader(events=events,
+#                                      tickers=[ticker],
+#                                      start_date=start_date_fixed,
+#                                      end_date=end_date_fixed,
+#                                      asset_type="STOCK")
+#         events = events,
+#         tickers = [ticker],
+#         start_date = start_date_fixed,
+#         end_date = end_date_fixed,
+#         strategy_name= "MAC",
+#     )
 
-    backtest = Backtest(
-        events = events,
-        tickers = [ticker],
-        start_date = start_date_fixed,
-        end_date = end_date_fixed,
-        strategy_name= "MAC",
-    )
-
-    backtest_run = backtest.run()
-    return redirect(f"/backtestrunrecords/?run_id={backtest_run.id}")
+#     backtest_run = backtest.run()
+#     return redirect(f"/backtestrunrecords/?run_id={backtest_run.id}")
 
 def backtest_run_records(request):
     run_id = request.GET.get("run_id")
@@ -214,7 +237,3 @@ def backtest_run_records(request):
         "position_record": position_record,
         "fill_record": fill_record,
     })
-
-
-
-
