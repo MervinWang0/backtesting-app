@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 zero = Decimal("0")
 
-@dataclass
-class PositionUpdate(frozen=True):
+@dataclass(frozen=True)
+class PositionUpdate:
     prev_qty : Decimal
     new_qty : Decimal
 

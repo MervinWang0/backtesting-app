@@ -10,29 +10,29 @@ sys.path.insert(0, str(BASE_DIR))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Orbital.settings")
 django.setup()
 
-import plotly.express as px
+#import plotly.express as px
 from queue import Queue
 # from base.engine.monte_carlo_simulation import MonteCarloSimulator
 from datetime import datetime
-from base.engine.data_loader import DatabaseDataLoader, Bar
+from base.engine.data_loader import Bar
 from base.engine.backtest import Backtest
 import pandas as pd
 import plotly.graph_objects as go
 
 
-def get_equity_graph(equity_record: list[dict[str, any]]) -> px.Figure:
-    '''
-    This function takes in a DataFrame with the columns of
-    "date"
-    "equity"
-    Note that these columnsa are a min requirement, having more is acceptable
-    and returns a Figure objects from plotly.py. FigureObj.show() displays a graph
-    '''
-    data_frame = pd.DataFrame(equity_record)
-    fig = px.line(data_frame=data_frame, x="date", y="equity")
-    return fig
+# def get_equity_graph(equity_record: list[dict[str, any]]):
+#     '''
+#     This function takes in a DataFrame with the columns of
+#     "date"
+#     "equity"
+#     Note that these columnsa are a min requirement, having more is acceptable
+#     and returns a Figure objects from plotly.py. FigureObj.show() displays a graph
+#     '''
+#     data_frame = pd.DataFrame(equity_record)
+#     #fig = px.line(data_frame=data_frame, x="date", y="equity")
+#     return fig
 
-def get_ohlv_graph(stock_data: list[Bar]) -> px.Figure:
+def get_ohlv_graph(stock_data: list[Bar]):
     data = {
         'Date' : [bar.date for bar in stock_data],
         'Open' : [bar.open for bar in stock_data],
@@ -50,8 +50,27 @@ def get_ohlv_graph(stock_data: list[Bar]) -> px.Figure:
     )])
     return fig
 
+def get_ohlv_graph2(stock_data: list[Bar]):
+    data = {
+        'Date' : [bar.date for bar in stock_data],
+        'Open' : [bar.open_price for bar in stock_data],
+        'High' : [bar.high_price for bar in stock_data],
+        'Low' : [bar.low_price for bar in stock_data],
+        'Close' : [bar.close_price for bar in stock_data]
+    }
+    df = pd.DataFrame(data)
+    fig = go.Figure(data=[go.Ohlc(
+        x=df['Date'],
+        open=df['Open'],
+        high=df['High'],
+        low=df['Low'],
+        close=df['Close']
+    )])
+    return fig
 
-def show_price_graphs(prices: list[list[float]]) -> px.Figure:
+
+
+#def show_price_graphs(prices: list[list[float]]) -> px.Figure:
     df = pd.DataFrame(prices).T
     # print(df)
     df = df.rename(columns={i: 'OG' if i == 0 else f"Sim {i}" for i in range(len(df))})

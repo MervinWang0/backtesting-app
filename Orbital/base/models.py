@@ -438,10 +438,10 @@ class PaperOrder(models.Model):
         MARKET = "MARKET", "Market"
         LMT = "LMT", "Limit"
     
-    account = models.ForeignKey(PaperAccount, on_delete=models.CASCADE, related_name = "positions")
-    stock = models.ForeignKey(Stock, on_delete=models.PROTECT, related_name="stock_positions", null=True, blank=True)
-    forex = models.ForeignKey(ForexPair, on_delete=models.PROTECT, related_name = "forex_positions", null=True, blank=True)
-    futures = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="futures_positions", null=True, blank=True)
+    account = models.ForeignKey(PaperAccount, on_delete=models.CASCADE)
+    stock = models.ForeignKey(Stock, on_delete=models.PROTECT, related_name="stock_order", null=True, blank=True)
+    forex = models.ForeignKey(ForexPair, on_delete=models.PROTECT, related_name = "forex_order", null=True, blank=True)
+    futures = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="futures_order", null=True, blank=True)
 
     order = models.CharField(max_length=10, choices=Order.choices,)
     order_type = models.CharField(max_length=10, choices = OrderType.choices , default = OrderType.MARKET,)

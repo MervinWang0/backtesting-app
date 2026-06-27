@@ -14,3 +14,4 @@ class BacktestOptions(forms.form):
 
     class RecordDateForm(forms.form):
         record_date = forms.ChoicesField
+        

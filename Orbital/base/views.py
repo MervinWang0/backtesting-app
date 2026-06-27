@@ -1,24 +1,23 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.management import call_command
-
-
-
-
-
+from django.contrib import messages
+from django.views.decorators.http import require_POST
 
 #from django.contrib.auth import logout as auth_logout
 
 from datetime import datetime
-from base.models import StockPriceHistory, Stock
+from base.models import StockPriceHistory, Stock, PaperAccount, PaperOrder
 from decimal import Decimal
 from django.db.models import DateField, DecimalField, F, FloatField, OuterRef, Q, Subquery, Value, BigIntegerField, ExpressionWrapper
 from django.db.models.functions import Cast, NullIf
 from django.core.paginator import Paginator
-
+from base.services.paperTrading import execute_order
+from base.engine.graph import get_ohlv_graph2
 
 from queue import Queue
 from base.engine.backtest import Backtest
 from base.models import BacktestRun
+import plotly.io as pio
 
 # Create your views here.
 PRICE_OUTPUT_FIELD = DecimalField(
@@ -124,13 +123,60 @@ def stock(request):
     latest_price = (
         StockPriceHistory.objects.filter(stock=stock).order_by("-date").first()
     )
+    stock_data = StockPriceHistory.objects.filter(stock=stock).order_by("-date")
+    
+    graph = None
+
+    if stock_data.exists():
+        graph = get_ohlv_graph2(list(stock_data))
+        graph = pio.to_html(
+            graph,
+            full_html=False,
+            include_plotlyjs="cdn",
+            config = {
+                "responsive": True,
+                "displaylog": False,
+            }
+        )
 
     context = {
         "stock": stock,
         "latest_price": latest_price,
+        "graph" : graph,
     }
     
     return render(request, "stock.html", context)
+
+@require_POST
+def submit_paper_order(request, account_id, symbol):
+    account = get_object_or_404(PaperAccount, id = account_id, user = request.user)
+    stock = Stock.objects.filter(ticker = symbol).first()
+
+    type = request.POST.get("type")
+    qty = request.POST.get("quantity")
+
+    try:
+        trade = execute_order(
+            user = request.user,
+            account_id= account.id,
+            ticker= symbol,
+            type = type,
+            qty = qty,
+        )
+    except:
+        print("error")
+    else:
+        messages.success(
+            request,
+            (
+                f"{trade.order.side}"
+                f"{trade.quantity}"
+                f"{symbol}"
+                f"${trade.fulfilled_price}"
+            ),
+        )
+    return redirect("dashboard")
+
 
 
 

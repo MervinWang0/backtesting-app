@@ -30,8 +30,21 @@
             </tr>
         </body>
     </table>
+
+    {% if graph %}
+        <div class = "stock-graph">
+            {{ graph|safe }}
+        </div>
+    {% endif %}
+
     {% else %}
         <p>No price data available for {{ stock.ticker }}</p>
     {% endif %}
+
+    <form 
+        method="POST"
+        action = "{% url ' %}"
+
+
 </div>
 {% endblock %}
