@@ -137,11 +137,9 @@ USE_TZ = True
 
 # Adds cacheing behaviour to the static files
 STORAGES = {
-    # ...
-    "staticfiles": {
-        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
-    },
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    # TODO It might be better to make a workaround such that hashing does not break js
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
 
 # Static files (CSS, JavaScript, Images)
