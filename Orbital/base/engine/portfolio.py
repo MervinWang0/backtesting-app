@@ -17,7 +17,8 @@ def to_decimal(val) -> Decimal:
 class Portfolio:
     def __init__(self, data_loader: DataLoader, events: Queue, 
                  run_name: str, strategy_name: str, start_date: datetime, end_date: datetime,
-                 btr_model: BacktestRun, initial_capital: float =  100000.0, quantity =  5,):#, User = None):
+                 btr_model: BacktestRun, initial_capital: float =  100000.0, quantity =  5,
+                 commission: float = 0):#, User = None):
         self.data_loader = data_loader
         self.events = events
         self.initial_capital = initial_capital

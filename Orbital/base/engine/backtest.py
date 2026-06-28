@@ -119,7 +119,8 @@ class Backtest:
         self.portfolio = Portfolio(self.data_loader, self.events,
                                 run_name="test", strategy_name="Moving Average Cross",
                                 start_date=self.start_date, end_date=self.end_date,
-                                initial_capital=self.initial_capital, quantity=5, btr_model=self.run_model)       
+                                initial_capital=self.initial_capital, quantity=5, btr_model=self.run_model,
+                                )       
 
     def get_backtest_run_id(self) -> int:
         '''

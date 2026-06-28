@@ -40,7 +40,7 @@ def backtest_graph(request) -> HttpResponse:
                     data[key] = float(data[key])
             except Exception:
                 pass
-        # print(data)
+        print(data)
         # Use inputs to construct some necessary parameters
         events = Queue()
         data_loader = DatabaseDataLoader(events=events, tickers=data["tickers"],

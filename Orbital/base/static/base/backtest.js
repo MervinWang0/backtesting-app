@@ -44,9 +44,9 @@ function change_strategy(){
     // Else it stays/becomes invisible
     const all_strategy_div = document.querySelectorAll(".input-field")
     all_strategy_div.forEach(element => {
-        console.log(param_list);
-        console.log(element);
-        console.log(element.querySelector("input").id);
+        // console.log(param_list);
+        // console.log(element);
+        // console.log(element.querySelector("input").id);
         if(param_list.includes(element.querySelector("input").id)){
             element.style.display = "";
         }
@@ -84,31 +84,37 @@ function run_backtest(){
 function validate(){
     // Determine the strategy
     const chosen_strategy_id = strategy_btn.value;
-    // alert(`chosen strategy id is ${chosen_strategy_id}`);
-    // alert(`strategy btn value is ${strategy_btn.value}`);
-    if (chosen_strategy_id === "none") 
-        {alert("Please select a strategy"); return;}
-    // Check if any strategy params are empty
-    const strategy_div = document.getElementById(chosen_strategy_id);
-    const strategy_params = strategy_div.querySelectorAll('input')
-    for(const input of strategy_params) {
-        // alert(`${input.value}`)
-        if (input.value == "") {
-            alert(`Please enter the required fields ${input.name}`);
-            return false
-        } 
-    }
-    return true
-}
+    const param_list = show_params(chosen_strategy_id);
+    // For all the parameters, 
+    const all_strategy_div = document.querySelectorAll(".input-field")
+    all_strategy_div.forEach(element => {
+        let input = element.querySelector("input")
+        // console.log(param_list);
+        // console.log(element);
+        // console.log(element.querySelector("input").id);
+        // If each element's input is within inputs of the specifc strategy
+        // and if they value of the input is empty, make an alert
+        if(param_list.includes(input.id) && input.value == ""){
+            alert(`Please enter the require fields ${input.name}`)
+            return false;
+        }
+    });
+    return true;
+
+}   
 
 // Convert input params into suitable format and pass to views function
 // Stores the run_id too. As an obj
 let run_id = {}
 function graph_backtest() {
-    // Clean the data
+    // Create variables needed to 
     const chosen_strategy_id = strategy_btn.value;
-    const strategy_div = document.getElementById(chosen_strategy_id);
-    const strategy_params = strategy_div.querySelectorAll('input');
+    const param_list = show_params(chosen_strategy_id)
+    // Create an array of inputs of the chosen strategy
+    const strategy_params = [];
+    param_list.forEach(input_id => strategy_params.push(document.getElementById(input_id)))
+
+    // CLean the params
     const cleaned_params = {};
     const ticker_lst = [];
     for(const input of strategy_params) {
@@ -119,9 +125,12 @@ function graph_backtest() {
             cleaned_params[input.name] = input.value;
         }
     }
+    // Input is expected as a percentage but used in backtest as a multiple. 1% => 0.01
+    cleaned_params["commission"] = cleaned_params["commission"] / 100
     cleaned_params["tickers"] = ticker_lst;
     cleaned_params['strategy_name'] = chosen_strategy_id;
     // alert(`These are the cleaned parameters to be passed ${cleaned_params}`)
+    console.log(cleaned_params)
 
     // Pass data to views function
     fetch("/backtest_graph/", {
