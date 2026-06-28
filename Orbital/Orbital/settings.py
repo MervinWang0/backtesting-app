@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-avvohf55!47g2ht0_-y*(+w%eukh@bf#024gyuo+r8xd-j7u!r'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['backtesting-app-production.up.railway.app', '127.0.0.1']
 
@@ -90,19 +90,19 @@ def get_secret(secret_name, default="password"):
 
 DATABASES = {
     # This is the setting for remote db
-    'default' : dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"))
+    # 'default' : dj_database_url.config(
+    #     default=os.environ.get("DATABASE_URL"))
     
 
         # Old native way of setting database params
-        # 'default' : {
-        #     'ENGINE': 'django.db.backends.postgresql',
-        #     'NAME': os.environ.get('DB_NAME', 'Stock_price_db'),
-        #     'USER': os.environ.get('DB_USER', 'postgres'),
-        #     'PASSWORD': os.environ.get('DB_PASSWORD', 'password'),
-        #     'HOST': os.environ.get('DB_HOST', 'localhost'),
-        #     'PORT': os.environ.get('DB_PORT', '5432'),
-        # }
+        'default' : {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'Stock_price_db'),
+            'USER': os.environ.get('DB_USER', 'postgres'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'password'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
 }
 
 # Password validation
