@@ -48,14 +48,14 @@ RUN python -m pip install --upgrade pip setuptools wheel
 COPY requirements.txt .
 RUN python -m pip install -r requirements.txt
 
+# Used to arrange static files
+RUN python manage.py collectstatic --noinput
+
 # Switch to the non-privileged user to run the application.
 USER appuser
 
 # Copy the source code into the container.
 COPY . .
-
-# Used to arrange static files
-RUN python manage.py collectstatic --noinput
 
 # Expose the port that the application listens on.
 EXPOSE 8000
