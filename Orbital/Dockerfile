@@ -61,4 +61,4 @@ USER appuser
 EXPOSE 8000
 
 # Run the application.
-CMD ["python", "-m", "gunicorn", "Orbital.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["python", "-m", "gunicorn", "Orbital.wsgi:application", "--bind", "0.0.0.0:8000", "--timeout", "120"]
