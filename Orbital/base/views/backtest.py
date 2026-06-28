@@ -43,15 +43,15 @@ def backtest_graph(request) -> HttpResponse:
                 pass
         print(data)
         # Checks if stock data exists for ticker in period otherwise download
-        # period = get_yf_period(data["start_date"], data["end_date"])
-        # for ticker in data["tickers"]:
-        #     if not data_exists(ticker, data["start_date"], data["end_date"]):
-        #         call_command(
-        #             "load_stock_data",
-        #             symbol = ticker,
-        #             period = period,
-        #             interval = "1d",
-        #         )
+        period = get_yf_period(data["start_date"], data["end_date"])
+        for ticker in data["tickers"]:
+            if not data_exists(ticker, data["start_date"], data["end_date"]):
+                call_command(
+                    "load_stock_data",
+                    symbol = ticker,
+                    period = period,
+                    interval = "1d",
+                )
 
         # Use inputs to construct some necessary parameters
         events = Queue()
@@ -81,35 +81,35 @@ def backtest_graph(request) -> HttpResponse:
                              "metrics" : metrics, "run_id" : backtest.get_backtest_run_id()})
 
 # Functions for automatic downloading of data
-# def data_exists(symbol, start_date, end_date) -> bool:
-#     stock = Stock.objects.filter(ticker = symbol).first()
+def data_exists(symbol, start_date, end_date) -> bool:
+    stock = Stock.objects.filter(ticker = symbol).first()
 
-#     if not stock:
-#         return False
+    if not stock:
+        return False
     
-#     bars = StockPriceHistory.objects.filter(stock = stock, date__range = (start_date, end_date),)
+    bars = StockPriceHistory.objects.filter(stock = stock, date__range = (start_date, end_date),)
 
-#     if not bars.exists():
-#         return False
+    if not bars.exists():
+        return False
 
-#     return True     
+    return True     
 
-# def get_yf_period(start_date, end_date):
-#     days = (end_date - start_date).days +1
+def get_yf_period(start_date, end_date):
+    days = (end_date - start_date).days +1
 
-#     if days <= 31:
-#         return "1mo"
-#     elif days <= 93:
-#         return "3mo"
-#     elif days <= 186:
-#         return "6mo"
-#     elif days <= 365:
-#         return "1y"
-#     elif days <=730:
-#         return "2y"
-#     elif days <=1825:
-#         return "5y"
-#     elif days <= 3650:
-#         return "10y"
-#     else:
-#         return "max"
+    if days <= 31:
+        return "1mo"
+    elif days <= 93:
+        return "3mo"
+    elif days <= 186:
+        return "6mo"
+    elif days <= 365:
+        return "1y"
+    elif days <=730:
+        return "2y"
+    elif days <=1825:
+        return "5y"
+    elif days <= 3650:
+        return "10y"
+    else:
+        return "max"
