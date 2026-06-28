@@ -33,55 +33,84 @@
         <option value="moving_average_crossover">Moving Average Crossover</option>
         <option value="mean_reversion">Mean Reversion</option>
     </select>
-
-    {% comment %} Strategy params input{% endcomment %}
-    <div class='strategy_parameters input-grid'>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1 ">Short Window:</label>
-            <input type="number" placeholder="e.g. 5, 10" name="short_window" id="short_window">
+    {% comment %} container for input and output in a flex grid {% endcomment %}
+    <div class="flex_container">
+        {% comment %} Strategy params input{% endcomment %}
+        <div class='strategy_parameters input-grid'>
+            <div class='input-field activity-value' style="display:none;">
+                <label class="label1 ">Short Window:</label>
+                <input type="number" placeholder="e.g. 5, 10" name="short_window" id="short_window">
+            </div>
+            <div class='input-field activity-value' style="display:none;">
+                <label class="label1 ">Long Window:</label>
+                <input type="number" placeholder="e.g. 20, 50, 100" class="strategy_input" name="long_window" id="long_window">
+            </div>
+            <div class='input-field activity-value' style="display:none;">
+                <label class="label1">Asset Type:</label>
+                <input type="text" placeholder="e.g. STOCK, FOREX" class="strategy_input" name="asset_type" id="asset_type">
+            </div>
+            <div class='input-field activity-value' style="display:none;">
+                <label class="label1">Ticker:</label>
+                <input type="text" placeholder="e.g. AAPL, MSFT" class="strategy_input" name="ticker" id="ticker">
+            </div>
+            <div class='input-field activity-value' style="display:none;">
+                <label class="label1">Strength:</label>
+                <input type="number" placeholder="e.g. 1, 10, 50" class="strategy_input" name="strength" id="strength">
+            </div>
+            <div class='input-field activity-value' style="display:none;">
+                <label class="label1">Slippage:</label>
+                <input type="number" placeholder="e.g. 0.05, a percentage of price" class="strategy_input" name="slippage" id="slippage">
+            </div>
+            <div class='input-field activity-value' style="display:none;">
+                <label class="label1">Initial Capital:</label>
+                <input type="number" placeholder="e.g. 100,000" class="strategy_input" name="initial_capital" id="initial_capital">
+            </div>
+            <div class='input-field activity-value' style="display:none;">
+                <label class="label1">Commission:</label>
+                <input type="number" placeholder="e.g. 0.01, a percentage of each trade" class="strategy_input" name="commission" id="commission">
+            </div>
+            <div class='input-field activity-value' style="display:none;">
+                <label class="label1">Rolling Window:</label>
+                <input type="number" class="strategy_input" name="rolling_window" id="rolling_window">
+            </div>
+            <div class='input-field activity-value' style="display:none;">
+                <label class="label1">Start Date:</label>
+                <input type="date" class="strategy_input" name="start_date" id="start_date">
+            </div>
+            <div class='input-field activity-value' style="display:none;">
+                <label class="label1">End Date:</label>
+                <input type="date" class="strategy_input" name="end_date" id="end_date">
+            </div>
         </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1 ">Long Window:</label>
-            <input type="number" placeholder="e.g. 20, 50, 100" class="strategy_input" name="long_window" id="long_window">
+        {% comment %} Div to store metrics {% endcomment %}
+        <div class="output_grid" id="metrics_container">
+            <div class="output-field activity-value" style="display:none;">
+                <h3>Total Return:</h3>
+                <p id="Total Return"></p>
+            </div>
+            <div class="output-field activity-value" style="display:none;">
+                <h3>Mean Daily Return:</h3>
+                <p id="Mean Daily Return"></p>
+            </div>
+            <div class="output-field activity-value" style="display:none;">
+                <h3>CAGR:</h3>
+                <p id="CAGR"></p>
+            </div>
+            <div class="output-field activity-value" style="display:none;">
+                <h3>Volatility:</h3>
+                <p id="Volatility"></p>
+            </div>
+            <div class="output-field activity-value" style="display:none;">
+                <h3>Sharpe Ratio:</h3>
+                <p id="Sharpe Ratio"></p>
+            </div>
+            <div class="output-field activity-value" style="display:none;">
+                <h3>Max Drawdown:</h3>
+                <p id="Max Drawdown"></p>
+            </div>
         </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Asset Type:</label>
-            <input type="text" placeholder="e.g. STOCK, FOREX" class="strategy_input" name="asset_type" id="asset_type">
-        </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Ticker:</label>
-            <input type="text" placeholder="e.g. AAPL, MSFT" class="strategy_input" name="ticker" id="ticker">
-        </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Strength:</label>
-            <input type="number" placeholder="e.g. 1, 10, 50" class="strategy_input" name="strength" id="strength">
-        </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Slippage:</label>
-            <input type="number" placeholder="e.g. 0.05, a percentage of price" class="strategy_input" name="slippage" id="slippage">
-        </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Initial Capital:</label>
-            <input type="number" placeholder="e.g. 100,000" class="strategy_input" name="initial_capital" id="initial_capital">
-        </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Commission:</label>
-            <input type="number" placeholder="e.g. 0.01, a percentage of each trade" class="strategy_input" name="commission" id="commission">
-        </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Rolling Window:</label>
-            <input type="number" class="strategy_input" name="rolling_window" id="rolling_window">
-        </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Start Date:</label>
-            <input type="date" class="strategy_input" name="start_date" id="start_date">
-        </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1">End Date:</label>
-            <input type="date" class="strategy_input" name="end_date" id="end_date">
-        </div>
-
     </div>
+</div>
 
     {% comment %} Button to submit strategy params and run backtest {% endcomment %}
     <div>
@@ -96,15 +125,5 @@
 
 {% comment %} New div to store graph {% endcomment %}
 <div class="flex_item" name="equity_graph_container" id="equity_graph_container">
-</div>
-
-{% comment %} Div to store metrics {% endcomment %}
-<div class="metrics_container flex_item" id="metrics_container">
-    <p class="metric" id="Total Return" style="display:none;"></p>
-    <p class="metric" id="Mean Daily Return" style="display:none;"></p>
-    <p class="metric" id="CAGR" style="display:none;"></p>
-    <p class="metric" id="Volatility" style="display:none;"></p>
-    <p class="metric" id="Sharpe Ratio" style="display:none;"></p>
-    <p class="metric" id="Max Drawdown" style="display:none;"></p>
 </div>
 {% endblock%}

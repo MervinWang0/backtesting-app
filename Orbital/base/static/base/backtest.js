@@ -89,9 +89,9 @@ function validate(){
     const all_strategy_div = document.querySelectorAll(".input-field")
     all_strategy_div.forEach(element => {
         let input = element.querySelector("input")
-        // console.log(param_list);
-        // console.log(element);
-        // console.log(element.querySelector("input").id);
+        console.log(param_list);
+        console.log(element);
+        console.log(element.querySelector("input").id);
         // If each element's input is within inputs of the specifc strategy
         // and if they value of the input is empty, make an alert
         if(param_list.includes(input.id) && input.value == ""){
@@ -106,6 +106,9 @@ function validate(){
 // Convert input params into suitable format and pass to views function
 // Stores the run_id too. As an obj
 let run_id = {}
+const percentage_outputs = ["Total Return", "Mean Daily Return", "CAGR",
+    "Max Drawdown",
+]
 function graph_backtest() {
     // Create variables needed to 
     const chosen_strategy_id = strategy_btn.value;
@@ -154,20 +157,27 @@ function graph_backtest() {
 
         // For metrics
         const metrics_container_div = document.getElementById("metrics_container");
-        const paragraphs = metrics_container_div.querySelectorAll("p");
+        const divs = metrics_container_div.querySelectorAll(".output-field");
 
         // Turn all metric paragraphs blank first
-        for(const para of paragraphs) {
-            para.style.display = "none";
+        for(const div of divs) {
+            div.style.display = "none";
         }
-        // For each metric calculated
+        // For each metric calculated turn it visible and place the value in it
         // console.log(data["metrics"])
         for(const [key, value] of Object.entries(data["metrics"])) {
-            // console.log(key)
+            console.log(key);
             let paragraph = document.getElementById(key);
-            // console.log(paragraph)
-            paragraph.innerHTML = `${key}: ${value}`;
-            paragraph.style.display = '';
+            console.log(paragraph);
+            // Convert some of the metrics to percentage
+            if (percentage_outputs.includes(key)) {
+                paragraph.innerHTML = `${(value * 100).toFixed(2)}%`;
+            }
+            else {
+                paragraph.innerHTML = `${value.toFixed(4)}`;
+            }
+            paragraph.parentElement.style.display = '';
+            console.log(paragraph.parentElement);
         // Makes run_id a dict as needed by URLSearchParams
         run_id = {"run_id" : data["run_id"]};
         }

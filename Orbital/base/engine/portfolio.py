@@ -141,14 +141,24 @@ class Portfolio:
 
         if curr_quantity == 0:
             return 0.0
-
+        
         current_price = self.get_latest_price(ticker)
         avg_price = self.avg_price[ticker]
         if curr_quantity > 0:
-            return curr_quantity * (current_price - avg_price)
+            pnl = curr_quantity * (current_price - avg_price)
         else:
             #short position
-            return abs(curr_quantity) * (avg_price - current_price)
+            pnl = abs(curr_quantity) * (avg_price - current_price)
+        
+        asset_type = self.asset_type_by_ticker.get(ticker)
+        if asset_type == AssetType.FOREX:
+            bar = self.data_loader.get_current_bar(ticker)
+            if bar is None:
+                raise ValueError(f"No price data available for ticker {ticker} at the time of unrealised PnL calculation.")
+            #For forex, unrealised PnL is converted to account currency using the current exchange rate
+            return self.convert_to_account_currency(pnl, bar.quote_currency)
+        
+        return pnl
 
     def calculate_holdings_value(self) -> float:
         total_value = 0.0
@@ -268,12 +278,13 @@ class Portfolio:
     def update_cash(self, fill: FillEvent) -> None:
         fill_cost = fill.quantity * fill.fill_cost
         if fill.direction == "BUY":
-            self.current_capital -= fill_cost + fill.commission
+            cash_chng = -(fill_cost + fill.commission)
         elif fill.direction == "SELL":
-            self.current_capital += fill_cost - fill.commission
+            cash_chng = (fill_cost - fill.commission)
         else:
-            raise ValueError(f"Invalid fill direction {fill.direction} "
-                             f"in cash update. Expected 'BUY' or 'SELL'.")
+            raise ValueError(f"Invalid fill direction {fill.direction} in cash update. Expected 'BUY' or 'SELL'.")
+        self.cash_reserves[self.account_currency] += cash_chng
+        self.current_capital = self.cash_reserves[self.account_currency]
         self.total_commission += fill.commission
 
     #Updates average price and realized PnL for the ticker based on the new fill

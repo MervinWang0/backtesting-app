@@ -24,59 +24,75 @@
 {% comment %} Create strategy dropdown button {% endcomment %}
 <div class="pane1" id="input_wrapper" name="input_wrapper">
     <p class="header1">Choose parameters for simulation</p>
-    <div class="param_element" id="jump_diffusion_div">
-        <label for="jump_diffusion">Jump Diffusion:</label>
-        <input type="checkbox" id="is_jump_diffusion" name="Jump Diffusion"><br>
-    </div>
+    <div class="input-grid">
+        <div class="param_element activity-value input-field checkbox_container" id="jump_diffusion_div">
+            <label for="is_jump_diffusion">Jump Diffusion:
+                <input type="checkbox" id="is_jump_diffusion" name="Jump Diffusion">
+                {% comment %} <span class="checkmark"></span> {% endcomment %}
+            </label>
+        </div>
 
-    <div class="param_element" id="regime_switching_div">
-        <label for="regime_switching">Regime Switching:</label>
-        <input type="checkbox" id="is_regime_switching" name="Regime Switching"><br>
-    </div>
+        <div class="param_element activity-value input-field checkbox_container" id="regime_switching_div">
+            <label for="is_regime_switching">Regime Switching:
+                <input type="checkbox" id="is_regime_switching" name="Regime Switching">
+                {% comment %} <span class="checkmark"></span> {% endcomment %}
+            </label>
+        </div>
 
-    <div class="param_element" id="is_t_div">
-        <label for="is_t">T Distribution:</label>
-        <input type="checkbox" id="is_t" name="T Distribution"><br>
-    </div>
+        <div class="param_element activity-value input-field checkbox_container" id="is_t_div">
+            <label for="is_t">T Distribution:</label>
+                <input type="checkbox" id="is_t" name="T Distribution">
+                {% comment %} <span class="checkmark"></span> {% endcomment %}
+            </label>
+        </div>
 
-    <div class="param_element" id="num_sims_div">
-        <label for="num_sims">Number of Simulations:</label>
-        <input type="number" id="num_sims" name="Number of Simulations"><br>
-    </div>
+        <div class="param_element activity-value input-field" id="num_sims_div">
+            <label for="num_sims">Number of Simulations:
+                <input type="number" id="num_sims" name="Number of Simulations"><br>
+            </label>
+        </div>
 
-    <div class="param_element" id="dt_div">
-        <label for="dt">Time Step:</label>
-        <input type="number" id="dt" name="Time Step">
-    </div>
+        <div class="param_element activity-value input-field" id="dt_div">
+            <label for="dt">Time Step:
+                <input type="number" id="dt" name="Time Step">
+            </label>
+        </div>
 
-    <div class="param_element" id="mu_div">
-        <label for="mu">Simple Average Daily Return:</label>
-        <input type="number" id="mu" name="Simple Daily Average Mean"><br>
-    </div>
+        <div class="param_element activity-value input-field" id="mu_div">
+            <label for="mu">Simple Average Daily Return:
+                <input type="number" id="mu" name="Simple Daily Average Mean"><br>
+            </label>
+        </div>
 
-    <div class="param_element" id="sigma_div">
-        <label for="sigma">Average Daily Volatility:</label>
-        <input type="number" id="sigma" name="Average Daily Volatility"><br>
-    </div>
+        <div class="param_element activity-value input-field" id="sigma_div">
+            <label for="sigma">Average Daily Volatility:
+                <input type="number" id="sigma" name="Average Daily Volatility"><br>
+            </label>
+        </div>
 
-    <div class="param_element" id="df_div" style="display:none;">
-        <label for="df">Degree of Freedom:</label>
-        <input type="number" id="df" name="Degree of Freedom">
-    </div>
+        <div class="param_element activity-value input-field" id="df_div" style="display:none;">
+            <label for="df">Degree of Freedom:
+                <input type="number" id="df" name="Degree of Freedom">
+            </label>
+        </div>
 
-    <div class="param_element" id="exp_jumps_div" style="display:none;">
-        <label for="exp_jumps">Yearly Expected Number of Jumps:</label>
-        <input type="number" id="exp_jumps" name="Yearly Expected Number of Jumps">
-    </div>
+        <div class="param_element activity-value input-field" id="exp_jumps_div" style="display:none;">
+            <label for="exp_jumps">Yearly Expected Number of Jumps:
+                <input type="number" id="exp_jumps" name="Yearly Expected Number of Jumps">
+            </label>
+        </div>
 
-    <div class="param_element" id="mean_log_jump_size_div" style="display:none;">
-        <label for="mean_log_jump_size">Average Log Jump Size:</label>
-        <input type="number" id="mean_log_jump_size" name="Average Log Jump Size">
-    </div>
+        <div class="param_element activity-value input-field" id="mean_log_jump_size_div" style="display:none;">
+            <label for="mean_log_jump_size">Average Log Jump Size:
+                <input type="number" id="mean_log_jump_size" name="Average Log Jump Size">
+            </label>
+        </div>
 
-    <div class="param_element" id="std_log_jump_size_div" style="display:none;">
-        <label for="std_log_jump_size">Average Log Jump Volatility:</label>
-        <input type="number" id="std_log_jump_size" name="Average Log Jump Volatility">
+        <div class="param_element activity-value input-field" id="std_log_jump_size_div" style="display:none;">
+            <label for="std_log_jump_size">Average Log Jump Volatility:
+                <input type="number" id="std_log_jump_size" name="Average Log Jump Volatility">
+            </label>
+        </div>
     </div>
 </div>
 <div class=window1 id="run_mcs_btn_container" name="run_mcs_btn_container">

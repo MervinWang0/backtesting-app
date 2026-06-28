@@ -361,6 +361,8 @@ class DatabaseDataLoader(DataLoader):
                 main_bar = self.load_stock_data(ticker)
             elif self.asset_type == "FUTURES":
                 main_bar = self.load_futures_data(ticker)
+            elif self.asset_type == "FOREX":
+                main_bar = self.load_forex_date(ticker)
             else:
                 raise ValueError(f"Unsupported asset type: {self.asset_type}")
             

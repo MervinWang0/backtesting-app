@@ -24,12 +24,12 @@ const is_t_params_id = ["df"];
 const cleaned_params = {"run_id" : run_id}
 
 // Create an array of inputs
-const inputs_div = document.getElementById("input_wrapper");
+const param_divs = document.querySelectorAll(".input-field");
 const inputs = [];
-for(const div of inputs_div.querySelectorAll("div")){
-    inputs.push(div.querySelector('input'));
+for(const div of param_divs){
+    inputs.push(div.querySelector("input"));
 }
-
+console.log(inputs)
 // Add events to checkbox to show/hide params
 jump_diffusion_checkbox.addEventListener("change", () => show_params(jump_params_id, jump_diffusion_checkbox));
 regime_switching_checkbox.addEventListener("change", () => hide_params(regime_switching_params_id,
@@ -73,10 +73,10 @@ function show_params(input_id_array, checkbox){
         let element = document.getElementById(element_id)
         // console.log(element)
         if (checkbox.checked) {
-            element.parentElement.style.display = "";
+            element.closest("div").style.display = "";
         }
         else {
-            element.parentElement.style.display = "none";
+            element.closest("div").style.display = "none";
         }
     }
 }
@@ -86,10 +86,10 @@ function hide_params(input_id_array, checkbox){
     for(const element_id of input_id_array) {
         let element = document.getElementById(element_id)
         if (checkbox.checked) {
-            element.parentElement.style.display = "none";
+            element.closest("div").style.display = "none";
         }
         else {
-            element.parentElement.style.display = "";
+            element.closest("div").style.display = "";
         }
     }
 }
