@@ -11,24 +11,67 @@ const run_backtest_btn = document.getElementById("run_backtest")
 const view_mcs_btn = document.getElementById("view_mcs_btn")
 
 // The trigger of the buttons calling the function
-strategy_btn.addEventListener("change", show_params)
+strategy_btn.addEventListener("change", change_strategy)
 run_backtest_btn.addEventListener("click", run_backtest)
 view_mcs_btn.addEventListener("click", view_mcs)
 
-// Shows strategy specific params and hides others
-function show_params(){
-    //  Turns chosen strategy's param visible and others invisible
-    const all_strategy_params = document.querySelectorAll(".strategy_parameters");
-    const chosen_strategy_id = this.value;
-    all_strategy_params.forEach(div => {
-        if (div.id === chosen_strategy_id){
-            div.style.display = ""
-        }
-        else {
-            div.style.display = "none";
-        }
-        })
+function show_params(chosen_strategy_id){
+    const SMA = ["short_window", "long_window", "asset_type",
+        "ticker", "strength", "slippage", "initial_capital",
+        "commission", "start_date", "end_date"
+    ]
+    const MR = ["rolling_window", "ticker", "start_date",
+        "end_date"
+    ]
+    let param_list = []
+    switch(String(chosen_strategy_id)) {
+        case "moving_average_crossover":
+            param_list = SMA;
+            break;
+        case "mean_reversion":
+            param_list = MR;
+            break;
+    }
+    return param_list
 }
+
+function change_strategy(){
+    // First obtain the list of params for this particular strategy
+    const chosen_strategy_id = strategy_btn.value;
+    const param_list = show_params(chosen_strategy_id);
+
+    // Iterate through the divs, and if the input id matches the params make it visible
+    // Else it stays/becomes invisible
+    const all_strategy_div = document.querySelectorAll(".input-field")
+    all_strategy_div.forEach(element => {
+        console.log(param_list);
+        console.log(element);
+        console.log(element.querySelector("input").id);
+        if(param_list.includes(element.querySelector("input").id)){
+            element.style.display = "";
+        }
+        else{
+            element.style.display = "none";
+        }
+        
+    });
+
+}
+
+// Shows strategy specific params and hides others
+// function show_params(){
+//     //  Turns chosen strategy's param visible and others invisible
+//     const all_strategy_params = document.querySelectorAll(".strategy_parameters");
+//     const chosen_strategy_id = this.value;
+//     all_strategy_params.forEach(div => {
+//         if (div.id === chosen_strategy_id){
+//             div.style.display = ""
+//         }
+//         else {
+//             div.style.display = "none";
+//         }
+//         })
+// }
 
 // Runs backtest when run button is clicked and input passed
 function run_backtest(){

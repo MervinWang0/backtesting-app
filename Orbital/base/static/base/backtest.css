@@ -1,81 +1,42 @@
 /* Change background colour */
-body {
-  background: linear-gradient(rgb(217, 249, 223), rgb(174, 226, 255));
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-}
+
 
 #view_mcs_button:disabled {
   pointer-events: none;
   color: grey;
 }
-#input_container {
-  /* border-width: thin; */
-  /* border-style: solid; */
-  /* border-color: rgb(181, 186, 255); */
-  /* background-color: radial-gradient(rgb(181, 186, 255), rgb(159, 161, 255)) */
-}
-/* Modify Strategy */
-#strategy {
-  margin: 10px;
-}
-#run_backtest {
-  margin: 10px;
 
-  /* position: absolute;
-  top: 8px;
-  left: 320px; */
+
+/* ---Backtest Specific elements */
+.input-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 240px));
+    gap: 16px 24px;
+    max-width: 40%;
 }
 
-#view_mcs_btn {
-  margin: 10px;
-  /* position: absolute;
-  top: 35px;
-  left: 320px; */
+.input-field{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    max-width: 240px;
+    box-sizing: border-box;
 }
 
-#input_container {
-  position: relative;
-  gap:10px;
+.input-field label {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
 }
 
-/* Style input parameter boxes */
-
-.container {
-  display: flex;
-  flex-flow: row wrap;
-  justify-content: center;
+.input-field input {
+    font-size: 0.8rem;
+    font-weight: 50;
+    color: var(--text-secondary);
+    border-radius: 10px;
+    background-color: var(--surface-secondary);
+    border-color:var(--border-primary) ;
+    border-width: var(--radius-small);
 }
 
-.flex_item {
-
-}
-
-/* Label1 is for Text informing user of input to type in */
-.label1 {
-  background-image: radial-gradient(circle at center, rgb(245, 235, 235), pink);
-  border-width: 0.5rem;
-  /* border-radius: 10%/20%; */
-  border-radius: 0.5rem;
-  border-color: aliceblue;
-  text-align: center;
-}
-
-.strategy_parameters {
-  display: grid;
-  grid-template-columns: 120px 100px;
-  /* grid-template-rows: auto auto; */
-  gap: 12px;
-  align-items: center;
-
-  border-radius: 4px;
-}
-
-.strategy_parameters input {
-  max-width: 150px;
-}
-
-/* Style the output container of metrics */
-.metrics_container p{
-  color: aqua;
-}

@@ -1,11 +1,15 @@
 {% extends "base/base.html" %}
 {% load static %}
+{% comment %} Creates title of page {% endcomment %}
 {% block title %}
-    U.S. Stock Market
+    Dashboard
 {% endblock %}
 
+{% comment %} Code of page {% endcomment %}
 {% block content %}
+<link rel = 'stylesheet' href = "{% static 'base/variables.css' %}">
 <link rel = "stylesheet" href = "{% static 'base/dashboard.css' %}">
+<link rel = 'stylesheet' href = "{% static 'base/component.css' %}">
 <script src = "{% static 'base/dashboard.js' %}" defer></script>
 <section class = "market-hero">
     <div class =  "page-container market-hero__inner">

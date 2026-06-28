@@ -1,60 +1,86 @@
 {% extends "base/base.html" %}
 {% load static %}
+{% comment %} Creates title of page {% endcomment %}
+{% block title %}
+    Backtestor
+{% endblock %}
 
 {%block content%}
+<link rel = 'stylesheet' href = "{% static 'base/variables.css' %}">
+<link rel = 'stylesheet' href = "{% static 'base/component.css' %}">
 <link rel = 'stylesheet' href = "{% static 'base/backtest.css' %}">
 <script src = "{% static 'base/backtest.js' %}"  defer></script>
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 
-{% comment %} container is parent flex {% endcomment %}
+{% comment %} Creating a header for the page {% endcomment %}
+<section class = "market-hero">
+    <div class =  "page-container market-hero__inner">
+        <div>
+            <p class = "eyebrow"> The Best!</p>
+
+            <h1>Pennywise Backtestor</h1>
+
+        </div>
+    </div>
+</section>
+
+{% comment %} container stores all the elements of backtest webpage {% endcomment %}
 <div class="container" name="input_container" id="input_container">
     {% comment %} Create strategy dropdown button {% endcomment %}
     <label for="strategy">Choose a Strategy</label>
-    <select class="flex_item" name="strategy" id="strategy">
+    <select name="strategy" id="strategy">
         <option value="none">--Select--</option>
         <option value="moving_average_crossover">Moving Average Crossover</option>
         <option value="mean_reversion">Mean Reversion</option>
     </select>
 
-    {% comment %} Each specific strategy has parameters {% endcomment %}
-    {% comment %} None strategy {% endcomment %}
-    <div class='strategy_parameters flex_item' id='none' style="display:none;">
-    </div>
+    {% comment %} Strategy params input{% endcomment %}
+    <div class='strategy_parameters input-grid'>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1 ">Short Window:</label>
+            <input type="number" placeholder="e.g. 5, 10" name="short_window" id="short_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1 ">Long Window:</label>
+            <input type="number" placeholder="e.g. 20, 50, 100" class="strategy_input" name="long_window" id="long_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Asset Type:</label>
+            <input type="text" placeholder="e.g. STOCK, FOREX" class="strategy_input" name="asset_type" id="asset_type">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Ticker:</label>
+            <input type="text" placeholder="e.g. AAPL, MSFT" class="strategy_input" name="ticker" id="ticker">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Strength:</label>
+            <input type="number" placeholder="e.g. 1, 10, 50" class="strategy_input" name="strength" id="strength">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Slippage:</label>
+            <input type="number" placeholder="e.g. 1, 5, 10" class="strategy_input" name="slippage" id="slippage">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Initial Capital:</label>
+            <input type="number" placeholder="e.g. 100,000" class="strategy_input" name="initial_capital" id="initial_capital">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Commission:</label>
+            <input type="number" placeholder="e.g. 0.50, 2.00" class="strategy_input" name="commission" id="commission">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Rolling Window:</label>
+            <input type="number" class="strategy_input" name="rolling_window" id="rolling_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Start Date:</label>
+            <input type="date" class="strategy_input" name="start_date" id="start_date">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">End Date:</label>
+            <input type="date" class="strategy_input" name="end_date" id="end_date">
+        </div>
 
-    {% comment %} SMA strategy {% endcomment %}
-    <div class='strategy_parameters flex_item' id='moving_average_crossover' style="display:none;">
-        <label class="label1">Short Window:</label>
-        <input type="number" name="short_window">
-        <label class="label1">Long Window:</label>
-        <input type="number" name="long_window">
-        <label class="label1">Asset Type:</label>
-        <input type="text" name="asset_type">
-        <label class="label1">Ticker:</label>
-        <input type="text" name="ticker">
-        <label class="label1">Strength:</label>
-        <input type="number" name="strength">
-        <label class="label1">Slippage:</label>
-        <input type="number" name="slippage">
-        <label class="label1">Initial Capital:</label>
-        <input type="number" name="initial_capital">
-        <label class="label1">Commission:</label>
-        <input type="number" name="commission">
-        <label class="label1">Start Date:</label>
-        <input type="date" name="start_date">
-        <label class="label1">End Date:</label>
-        <input type="date" name="end_date">
-    </div>
-
-    {% comment %} mean reversion strategy  {% endcomment %}
-    <div class='strategy_parameters flex_item' id='mean_reversion' style="display:none;">
-        <label>Rolling Window:</label>
-        <input type="number" name="rolling_window">
-        <label>Ticker:</label>
-        <input type="text" name="ticker">
-        <label>Start Date:</label>
-        <input type="date" name="start_date">
-        <label>End Date:</label>
-        <input type="date" name="end_date">
     </div>
 
     {% comment %} Button to submit strategy params and run backtest {% endcomment %}
