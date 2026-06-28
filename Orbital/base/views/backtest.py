@@ -44,14 +44,17 @@ def backtest_graph(request) -> HttpResponse:
         print(data)
         # Checks if stock data exists for ticker in period otherwise download
         period = get_yf_period(data["start_date"], data["end_date"])
-        for ticker in data["tickers"]:
-            if not data_exists(ticker, data["start_date"], data["end_date"]):
-                call_command(
-                    "load_stock_data",
-                    symbol = ticker,
-                    period = period,
-                    interval = "1d",
-                )
+        if data["asset_type"] == "STOCK":
+            for ticker in data["tickers"]:
+                if not data_exists(ticker, data["start_date"], data["end_date"]):
+                    call_command(
+                        "load_stock_data",
+                        symbol = ticker,
+                        period = period,
+                        interval = "1d",
+                    )
+        # elif data["asset_type"] == "FOREX": TODO
+            
 
         # Use inputs to construct some necessary parameters
         events = Queue()
