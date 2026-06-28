@@ -424,3 +424,45 @@ def backtest_run_records(request):
         "position_record": position_record,
         "fill_record": fill_record,
     })
+
+@login_required
+def portfolio(request):
+    accounts = (
+        PaperAccount.objects.filter(user=request.user).order_by("id")
+    )
+
+    selected_account = None
+    positions = []
+    trades = []
+
+    selected_account_id = request.GET.get("account")
+
+    if selected_account_id:
+        selected_account = get_object_or_404(
+            accounts,
+            pk = selected_account_id,
+        )
+    else:
+        selected_account = accounts.first()
+    
+    if selected_account:
+        positions = (
+            selected_account.positions
+            .select_related("stock", "forex", "futures")
+            .order_by("-updated_at")
+        )
+
+        trades = (
+            PaperTrade.objects.filter(order__account = selected_account)
+            .select_related("order")
+            .order_by("-executed_at", "-id")
+        )
+    
+    context = {
+        "accounts": accounts,
+        "selected_account": selected_account,
+        "positions" : positions,
+        "trades" : trades,
+    }
+
+    return render(request, "portfolio.html", context)

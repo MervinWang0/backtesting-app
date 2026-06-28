@@ -94,6 +94,8 @@ function hide_params(input_id_array, checkbox){
     }
 }
 
+const cannot_negative_id_list = []
+const must_int_id_list = []
 // Checks if the correct parameters are filled in
 function validate(){
     // Obtain list of input ids that are displayed

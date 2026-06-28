@@ -80,6 +80,9 @@ function run_backtest(){
     view_mcs_btn.disabled = false
 }
 
+const cannot_negative_id_list = ["short_window", "long_window", "strength", "commission", "slippage", "initial_capital",
+    "rolling_window"]
+const must_int_id_list = ["short_window", "long_window", "rolling_window"]
 // Checks if all the inputs of a strategy is passed
 function validate(){
     // Determine the strategy
@@ -89,13 +92,23 @@ function validate(){
     const all_strategy_div = document.querySelectorAll(".input-field")
     all_strategy_div.forEach(element => {
         let input = element.querySelector("input")
-        console.log(param_list);
-        console.log(element);
-        console.log(element.querySelector("input").id);
+        // console.log(param_list);
+        // console.log(element);
+        // console.log(element.querySelector("input").id);
         // If each element's input is within inputs of the specifc strategy
         // and if they value of the input is empty, make an alert
         if(param_list.includes(input.id) && input.value == ""){
             alert(`Please enter the require fields ${input.name}`)
+            return false;
+        }
+        // Negative number error handling
+        if(cannot_negative_id_list.includes(input.id) && input.value < 0){
+            alert(`${input.name} cannot be negative`);
+            return false;
+        }
+        // Integer number handling
+        if(must_int_id_list.includes(input.id) && !Number.isInteger(input.value)){
+            alert(`${input.name} must be an integer`);
             return false;
         }
     });
