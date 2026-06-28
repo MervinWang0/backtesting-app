@@ -1,0 +1,160 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="paper-dashboard">
+    <h1>Paper trading account</h1>
+
+    {% if accounts %}
+        <form method="get" id="account-selector">
+            <label for="account">Paper Account</label>
+
+            <select
+                name="account"
+                id="account"
+                onchange="this.form.submit()"
+            >
+                {% for account in accounts %}
+                    <option
+                        value="{{ account.id }}"
+                        {% if selected_account and account.id == selected_account.id %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ account }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <noscript>
+                <button type="submit">Display account details</button>
+            </noscript>
+        </form>
+
+        {% if selected_account %}
+            <section class="account-summary">
+                <h2>Account summary</h2>
+
+                <dl>
+                    <dt>Account</dt>
+                    <dd>{{ selected_account }}</dd>
+
+                    <dt>Account ID</dt>
+                    <dd>{{ selected_account.name }}</dd>
+
+                    {% if selected_account.balance is not None %}
+                        <dt>Cash balance</dt>
+                        <dd>{{ selected_account.balance|floatformat:2 }}</dd>
+                    {% endif %}
+                </dl>
+            </section>
+
+            <section>
+                <h2>Open positions</h2>
+
+                {% if positions %}
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Stock</th>
+                                    <th>Quantity</th>
+                                    <th>Average cost</th>
+                                    <th>Realised PnL</th>
+                                    <th>Updated</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for position in positions %}
+                                    <tr>
+                                        <td>{{ position.stock.ticker }}</td>
+                                        <td>
+                                            {{ position.stock_quantity|floatformat:4 }}
+                                        </td>
+                                        <td>
+                                            {{ position.avg_cost|floatformat:4 }}
+                                        </td>
+                                        <td>
+                                            {{ position.realised_pnl|floatformat:4 }}
+                                        </td>
+                                        <td>
+                                            {{ position.updated_at|date:"d M Y, H:i" }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p>This account does not have any open positions.</p>
+                {% endif %}
+            </section>
+
+            <section>
+                <h2>Trade history</h2>
+                {% if trades %}
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Stock</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Opened</th>
+                                    <th>Closed</th>
+                                    <th>Gross amount</th>
+                                    <th>Comission</th>
+                                    <th>Realised P&L</th>
+                                    <th>Cash Change</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for trade in trades %}
+                                    <tr>
+                                        <td>
+                                            {{ trade.date|date:"d M Y" }}
+                                        </td>
+                                        <td>
+                                            {{ trade.stock.ticker }}
+                                        </td>
+                                        <td>
+                                            {{ trade.fulfilled_price|floatformat:4 }}
+                                        </td>
+                                        <td>
+                                            {{ trade.quantity|floatformat:4 }}
+                                        </td>
+                                        <td>
+                                            {{ trade.opened_quantity|floatformat:4 }}
+                                        </td>
+                                        <td>
+                                            {{ trade.closed_quantity|floatformat:4 }}
+                                        </td>
+                                        <td>
+                                            {{ trade.gross_amount|floatformat:4 }}
+                                        </td>
+                                        <td>
+                                            {{ trade.commission|floatformat:4 }}
+                                        </td>
+                                        <td>
+                                            {{ trade.realised_pnl|floatformat:4 }}
+                                        </td>
+                                        <td>
+                                            {{ trade.cash_change|floatformat:4 }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p>This account does not have any trades.</p>
+                {% endif %}
+            </section>
+        {% endif %}
+    {% else %}
+        <p>You do not have any paper trading accounts.</p>
+    {% endif %}
+</div>
+{% endblock %}

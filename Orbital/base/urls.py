@@ -14,6 +14,7 @@ urlpatterns = [
     path("stocks/", views.stock, name = "stock"),
     path("stocks/<str:symbol>/order/", views.submit_paper_order, name= "submit_paper_order"),
     path("paper-accounts/create", views.create_paper_account, name="create_paper_account"),
+    path("portfolio/", views.portfolio, name="portfolio"),
 
     # #Authentication wrapped under accounts
     # path("accounts/Login/", views.Login, name = "Login"),
