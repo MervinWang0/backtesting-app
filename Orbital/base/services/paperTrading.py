@@ -7,7 +7,6 @@ from django.db import transaction
 from django.utils import timezone
 
 
-
 User = get_user_model()
 zero = Decimal("0")
 

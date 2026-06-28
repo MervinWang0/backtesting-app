@@ -105,7 +105,7 @@
 }
 
 .primary-button {
-    color: white;
+    color: var(--text-primary);
     background: var(--accent);
     border: 1px solid var(--accent);
 }

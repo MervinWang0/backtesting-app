@@ -150,3 +150,6 @@ STATIC_URL = '/static/'
 
 # For deployment, whitenoise requires the static root to be defined
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+LOGIN_REDIRECT_URL = "dashboard"
+LOGOUT_REDIRECT_URL = "login"

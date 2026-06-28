@@ -100,11 +100,11 @@ function validate(){
     // If any of their values are empty string alert
     for(const input of inputs) {
         // console.log(input.style.display)
-        if(input.parentElement.style.display === "" && input.value === ""){
+        if(input.closest("div").style.display === "" && input.value === ""){
             alert(`Please fill in the field of ${input.name}`);
             return false;
         }
-        else if(input.parentElement.style.display === "") {
+        else if(input.closest("div").style.display === "") {
             cleaned_params[input.id] = input.value;
         }
     }

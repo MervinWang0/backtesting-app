@@ -1,0 +1,67 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class = "create-paper-account">
+    <div class = "page-header">
+        <h1>Create a paper account</h1>
+    </div>
+
+    <form method = "post" class = "create-paper-account-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class = "form-errors">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class = "form-field">
+            <label for="{{ form.name.id_for_label }}">
+                {{ form.name.label }}
+            </label>
+
+            {{ form.name }}
+
+            <small>
+                {{ form.name.help_text }}
+            </small>
+
+            {% for error in form.name.errors %}
+                <p class = "field-error">
+                    {{ error }}
+                </p>
+            {% endfor %}
+        </div>
+
+        <div class = "form-field">
+            <label for="{{ form.initial_capital.id_for_label }}">
+                {{ form.initial_capital.label }}
+            </label>
+
+            {{ form.initial_capital }}
+
+            <small>
+                {{ form.initial_capital.help_text }}
+            </small>
+
+            {% for error in form.initial_capital.errors %}
+                <p class = "field-error">
+                    {{ error }}
+                </p>
+            {% endfor %}
+        </div>
+
+        <div class = "form-actions">
+            <button type="submit" class = "primary-button">
+                Create account
+            </button>
+
+            <a href="{% url 'dashboard' %}" class = "secondary-button">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

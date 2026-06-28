@@ -1,16 +1,16 @@
 {% extends "base/base.html" %}
 {% load static %}
-{% comment %} Creates title of page {% endcomment %}
+
 {% block title %}
     Dashboard
 {% endblock %}
 
-{% comment %} Code of page {% endcomment %}
 {% block content %}
 <link rel = 'stylesheet' href = "{% static 'base/variables.css' %}">
 <link rel = "stylesheet" href = "{% static 'base/dashboard.css' %}">
 <link rel = 'stylesheet' href = "{% static 'base/component.css' %}">
 <script src = "{% static 'base/dashboard.js' %}" defer></script>
+<script src = "{% static 'base/stock.js' %}" defer></script>
 <section class = "market-hero">
     <div class =  "page-container market-hero__inner">
         <div>
@@ -36,6 +36,79 @@
         </div>
     </div>
 </section>
+
+{% if not accounts %}
+    <section class = "empty-state">
+        <h2>No paper accounts yet</h2>
+
+        <p>
+            Create a paper account to start simulated trades
+        </p>
+
+        <a
+            href = "{% url 'create_paper_account' %}"
+            class = "primary-button">
+        Create paper account
+        </a>
+    </section>
+{% else %}
+    <section class = "account-summary">
+        <form 
+            method = "get"
+            action = "{% url 'dashboard' %}"
+            class = "account-selector">
+            <div class = "form-field">
+                <label for="account">
+                    Selected account
+                </label>
+
+                <select id = "account" name = "account" onchange="this.form.submit()">
+                    {% for account in accounts %}
+                        <option
+                            value="{{ account.id }}"
+                            {% if selected_account.pk == account.pk %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ account.name }}
+                            {{ account.cash_balance }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="secondary-button">
+                View account
+            </button>
+        </form>
+        <a
+            href="{% url 'create_paper_account' %}"
+            class = "primary-button"
+        >
+        Create another account
+        </a>
+    </section>
+
+    <div class="summary-card">
+        <span class = "summary-label">
+            Starting balance
+        </span>
+
+        <strong>
+            USD ${{ selected_account.initial_capital|floatformat:2 }}
+        </strong>
+
+        <div class="summary-card">
+            <span class=""summary-label>
+                Available cash
+            </span>
+
+            <strong>
+                USD ${{ selected_account.cash_balance|floatformat:2 }}
+            </strong>
+        </div>
+    </div>
+{% endif %}
 
 <section class = "portfolio-summary-section">
     <div class = "section-heading">

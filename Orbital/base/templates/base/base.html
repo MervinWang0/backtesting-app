@@ -11,39 +11,47 @@
             Penny Wise
         {% endblock %}
     </title>
+
+    <nav class="navbar">
+        <a href="/" class="brand">
+            <span class = "brand-icon">↗</span>
+            PennyWise
+        </a>
+
+        <div class="nav-links">
+            <a href = "/dashboard" class="nav-link active">Dashboard</a>
+            <a href = "/backtest" class="nav-link active">Backtest</a>
+            <a href="/portfolio" class = "nav-link active">Portfolio</a>
+        </div>
+
+    </nav>
+
+    <link
+        rel="stylesheet"
+        href="{% static 'base/navbar.css' %}"
+    >
+
+    <link
+        rel = "stylesheet"
+        href = "{% static 'base/dashboard.css' %}"
+    >
+
+    <script
+        src = "{% static 'base/dashboard.js' %}"
+        defer
+    ></script>
+
+    <script
+        src = "{% static 'base/stock.js' %}"
+        defer
+    ></script>
+    <link rel = 'stylesheet' href = "{% static 'base/variables.css' %}">
+    <link rel = 'stylesheet' href = "{% static 'base/component.css' %}">
 </head>
 
 <body>
-    <header class = "site-header">
-        <div class = "site-header__inner">
-            {% comment %} <a href = "{% url 'dashboard' %}" class = "brand">
-                PennyWise
-            </a> {% endcomment %}
-
-            <nav class = "main-navigation" aria-label = "Main Navigation">
-                {% comment %} <a
-                    href = "{% url 'dashboard' %}"
-                    class = "main-navigation__link main-navigation__link--active"
-                > 
-                Market
-            </a> {% endcomment %}
-
-            {% comment %} <a href = "{% url 'Backtest' %}" class = "main-navigation__link">
-                Backtest
-            </a> {% endcomment %}
-
-            {% comment %} <a href = "{% url 'Porfolio' %}" class = "main-navigatioon__link">
-                Portfolio
-            </a> {% endcomment %}
-            </nav>
-        </div>
-    </heaader>
-
-    <main>
     {% block content %}
-    <link rel = 'stylesheet' href = "{% static 'base/variables.css' %}">
     {% endblock %}
-</main>
 </body>
-</html>
 
+</html>
