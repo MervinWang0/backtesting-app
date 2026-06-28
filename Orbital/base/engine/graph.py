@@ -87,6 +87,24 @@ def show_price_graphs(prices: list[list[float]]) -> px.Figure:
                       yaxis_title="Price")
     return fig
 
+def get_ohlv_graph2(stock_data: list[StockPriceHistory]):
+    data = {
+        'Date' : [bar.date for bar in stock_data],
+        'Open' : [bar.open_price for bar in stock_data],
+        'High' : [bar.high_price for bar in stock_data],
+        'Low' : [bar.low_price for bar in stock_data],
+        'Close' : [bar.close_price for bar in stock_data]
+    }
+    df = pd.DataFrame(data)
+    fig = go.Figure(data=[go.Ohlc(
+        x=df['Date'],
+        open=df['Open'],
+        high=df['High'],
+        low=df['Low'],
+        close=df['Close']
+    )])
+    return fig
+
 if __name__ == "__main__":
     pass
 
