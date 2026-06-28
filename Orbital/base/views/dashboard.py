@@ -170,41 +170,41 @@ def data_exists(symbol, start_date, end_date):
     return True    
 
 #  I don't understand this code I'm going to comment it out
-# def backtest_run(request):
-#     start_date = request.POST.get("start_date")
-#     end_date = request.POST.get("end_date")
-#     ticker = request.POST.get("ticker","").upper().strip()
+def backtest_run(request):
+    start_date = request.POST.get("start_date")
+    end_date = request.POST.get("end_date")
+    ticker = request.POST.get("ticker","").upper().strip()
 
-#     start_date_fixed = datetime.strptime(start_date, "%Y-%m-%d").date()
-#     end_date_fixed = datetime.strptime(end_date, "%Y-%m-%d").date()
+    start_date_fixed = datetime.strptime(start_date, "%Y-%m-%d").date()
+    end_date_fixed = datetime.strptime(end_date, "%Y-%m-%d").date()
 
-#     period = get_yf_period(start_date_fixed, end_date_fixed)
+    period = get_yf_period(start_date_fixed, end_date_fixed)
 
-#     if not data_exists(ticker, start_date_fixed, end_date_fixed):
-#         call_command(
-#             "load_stock_data",
-#             symbol = ticker,
-#             period = period,
-#             interval = "1d",
-#         )
+    if not data_exists(ticker, start_date_fixed, end_date_fixed):
+        call_command(
+            "load_stock_data",
+            symbol = ticker,
+            period = period,
+            interval = "1d",
+        )
 
-#     events = Queue()
-#     # I'm placing asset_type as "STOCK" for now, because I don't understand
-#     # the post method of this function well enough to pass asset_type in
-#     data_loader = DatabaseDataLoader(events=events,
-#                                      tickers=[ticker],
-#                                      start_date=start_date_fixed,
-#                                      end_date=end_date_fixed,
-#                                      asset_type="STOCK")
-#         events = events,
-#         tickers = [ticker],
-#         start_date = start_date_fixed,
-#         end_date = end_date_fixed,
-#         strategy_name= "MAC",
-#     )
+    events = Queue()
+    # I'm placing asset_type as "STOCK" for now, because I don't understand
+    # the post method of this function well enough to pass asset_type in
+    data_loader = DatabaseDataLoader(events=events,
+                                     tickers=[ticker],
+                                     start_date=start_date_fixed,
+                                     end_date=end_date_fixed,
+                                     asset_type="STOCK")
+        events = events,
+        tickers = [ticker],
+        start_date = start_date_fixed,
+        end_date = end_date_fixed,
+        strategy_name= "MAC",
+    )
 
-#     backtest_run = backtest.run()
-#     return redirect(f"/backtestrunrecords/?run_id={backtest_run.id}")
+    backtest_run = backtest.run()
+    return redirect(f"/backtestrunrecords/?run_id={backtest_run.id}")
 
 def backtest_run_records(request):
     run_id = request.GET.get("run_id")
