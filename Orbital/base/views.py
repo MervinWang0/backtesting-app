@@ -33,8 +33,8 @@ PRICE_OUTPUT_FIELD = DecimalField(
 
 #register related
 def register_view(request):
-    if request.user.is_authenticated:
-        return redirect("dashboard")
+    # if request.user.is_authenticated:
+    #     return redirect("dashboard")
     
     if request.method == "POST":
         form = RegisterForm(request.POST)
@@ -181,7 +181,7 @@ def dashboard(request):
         .order_by("-date")
     )
 
-    total_assets = get_total_assests(positions, selected_account.cash_balance)
+    total_assets = get_total_assets(positions, selected_account.cash_balance)
 
     context = {
         "accounts" : accounts,
@@ -208,12 +208,17 @@ def get_porfolio_summary(user):
         "Today_pnl" : Decimal("999.99"),
     }
 
-def get_total_assests(positions, cash):
-    assets = 0
-    for stock in positions:
-        latest_price_rows = (StockPriceHistory.objects.filter(stock=stock).order_by('-date'))
-        latest_price = Subquery(latest_price_rows.values("close_price")[:1])
-        assets += stock.quantity * latest_price
+def get_total_assets(positions, cash):
+    assets = Decimal("0")
+    for position in positions:
+        latest_price = (StockPriceHistory.objects.filter(stock_id=position.stock_id).order_by('-date','-pk').values_list("close_price", flat=True).first())
+        print("quantity:", repr(position.stock_quantity))
+        print("price:", repr(latest_price))
+        print("cash:", repr(cash))
+        if latest_price is not None:
+            qty = Decimal(str(position.stock_quantity))
+            price = Decimal(str(latest_price))
+            assets += (qty * price)
     return assets + cash
 
 
