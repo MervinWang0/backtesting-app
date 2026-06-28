@@ -22,18 +22,6 @@
                 Heatmap for stocks
             </p>
         </div>
-        <div class = "market-status">
-            <span class = "market-status__dot"></span>
-
-            <span>
-                Latest close price:
-                {% if market_date %}
-                    {{ market_date|date:"M j, Y" }}
-                {% else %}
-                    No price data
-                {% endif %}
-            </span>
-        </div>
     </div>
 </section>
 

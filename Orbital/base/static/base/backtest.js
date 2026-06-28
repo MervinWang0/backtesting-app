@@ -97,17 +97,20 @@ function validate(){
         // console.log(element.querySelector("input").id);
         // If each element's input is within inputs of the specifc strategy
         // and if they value of the input is empty, make an alert
-        if(param_list.includes(input.id) && input.value == ""){
+        const is_visible = (input) => input.closest("div").style.display == ""
+        if(param_list.includes(input.id) && input.value == "" && is_visible(input)){
             alert(`Please enter the require fields ${input.name}`)
             return false;
         }
         // Negative number error handling
-        if(cannot_negative_id_list.includes(input.id) && input.value < 0){
+        if(cannot_negative_id_list.includes(input.id) && input.value < 0 && is_visible(input)){
             alert(`${input.name} cannot be negative`);
             return false;
         }
         // Integer number handling
-        if(must_int_id_list.includes(input.id) && !Number.isInteger(input.value)){
+        const isIntegerString = (str) => Number.isInteger(Number(str)) && str.trim() !== "";
+        // console.log(!Number.isInteger(input.value))
+        if(must_int_id_list.includes(input.id) && !isIntegerString(input.value) && is_visible(input)){
             alert(`${input.name} must be an integer`);
             return false;
         }
