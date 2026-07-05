@@ -1,0 +1,76 @@
+import os
+import sys
+import django
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(BASE_DIR))
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Orbital.settings")
+django.setup()
+
+
+from queue import Queue
+from datetime import datetime
+from base.engine.data_loader import (DataLoader, Bar,
+                                     DatabaseDataLoader,
+                                     MCSDataLoader)
+from base.engine.backtest import Backtest, BacktestResult
+import numpy as np
+import pandas as pd
+import math
+import plotly.graph_objects as go
+# from scipy.stats import t as student_t
+# from scipy.stats import kurtosis
+import base.engine.graph as graph
+# from base.engine.distribution import Distribution
+from base.engine.monte_carlo_simulation import (MonteCarloSimulator,
+                GBMPriceSimulator, JumpComponent, RegimeComponent,
+                TComponent)
+from scipy import stats
+from functools import wraps
+from time import time
+
+def timed(f):
+    '''
+    This function is used to time any function
+    Usage syntax
+    @timed
+    def funct()
+    '''
+
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time()
+        result = f(*args, **kwds)
+        elapsed = time() - start
+        print(f"function {f.__name__} took {elapsed}")
+        return result
+    return wrapper
+
+if __name__ == "__main__":
+
+    @timed
+    def repeat_backtest(num_sims: int, backtest) -> None:
+        for _ in range(num_sims):
+            backtest.run()
+        
+    # Test obtaining og list historical data
+    start_date = datetime.fromisoformat("2021-05-24").date()
+    end_date = datetime.fromisoformat("2022-05-24").date()
+    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
+                             end_date, "STOCK")
+    backtest = Backtest(
+                        events=data_loader.events,
+                        tickers=["AAPL"],
+                        start_date=start_date,
+                        end_date=end_date,
+                        strategy_name="MovingAverageCross",
+                        asset_type="STOCK",
+                        short_window=5,
+                        long_window=10,
+                        data_loader=data_loader)
+    backtest.run()
+    stock_data = backtest.data_loader.get_stock_data()
+    
+    repeat_backtest(10, backtest)

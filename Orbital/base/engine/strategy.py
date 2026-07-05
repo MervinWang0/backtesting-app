@@ -3,7 +3,25 @@ from base.engine.data_loader import DataLoader, Bar
 from base.engine.execution import ExecutionLoader
 from queue import Queue
 from abc import ABC,abstractmethod
+from functools import wraps
+from time import time
 
+def timed(f):
+    '''
+    This function is used to time any function
+    Usage syntax
+    @timed
+    def funct()
+    '''
+
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time()
+        result = f(*args, **kwds)
+        elapsed = time() - start
+        print(f"function {f.__name__} took {elapsed}")
+        return result
+    return wrapper
 
 class Strategy(ABC):
     @abstractmethod
@@ -35,6 +53,7 @@ class MovingAverageCross:
         closes = [bar.close for bar in bars]
         return sum(closes) / len(closes)
 
+    # @timed
     def generate_signal(self, ticker: str) -> SignalEvent:
         #print("generating signal for ticker", ticker)
         try:

@@ -163,7 +163,8 @@ class MonteCarloSimulator():
                             asset_type=asset_type)
                             for i in range(len(og_data))]
         return random_stock_data
-
+    
+    @timed
     def run_backtest(self, random_stock_data: list[Bar]) -> any:
         ''' 
         This function is just to seperate the execution of the backtest with randomized

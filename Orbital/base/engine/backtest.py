@@ -11,6 +11,25 @@ from base.engine.strategy import MovingAverageCross
 import base.engine.graph as graph
 import base.engine.performance as p
 import base.models as models
+from functools import wraps
+from time import time
+
+def timed(f):
+    '''
+    This function is used to time any function
+    Usage syntax
+    @timed
+    def funct()
+    '''
+
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time()
+        result = f(*args, **kwds)
+        elapsed = time() - start
+        print(f"function {f.__name__} took {elapsed}")
+        return result
+    return wrapper
 
 class BacktestResult:
     '''
@@ -18,6 +37,7 @@ class BacktestResult:
     It contains all the data used to generate various metrics.
     The methods are in performance.py
     '''
+    # @timed
     def __init__(self, equity_records: list[dict[str, any]], fill_records: list[dict[str, any]],
                  risk_free_rate: float):
         self.equity_records = pd.DataFrame(equity_records)
@@ -63,6 +83,7 @@ class BacktestResult:
         df["pnl"] = (df['sell_price'] - df['buy_price']) * df['quantity']
         return df
 
+    @timed
     def get_metrics(self):
         '''
         Returns various performance and portfolio metrics
@@ -72,6 +93,7 @@ class BacktestResult:
                              trade_log=self.get_closed_trades())
 
 class Backtest:
+    @timed
     def __init__(self, events: Queue,
                  tickers: list[str],
                  start_date: datetime.date,
@@ -150,6 +172,7 @@ class Backtest:
         '''
         return self.run_model.id
 
+    @timed
     def run(self):
         '''
         Function that executes the backtest.
@@ -166,6 +189,7 @@ class Backtest:
         self.run_model.save()
         return result
 
+    # @timed
     def execute_events(self):
         '''
         Helper function for run, represents the handling of each bar,

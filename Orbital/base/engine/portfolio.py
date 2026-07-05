@@ -6,6 +6,25 @@ from base.engine.data_loader import DataLoader
 from base.engine.events import SignalEvent, OrderEvent, FillEvent, AssetType
 from base.models import (BacktestRun, PortfolioEquityRecord,
 PortfolioPositionRecord, PortfolioFillRecord, Stock, BenchmarkRecord, StockPriceHistory)
+from functools import wraps
+from time import time
+
+def timed(f):
+    '''
+    This function is used to time any function
+    Usage syntax
+    @timed
+    def funct()
+    '''
+
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time()
+        result = f(*args, **kwds)
+        elapsed = time() - start
+        print(f"function {f.__name__} took {elapsed}")
+        return result
+    return wrapper
 
 def to_decimal(val) -> Decimal:
     '''
@@ -17,8 +36,9 @@ def to_decimal(val) -> Decimal:
 class Portfolio:
     def __init__(self, data_loader: DataLoader, events: Queue, 
                  run_name: str, strategy_name: str, start_date: datetime, end_date: datetime,
-                 btr_model: BacktestRun, initial_capital: float =  100000.0, quantity =  5,
-                 commission: float = 0):#, User = None):
+                  initial_capital: float =  100000.0, quantity =  5,
+                 commission: float = 0, btr_model: BacktestRun = None):#, User = None):
+
         self.data_loader = data_loader
         self.events = events
         self.initial_capital = initial_capital
@@ -167,6 +187,7 @@ class Portfolio:
             total_value += quantity * price
         return total_value
 
+    # @timed
     def generate_order(self, signal: SignalEvent) -> OrderEvent:
         ticker = signal.ticker
         signal_type = signal.signal_type

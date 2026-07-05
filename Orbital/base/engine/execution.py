@@ -1,7 +1,25 @@
 from queue import Queue
 from base.engine.events import OrderEvent, FillEvent
 from base.engine.data_loader import DataLoader
+from functools import wraps
+from time import time
 
+def timed(f):
+    '''
+    This function is used to time any function
+    Usage syntax
+    @timed
+    def funct()
+    '''
+
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time()
+        result = f(*args, **kwds)
+        elapsed = time() - start
+        print(f"function {f.__name__} took {elapsed}")
+        return result
+    return wrapper
 
 class ExecutionLoader:
     '''
@@ -33,7 +51,7 @@ class ExecutionLoader:
         self.commission = commission
         self.slippage = slippage
 
-
+    # @timed
     def execute(self, event: OrderEvent):
         '''
         Description

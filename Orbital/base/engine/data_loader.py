@@ -18,7 +18,25 @@ from datetime import datetime, timedelta, date
 from queue import Queue
 from abc import ABC, abstractmethod
 from typing import Optional
+from functools import wraps
+from time import time
 
+def timed(f):
+    '''
+    This function is used to time any function
+    Usage syntax
+    @timed
+    def funct()
+    '''
+
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time()
+        result = f(*args, **kwds)
+        elapsed = time() - start
+        print(f"function {f.__name__} took {elapsed}")
+        return result
+    return wrapper
 #Dataclass to represent a single bar of data, each data contains
 #  the ticker, date, open, high, low, close, volume and asset type
 @dataclass(frozen=True)
@@ -83,7 +101,7 @@ class DataLoader(ABC):
     Implement a more robust timeline building function, the current function
     considers all dates where at least one stock traded as a valid date.
     '''
-     
+    # @timed
     def __init__(self, events : Queue, tickers: list[str], start_date: datetime.date,
                  end_date: datetime.date, asset_type : str):
         self.events = events
