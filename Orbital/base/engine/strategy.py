@@ -2,8 +2,23 @@ from base.engine.events import SignalEvent
 from base.engine.data_loader import DataLoader, Bar
 from base.engine.execution import ExecutionLoader
 from queue import Queue
+from abc import ABC,abstractmethod
 
 
+class Strategy(ABC):
+    @abstractmethod
+    def generate_signal() -> SignalEvent:
+        ''' 
+        Takes in ? and generates a SignalEvent
+        '''
+
+class MeanReversion(ABC):
+    ''' 
+    This class carries out a mean reverting trading strategy
+    '''
+    def __init__(self):
+        super().__init__()
+        
 class MovingAverageCross:
     def __init__(self, data_loader: DataLoader, events: Queue,
                  tickers: list[str], short_window, long_window, strength: float = 1.0):

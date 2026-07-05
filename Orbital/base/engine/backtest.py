@@ -23,6 +23,7 @@ class BacktestResult:
         self.equity_records = pd.DataFrame(equity_records)
         self.fill_records = fill_records
         self.risk_free_rate = risk_free_rate
+        self.trade_log = p.fill_to_trade_log(self.fill_records)
 
     def get_end_equity(self) -> float:
         '''
@@ -37,17 +38,38 @@ class BacktestResult:
         return graph.get_equity_graph(self.equity_records)
 
     def get_fill_records(self):
+        '''
+        Returns the fill records
+        '''
         return self.fill_records
 
     def get_equity_records(self) -> pd.DataFrame:
+        '''
+        Returns the equity records
+        '''
         return self.equity_records
 
-    def get_trade_records(self):
-        return p.fill_to_trade_log(self.fill_records)
+    def get_trade_log(self) -> tuple[list[dict[str, any]], dict[str, list[any]]]:
+        '''
+        Returns the trade log index 0 is open trades, index 1 is closed trades
+        '''
+        return p.fill_to_trade_log(self.fill_records) 
+
+    def get_closed_trades(self) -> pd.DataFrame:
+        '''
+        Returns the closed trades
+        '''
+        df = pd.DataFrame(self.get_trade_log()[1])
+        df["pnl"] = (df['sell_price'] - df['buy_price']) * df['quantity']
+        return df
 
     def get_metrics(self):
+        '''
+        Returns various performance and portfolio metrics
+        '''
         return p.get_metrics(equity_record=self.equity_records,
-                             risk_free_rate=self.risk_free_rate)
+                             risk_free_rate=self.risk_free_rate,
+                             trade_log=self.get_closed_trades())
 
 class Backtest:
     def __init__(self, events: Queue,

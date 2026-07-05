@@ -85,6 +85,7 @@ def show_price_graphs(prices: list[list[float]]) -> px.Figure:
     fig = px.line(df)
     fig.update_layout(xaxis_title="Date",
                       yaxis_title="Price")
+    fig.data[0].line.color = 'black'
     return fig
 
 def get_ohlv_graph2(stock_data: list[StockPriceHistory]):

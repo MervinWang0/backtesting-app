@@ -24,7 +24,10 @@ import plotly.graph_objects as go
 # from scipy.stats import kurtosis
 import base.engine.graph as graph
 # from base.engine.distribution import Distribution
-from base.engine.monte_carlo_simulation import MonteCarloSimulator
+from base.engine.monte_carlo_simulation import (MonteCarloSimulator,
+                GBMPriceSimulator, JumpComponent, RegimeComponent,
+                TComponent)
+from scipy import stats
 
 def test_gbm_prices(mcs, prices: list[float], df, tests) -> list[list[float]]:
     '''
@@ -92,178 +95,221 @@ if __name__ == "__main__":
                         data_loader=data_loader)
     backtest.run()
     stock_data = backtest.data_loader.get_stock_data()
-    mcs = MonteCarloSimulator(backtest)
-    test = mcs.simulate(num_sims=10,
-                 mu=0,
-                 dt=1,
-                 sigma=0,
-                 df=5,
-                 exp_jumps=2,)
-    graph.get_monte_graph(test).show()
-    # Graphical Test
-    # GBM Price check
-    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
-    # sigma = mcs.transform_daily_logged(prices).std()
-    # ito_mu = mcs.transform_daily_logged(prices).mean()
-    # mu = ito_mu + (sigma ** 2 / 2)
-    # test_prices = [prices]
-    # for _ in range(100):
-    #     test_prices.append(mcs.gbm(og_price=prices,mu=mu,dt=1,sigma=sigma,
-    #                         epsilon_lst=mcs.get_normal_epsilon_lst(len(prices) - 1)))
-    # fig = graph.show_price_graphs(test_prices)
-    # fig.data[0].line.color = "black"
-    # fig.show()
+    # mcs = MonteCarloSimulator(backtest)
+    # test = mcs.simulate(num_sims=10,
+    #              mu=0,
+    #              dt=1,
+    #              sigma=0,
+    #              df=5,
+    #              exp_jumps=2,)
+    # graph.get_monte_graph(test).show()
 
-    # GBM Sanity Check
+# ----------------------------------------------------------------------------------------------- #
+    # Testing Refactored MCS -> Checking self.params is 2d numpy array
+# ----------------------------------------------------------------------------------------------- #
     # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
-    # sigma = mcs.transform_daily_logged(prices).std()
-    # ito_mu = mcs.transform_daily_logged(prices).mean()
-    # mu = ito_mu + (sigma ** 2 / 2)
-    # test_prices = [np.log(theoretical_median(mcs, prices))]
+    # price_simulator = GBMPriceSimulator(prices=prices)
+    # print("This should be a 2D array of parameters, "
+    #       "Where each row represents a day, and each column the mu, sigma, "
+    #       "and so on of that day")
+    # # Converting to pandas for readability
+    # df = pd.DataFrame(price_simulator.params, columns=["mu", "sigma", 'epsilon',
+    #                                                    'jump contribution'])
+    # print(df)
+# ----------------------------------------------------------------------------------------------- #
+    # Testing Refactored MCS -> Graphical display of gbm prices
+# ----------------------------------------------------------------------------------------------- #
+    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # price_simulator = GBMPriceSimulator(prices=prices)
+    # print("Generating a random price graph")
+    # results = []
     # for _ in range(100):
-    #     test_prices.append(np.log(mcs.gbm(og_price=prices,mu=mu,dt=1,sigma=sigma,
-    #                         epsilon_lst=mcs.get_normal_epsilon_lst(len(prices) - 1))))
-    # fig = graph.show_price_graphs(test_prices)
-    # fig.data[0].line.color = "black"
+    #     results.append(price_simulator.randomize_price())
+    # fig = graph.show_price_graphs(results)
     # fig.show()
+    # print(results)
+# ----------------------------------------------------------------------------------------------- #
+    # Testing Refactored MCS -> Analytical test of GBM
+    # Terminal Price check. log of terminal prices should be normal Success
+    # Note that p value higher does not automatically mean more correct 0.99 would indicate
+    # lack of randomness
+# ----------------------------------------------------------------------------------------------- #
+    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # price_simulator = GBMPriceSimulator(prices=prices)
+    # result = []
+    # for _ in range(100):
+    #     result.append(price_simulator.randomize_price())
 
-    # Analytical Tests
-    # Check the mean of the simulated prices and std
-    # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
-    # total_log_return = []
+    # terminal_prices = np.array([price_path[-1] for price_path in result])
+    # log_terminal = np.log(terminal_prices / price_simulator.prices[0])
+
+    # # Should be approximately normal
+    # stat, p_value = stats.shapiro(log_terminal)  # or stats.normaltest
+    # print(f"p-value: {p_value}")  # want p > 0.05 to NOT reject normality
+# ----------------------------------------------------------------------------------------------- #
+    # Testing Refactored MCS -> Analytical test of GBM
+    # Test that mu and sigma converge to expected values Success
+# ----------------------------------------------------------------------------------------------- #
+    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
+    # price_simulator = GBMPriceSimulator(prices=prices)
+    # result = []
     # for _ in range(10000):
-    #     sigma = mcs.transform_daily_logged(prices).std()
-    #     ito_mu = mcs.transform_daily_logged(prices).mean()
-    #     mu = ito_mu + ((sigma ** 2) / 2)
-    #     rand_prices = mcs.gbm(og_price=prices, mu=mu, dt=1, sigma=sigma,
-    #             epsilon_lst=mcs.get_normal_epsilon_lst(len(prices) - 1))
-    #     # print(f"Initial price {rand_prices[0]}"
-    #     #       f"Final price = {rand_prices[-1]}")
-    #     total_log_return.append(mcs.transform_daily_logged([rand_prices[0], rand_prices[-1]]))
-    # # print(total_log_return)
-    # print(f"This is obtained mean = {np.mean(total_log_return)}."
-    #       f"This is expected mean = {ito_mu * (len(prices) - 1)}")
-    # print(f"This is obtained std = {np.std(total_log_return)}."
-    #       f"This is expected std = {sigma * np.sqrt(len(prices) - 1)}")
-        # assert np.isclose(np.mean(total_log_return), ito_mu * (len(prices) - 1), rtol=0.05)
+    #     result.append(price_simulator.randomize_price())
 
-    # Test jump_gbm
+    # mu_and_sigma = price_simulator.get_historical_mu_sigma()
+    # mu = mu_and_sigma[0]
+    # sigma = mu_and_sigma[1]
+
+    # terminal_prices = np.array([price_path[-1] for price_path in result])
+    # log_terminal = np.log(terminal_prices / price_simulator.prices[0])
+
+    # expected_mean = mu * len(price_simulator.prices)
+    # expected_var = sigma ** 2 * len(price_simulator.prices)
+
+    # sample_mean = log_terminal.mean()
+    # sample_var = log_terminal.var(ddof=1)
+
+    # print(f"Expected mean: {expected_mean:.4f}, Sample mean: {sample_mean:.4f}")
+    # print(f"Expected var: {expected_var:.4f}, Sample var: {sample_var:.4f}")
+# ----------------------------------------------------------------------------------------------- # 
+    # Testing Refactored MCS -> Analytical test of GBM
+    # Tests if gbm performs as expected when sigma is 0.
+    # GBM simulated price at day t, St, should be equivalent to S0 * exp(raw mu * t) Success
+# ----------------------------------------------------------------------------------------------- #
     # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
-    # test = [prices]
-    # for _ in range(10):
-    #     test.append(mcs.gbm(prices, 0.0003, 1, 0.01, mcs.get_t_epsilon_lst(len(prices) - 1, 5),
-    #                              3))
-    # fig = graph.show_price_graphs(test)
-    # fig.data[0].line.color = "black"
-    # fig.show()
+    # deterministic_price_simulator = GBMPriceSimulator(prices)
 
-    # Jump Diffusion Testing
-    # Checking if expected number of jumps is achieved
-    # Performs as expected, +/- 5% error at 100 sims
+    # # Obtain theoretical results first
+    # mu_and_sigma = deterministic_price_simulator.get_historical_mu_sigma()
+    # mu = mu_and_sigma[0]
+    # sigma = mu_and_sigma[1]
+    # raw_mu = mu + 0.5 * (sigma**2)
+
+    # # Set sigma to 0, and mu to raw mu
+    # deterministic_price_simulator.randomize_price()
+    # print(deterministic_price_simulator.params)
+    # deterministic_price_simulator.params[:, 1] = np.full(len(prices), 0)
+    # deterministic_price_simulator.params[:, 0] = np.full(len(prices), raw_mu)
+    
+
+    # theoretical_price = []
+    # for t in range(len(prices)):
+    #     # print("This should be change per day")
+    #     # print(raw_mu * t)
+    #     theoretical_price.append(prices[0] * np.exp(raw_mu * t))
+
+    # result = []
+    # for _ in range(1):
+    #     random_logged_returns = deterministic_price_simulator.gbm()
+    #     # print("std should be 0")
+    #     # print(random_logged_returns.std())
+    #     # print(f"This should match the changes per day {random_logged_returns.cumsum()}")
+    #     random_prices = (deterministic_price_simulator.prices[0] *
+    #                      np.exp(random_logged_returns.cumsum())).tolist()
+    #     random_prices.insert(0, deterministic_price_simulator.prices[0])
+    #     result.append(random_prices)
+
+    # # print(f"This is the theoretical price {theoretical_price}\n")
+    # # print(f"This is the simulated price {result}\n")
+    # np.testing.assert_allclose(result, np.array(theoretical_price))
+
+# ----------------------------------------------------------------------------------------------- # 
+    # Jump Diffusion Testing -> Testing if expected number of jumps is achieved Success
+# ----------------------------------------------------------------------------------------------- #
+    # # Jump Diffusion Testing
+    # # Checking if expected number of jumps is achieved
+    # # Performs as expected, +/- 5% error at 100 sims
     # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
     # jump_counts = []
-    # for _ in range(100):
-    #     sigma = mcs.transform_daily_logged(prices).std()
-    #     ito_mu = mcs.transform_daily_logged(prices).mean()
-    #     mu = ito_mu + ((sigma ** 2) / 2)
-    #     jump_count = mcs.randomize_price(og_price=prices, mu=mu, dt=1, sigma=sigma,
-    #                                      exp_jumps=2, df=5)
-    #     jump_counts.append(jump_count)
-    # print(np.mean(jump_counts))
-        
-    # Kurtosis testing
-    # Note that kurtosis makes use of Fisher such that normal == 0
+    # price_simulator = GBMPriceSimulator(prices, JumpComponent=JumpComponent(exp_jumps=2))
+    # for _ in range(1000):
+    #     price_simulator.randomize_price()
+    # print(f"Expected jump count = 2, Actual value = {price_simulator.jump_component.jump_count / 1000}")
+
+# ----------------------------------------------------------------------------------------------- #
+    # Testing to see list of states created by regime switching model
+# ----------------------------------------------------------------------------------------------- #
     # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
-    # jump_kurtosis = []
-    # gbm_kurtosis = []
-    # for _ in range(100):
-    #     sigma = mcs.transform_daily_logged(prices).std()
-    #     ito_mu = mcs.transform_daily_logged(prices).mean()
-    #     mu = ito_mu + ((sigma ** 2) / 2)
-    #     jump_price = mcs.randomize_price(og_price=prices, mu=mu, dt=1, sigma=sigma,
-    #                                      exp_jumps=2, df=5, is_t=False,is_reg_switch=False)
-    #     gbm_price = mcs.randomize_price(og_price=prices, mu=mu, dt=1, sigma=sigma,
-    #                                      exp_jumps=0, df=5, is_t=False,is_reg_switch=False)     
-    #     # assert kurtosis(jump_price) > kurtosis(gbm_price), "Jump prices should have fatter tails"
-    #     jump_kurtosis.append(kurtosis(jump_price))
-    #     gbm_kurtosis.append(kurtosis(gbm_price))
-    # print(f"This is the jump kurtosis = {np.mean(jump_kurtosis)}")
-    # print(f"This is the gbm kurtosis = {np.mean(gbm_kurtosis)}")
-        
-
-
-
-
-    # Graph check in log space
-    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
-    # test = [prices]
-    # for _ in range(10):
-    #     test.append(test_jump_prices(mcs, prices, 5, 1, 0.05, 0.01))
-    # test = list(map(lambda prices: map(math.log, prices), test))
-    # graph.show_price_graphs(test).show()
-
-    # Creating comparison between GBM and Jump Diffusion
-    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
-    # test = [prices]
-    # # Index 1 to 10 are GBM
-    # for _ in range(1):
-    #     test.append(mcs.gbm_prices(prices, 5))
-    # # Index 11 to 20 are Jump Diffusion
-    # for _ in range(1):
-    #     test.append(test_jump_prices(mcs, prices, 5, 2, 0.5, 0.01))
-    # fig = graph.show_price_graphs(test)
-    # for i in range(3):
-    #     if i == 0:
-    #         fig.data[i].line.color = "black"
-
-    #     elif i >= 1 and i <= 1:
-    #         fig.data[i].line.color = "red"
-    #     else:
-    #         fig.data[i].line.color = "green"
-    # fig.show()
-
-    # Test Regime Switching 
-
-    # Testing random price
-    # prices = list(map(lambda bar: bar.open, stock_data["CRWD"]))
-    # test = [prices]
-    # for i in range(100):
-    #     test.append(mcs.randomize_price(prices, 0.05, 1, 0.01, 5, 2))
-    # fig = graph.show_price_graphs(test)
-    # fig.data[0].line.color = "black"
-    # fig.show()
-
-    # Testing of model
-    # prices = list(map(lambda bar: bar.open, stock_data["AAPL"]))
-    # test = mcs.get_model(prices)
-    # print(test)
-    # print(f"This is the variances {test.covars_[1][0][0]}")
-    # print(f"This is the means {test.means_}")
-    # covars and mean has form [[[x]], [[y]]]
-    # print(f"This is the shape of transmat{test.transmat_}")
-    # Shape is [[x1, x2], [y1, y2]]
-
-    # Test if simulate creates random stock prices
-    # random_prices = mcs.simulate(num_sims=3,mu=0.01,dt=1,sigma=0.01,df=5)
-    # graph.get_ohlv_graph(random_prices[0]["AAPL"]).show()
-    # graph.get_ohlv_graph(random_prices[1]["AAPL"]).show()
-    # graph.get_ohlv_graph(random_prices[2]["AAPL"]).show()
-
-    # Check if equity graphs are created for each simulated result
-    # simulations = mcs.simulate(num_sims=3,mu=0.01,dt=1,sigma=0.01,df=5)
-    # fig_lst = []
-    # for backtestresult in simulations:
-    #     fig_lst.append(backtestresult.get_equity_graph())
+    # regime_component = RegimeComponent(prices)
+    # # Model if sorted correctly, 1 should correspond to high and 0 to low vol regime
+    # regime_component.apply(prices)
+# ----------------------------------------------------------------------------------------------- #
+    # Testing to see if the number of each state is correct -> Checks stationary distribution
+    # Success
+# ----------------------------------------------------------------------------------------------- # 
+    # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
+    # regime_component = RegimeComponent(prices)
+    # price_simulator = GBMPriceSimulator(prices, RegimeComponent=regime_component)
+    # eigenvalues, eigenvectors = np.linalg.eig(regime_component.model.transmat_.T)
+    # stationary = eigenvectors[:, np.isclose(eigenvalues, 1)]
+    # stationary = (stationary / stationary.sum()).real.flatten()
+    # # Eigenvalues give the theoretical time spent in high/low states, sample runs should converge
+    # num_sims = 100
+    # for _ in range(num_sims):
+    #     price_simulator.randomize_price()
+    #     actual_time = price_simulator.regime_component.high_time / num_sims
+    # print(f"This is the expected time to spend in [low, high] states {stationary}")
+    # print(f"This is the actual {actual_time}")
+# ----------------------------------------------------------------------------------------------- #
+    # Testing T distribution Check theoretical variance. Theoretical variance should be 1,
+    # Since it is scaled. Success!
+# ----------------------------------------------------------------------------------------------- # 
+    # df = 5
+    # t_component = TComponent(df)
+    # draws = t_component.get_t_epsilon_lst(10000, df)
+    # print(f"The theoretical variance is = 1\n"
+    #       f"The actual variance is = {draws.var()}\n")
+# ----------------------------------------------------------------------------------------------- #
+    # Testing T distribution Check T dist should have higher kurtosis than normal dist,
+    # Success!
+# ----------------------------------------------------------------------------------------------- # 
+    # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
+    # # Create an original price simulator to get normal epsilon list
+    # price_simulator = GBMPriceSimulator(prices)
+    # price_simulator.randomize_price()
+    # normal_epsilon = price_simulator.params[:, 2].copy()
+    # print(f"kurtosis of normal should be 0 = {stats.kurtosis(normal_epsilon)}"
+    #       "Acceptable if ~0.1 as there is variance is lower samples")
+    # t_component = TComponent(5)
+    # params = t_component.apply(price_simulator.params, prices)
+    # print(f"kurtosis of T dist should be higher = {stats.kurtosis(params[:, 2])}")
+# ----------------------------------------------------------------------------------------------- #
+    # Testing if randomize prices works when integrated with jump, t and reg
+    #  Graphs the prices
+# ----------------------------------------------------------------------------------------------- # 
+    # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
+    # jump_component = JumpComponent(2, 0.05, 0.10)
+    # regime_component = RegimeComponent(prices)
+    # t_component = TComponent(df=5)
+    # price_simulator = GBMPriceSimulator(prices, JumpComponent=jump_component,
+    #                                     RegimeComponent=regime_component, TComponent=t_component)
+    # result = []
+    # num_sims = 30
+    # for _ in range(num_sims):
+    #     result.append(price_simulator.randomize_price())
+    # graph.show_price_graphs(result).show()
     
-    # overlay_fig = go.Figure()
-    # for fig in fig_lst:
-    #     for trace in fig.data:
-    #         overlay_fig.add_trace(trace)
-    # overlay_fig.show()
+# ----------------------------------------------------------------------------------------------- #
+# ----------------------------------------------------------------------------------------------- #
+    # Testing if Monte Carlo Simulator correctly generates random backtests
+# ----------------------------------------------------------------------------------------------- # 
+    # mcs = MonteCarloSimulator(backtest=backtest)
+    # results = mcs.simulate(num_sims=5, df=5, exp_jumps=2,
+    #                        mean_log_jump_size=0.05, std_log_jump_size=0.15,
+    #                        is_t=True, is_regime_switching=True,
+    #                        is_jump_diffusion=True)
+    # graph.get_monte_graph(results).show()
+    
+# ----------------------------------------------------------------------------------------------- #
+    # Testing length of randomized prices should be equivalent to original price
+    # Success!
+# ----------------------------------------------------------------------------------------------- # 
+    # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
+    # price_simulator = GBMPriceSimulator(prices)
+    # result = price_simulator.randomize_price()
+    # print(f"This is the length of original prices = {len(prices)}")
+    # print(f"This is the length of randomized prices = {len(result)}")
+# ----------------------------------------------------------------------------------------------- # 
+    
 
-    # Some random testing
-    # test = mcs.backtest.data_loader.get_past_bars("AAPL", 100)
-    # print(test)
-
-
-
+    
