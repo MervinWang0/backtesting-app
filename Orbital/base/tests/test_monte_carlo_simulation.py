@@ -293,12 +293,12 @@ if __name__ == "__main__":
 # ----------------------------------------------------------------------------------------------- #
     # Testing if Monte Carlo Simulator correctly generates random backtests
 # ----------------------------------------------------------------------------------------------- # 
-    # mcs = MonteCarloSimulator(backtest=backtest)
-    # results = mcs.simulate(num_sims=100, df=5, exp_jumps=2,
-    #                        mean_log_jump_size=0.05, std_log_jump_size=0.15,
-    #                        is_t=True, is_regime_switching=True,
-    #                        is_jump_diffusion=True)
-    # graph.get_monte_graph(results).show()
+    mcs = MonteCarloSimulator(backtest=backtest)
+    results = mcs.simulate(num_sims=10, df=5, exp_jumps=2,
+                           mean_log_jump_size=0.05, std_log_jump_size=0.15,
+                           is_t=True, is_regime_switching=True,
+                           is_jump_diffusion=True)
+    graph.get_monte_graph(results).show()
     
 # ----------------------------------------------------------------------------------------------- #
     # Testing length of randomized prices should be equivalent to original price
