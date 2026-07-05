@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from queue import Queue
 
+from Orbital.base.engine.events import AssetType
 from base.engine.execution import executionLoader
 from base.engine.portfolio import Portfolio
 from base.engine.data_loader import DataLoader, Bar
@@ -52,6 +53,10 @@ class Backtest:
     def run(self):
         while self.data_loader.continue_bt:
             self.data_loader.next_day()
+
+            if self.is_futures():
+                self.futures_rollover()
+
             self.execute_events()
             self.portfolio.update_equity_record()
             self.portfolio.update_benchmark_record()
@@ -65,6 +70,28 @@ class Backtest:
             include_plotlyjs=True,
         )
         return self.portfolio.backtest_run, self.portfolio.benchmark_record
+    
+    def is_futures(self):
+        return self.asset_type == AssetType.Futures
+    
+    def futures_rollover(self):
+        if not self.is_futures():
+            return
+        for ticker in self.tickers:
+            bar = self.data_loader.get_latest_bar(ticker)
+            if bar is None:
+                continue
+            
+            current_quantity = self.portfolio.holdings.get(ticker, 0)
+            if current_quantity == 0:
+                continue
+            from_contract = bar.roll_from_contract_code
+            to_contract = bar.roll_to_contract_code
+            from_price = bar.roll_from_price
+            to_price = bar.roll_to_price
+            
+
+
 
     def execute_events(self):
         while not self.events.empty():

@@ -22,8 +22,20 @@ class Bar:
     volume: Optional[int]
     asset_type: str
 
+    #For forex
     base_currency: Optional[str] = None
     quote_currency: Optional[str] = None
+
+    #For futures
+    contract_multiplier: Optional[float] = None
+    source_contract_code: Optional[str] = None
+    is_roll: Optional[bool] = False
+    roll_from_contract_code: Optional[str] = None
+    roll_to_contract_code: Optional[str] = None
+    roll_from_price: Optional[float] = None
+    roll_to_price: Optional[float] = None
+
+
 
     @staticmethod
     def to_bar(stock_price_history):
@@ -146,21 +158,32 @@ class DataLoader:
     
     
     def load_futures_data(self, contract_code: str) -> list[Bar]:
-        futures_history = (ContinuousFuturesPriceHistory.objects.filter(series__contract_symbol=contract_code, series__contract_index = 1, series__date__range=(self.start_date, self.end_date),)
-                                                            .selected_related("series", "contract_symbol")
+        futures_history = (ContinuousFuturesPriceHistory.objects.filter(series__contract_symbol=contract_code, series__contract_index = 1, date__range=(self.start_date, self.end_date),)
+                                                            .select_related("series", "contract")
                                                             .order_by("date"))
         bars = []
+        previous_contract_code = None
         for record in futures_history:
+            current_contract_code = record.contract.contract_code
+            is_roll = previous_contract_code is not None and current_contract_code != previous_contract_code
             bars.append(Bar(
                 Symbol = record.contract.contract_code,
                 Date = record.date,
                 Open = float(record.open_price),
-                High = float(record.High_price),
+                High = float(record.high_price),
                 Low = float(record.low_price),
                 Close = float(record.close_price),
                 Volume = record.volume,
-                Asset_type = "FUTURES"
+                Asset_type = "FUTURES",
+                source_contract_code = current_contract_code,
+                contract_multiplier = record.contract.contract_multiplier,
+                is_roll = record.is_roll,
+                roll_from_contract_code = record.roll_from_contract.contract_code if record.roll_from_contract else None,
+                roll_to_contract_code = record.roll_to_contract.contract_code if record.roll_to_contract else None,
+                roll_from_price = float(record.roll_from_price) if record.roll_from_price is not None else None,
+                roll_to_price = float(record.roll_to_price) if record.roll_to_price is not None else None
             ))
+            previous_contract_code = current_contract_code
         return bars
 
 

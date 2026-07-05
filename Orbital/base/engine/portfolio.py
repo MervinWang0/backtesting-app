@@ -4,7 +4,8 @@ from decimal import Decimal
 from datetime import datetime
 from base.engine.events import AssetType, SignalEvent, OrderEvent, FillEvent
 from queue import Queue
-from base.models import BacktestRun, BenchmarkRecord, PortfolioEquityRecord, PortfolioPositionRecord, PortfolioFillRecord, Stock, StockPriceHistory, ForexPair, ForexPriceHistory
+from base.models import BacktestRun, BenchmarkRecord, PortfolioEquityRecord, PortfolioPositionRecord, PortfolioFillRecord, Stock, StockPriceHistory, ForexPair, ForexPriceHistory, FuturesContract, FuturesPriceHistory
+
 
 def to_decimal(val) -> Decimal:
     return Decimal(str(val))
@@ -75,6 +76,20 @@ class Portfolio:
             completed_at = self.data_loader.get_current_datetime()
         )
 
+    def get_contract_multiplier(self, ticker: str) -> float:
+        bar = self.data_loader.get_current_bar(ticker)
+        if bar is None:
+            raise ValueError(f"No price data available for {ticker}")
+        return bar.contract_multiplier
+
+    def get_source_contract_code(self, ticker: str) -> str:
+        bar = self.data_loader.get_current_bar(ticker)
+        if bar is None:
+            raise ValueError(f"No price data available for {ticker}")
+        return bar.source_contract_code
+    
+
+
     def add_cash(self, amount: float, currency: str) -> None:
         if currency not in self.cash_reserves:
             self.cash_reserves[currency] = 0.0
@@ -136,11 +151,13 @@ class Portfolio:
         
         current_price = self.get_latest_price(ticker)
         avg_price = self.avg_price[ticker]
+        multiplier = self.get_contract_multiplier(ticker) if self.asset_type_by_ticker.get(ticker) == AssetType.Futures else 1.0
+
         if curr_quantity > 0:
-            pnl = curr_quantity * (current_price - avg_price)
+            pnl = curr_quantity * (current_price - avg_price) * multiplier
         else:
             #short position
-            pnl = abs(curr_quantity) * (avg_price - current_price)
+            pnl = abs(curr_quantity) * (avg_price - current_price) * multiplier
         
         asset_type = self.asset_type_by_ticker.get(ticker)
         if asset_type == AssetType.FOREX:
@@ -151,6 +168,9 @@ class Portfolio:
             return self.convert_to_account_currency(pnl, bar.quote_currency)
         
         return pnl
+
+    def calculate_futures_unrealised_pnl(self, ticker: str) -> float:
+        return sum(self.calculate_unrealised_pnl_ticker(ticker) for ticker in self.holdings if self.asset_type_by_ticker.get(ticker) == AssetType.Futures)
 
     
     def calculate_holdings_value(self) -> float:
@@ -245,39 +265,46 @@ class Portfolio:
         curr_quantity = self.holdings.get(ticker, 0)
         trade_quantity = event.quantity if event.direction == "BUY" else -event.quantity
         new_quantity = curr_quantity + trade_quantity
+        multiplier = self.get_contract_multiplier(ticker)
 
         realised_pnl_day = self.update_position_tracker(
                                 ticker, 
                                 curr_quantity,
                                 trade_quantity, 
                                 event.fill_cost, 
-                                event.commission
+                                event.commission, 
+                                event.contract_multiplier,
+                                multiplier = multiplier,
         )
 
-        self.update_cash(event)
+        self.update_cash(event, realised_pnl_day)
 
+        net_realised_pnl = realised_pnl_day - event.commission
         self.holdings[ticker] = new_quantity
         print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
         print(f"Current capital after fill: {self.current_capital}")
-        self.realised_pnl += realised_pnl_day
+        self.realised_pnl += net_realised_pnl
         print(f"Realized PnL after fill: {self.realised_pnl}")
 
         self.update_fill_records(event,
                             curr_quantity,
                             new_quantity,
-                            realised_pnl_day= realised_pnl_day)
+                            realised_pnl_day= net_realised_pnl)
         self.end_equity()
 
     
 
-    def update_cash(self, fill: FillEvent) -> None:
+    def update_cash(self, fill: FillEvent, realised_pnl_day: float) -> None:
         fill_cost = fill.quantity * fill.fill_cost
-        if fill.direction == "BUY":
-            cash_chng = -(fill_cost + fill.commission)
-        elif fill.direction == "SELL":
-            cash_chng = (fill_cost - fill.commission)
+        if fill.asset_type == AssetType.Futures:
+            cash_chng = realised_pnl_day - fill.commission
         else:
-            raise ValueError(f"Invalid fill direction {fill.direction} in cash update. Expected 'BUY' or 'SELL'.")
+            if fill.direction == "BUY":
+                cash_chng = -(fill_cost + fill.commission)
+            elif fill.direction == "SELL":
+                cash_chng = (fill_cost - fill.commission)
+            else:
+                raise ValueError(f"Invalid fill direction {fill.direction} in cash update. Expected 'BUY' or 'SELL'.")
         self.cash_reserves[self.account_currency] += cash_chng
         self.current_capital = self.cash_reserves[self.account_currency]
         self.total_commission += fill.commission
@@ -295,7 +322,7 @@ class Portfolio:
 
     #Updates average price and realized PnL for the ticker based on the new fill
     #Note: Returns -commission as a negative cost to the trade
-    def update_position_tracker(self, ticker: str, curr_quantity: float, fill_quantity: float, fill_price: float, commission: float) -> float:
+    def update_position_tracker(self, ticker: str, curr_quantity: float, fill_quantity: float, fill_price: float, commission: float, multiplier: float) -> float:
         curr_avg_price = self.avg_price.get(ticker, 0.0)
         new_quantity = curr_quantity + fill_quantity
 
@@ -315,10 +342,10 @@ class Portfolio:
         closing_quantity = min(abs(curr_quantity), abs(fill_quantity))
         if curr_quantity > 0:
             #Close long position by selling
-            realised_pnl_day = closing_quantity * (fill_price - curr_avg_price)
+            realised_pnl_day = closing_quantity * (fill_price - curr_avg_price) * multiplier
         else:
             #Close short position by buying
-            realised_pnl_day = closing_quantity * (curr_avg_price - fill_price)
+            realised_pnl_day = closing_quantity * (curr_avg_price - fill_price) * multiplier
         
         realised_pnl_day -= commission
 
@@ -341,6 +368,7 @@ class Portfolio:
         record = {
                 "date": fill.datetime,
                 "ticker": fill.ticker,
+                "source_contract_code" : self.get_source_contract_code(fill.ticker) if fill.asset_type == AssetType.Futures else None,
                 "quantity": fill.quantity,
                 "fill_price": fill.fill_cost,
                 "direction": fill.direction,
@@ -396,6 +424,10 @@ class Portfolio:
         
         #Higher ratio = more risk, lower ratio = less risk
         gross_exposure_leverage = gross_exposure / total_equity if total_equity != 0 else 0.0
+        if asset_type == AssetType.Futures:
+            futures_unrealised_pnl = self.calculate_futures_unrealised_pnl(ticker)
+        else:
+            futures_unrealised_pnl = 0.0
 
         record = {
                 "date": date,
@@ -404,6 +436,7 @@ class Portfolio:
                 "equity": total_equity,
                 "realised_pnl" : self.realised_pnl,
                 "unrealised_pnl": unrealised_pnl,
+                "futures_unrealised_pnl": futures_unrealised_pnl,
                 "total_commission" : self.total_commission,
                 "gross_exposure": gross_exposure,
                 "net_exposure" : net_exposure,
@@ -431,17 +464,21 @@ class Portfolio:
     
     def update_position_record(self, date: datetime) -> None:
         for ticker, quantity in self.holdings.items():
+            multiplier = self.get_contract_multiplier(ticker)
             market_price = self.get_latest_price(ticker)
-            market_value = market_price * quantity
+            market_value = market_price * quantity * multiplier
             unrealised_pnl = self.calculate_unrealised_pnl_ticker(ticker)
 
             asset_type = self.asset_type_by_ticker.get(ticker)
             stock = None
             forex = None
+            future = None
             if asset_type == AssetType.STOCK:
                 stock = Stock.objects.filter(ticker=ticker).first()
             elif asset_type == AssetType.FOREX:
                 forex = ForexPair.objects.filter(ticker=ticker).first()
+            elif asset_type == AssetType.Futures:
+                future = FuturesContract.objects.filter(ticker=ticker).first()
             
             PortfolioPositionRecord.objects.update_or_create(
                 backtest_run = self.backtest_run,
@@ -450,6 +487,7 @@ class Portfolio:
                 defaults = {
                     "stock": stock,
                     "forex": forex,
+                    "future": future,
                     "quantity": to_decimal(quantity),
                     "avg_price": to_decimal(self.avg_price[ticker]),
                     "market_price": to_decimal(market_price),

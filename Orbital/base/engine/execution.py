@@ -120,6 +120,8 @@ class executionLoader:
             self.events.put(fill)
         else:
             return
+    
+    def execute_futures_roll()
         
 
 

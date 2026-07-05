@@ -70,6 +70,10 @@ class FillEvent:
     #for forex
     base_currency: Optional[str] = None
     quote_currency: Optional[str] = None
+
+    #For futures
+    contract_multiplier: Optional[float] = None
+    contract_code: Optional[str] = None
     
     type: str = field(default="FILL", init=False)
 

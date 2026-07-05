@@ -167,7 +167,12 @@ class ContinuousFuturesPriceHistory(models.Model):
 
     adjustment_val = models.DecimalField(max_digits = 20, decimal_places = 6, default = Decimal("0.0"))
 
-    is_rolled = models.BooleanField(default=False)
+    is_roll = models.BooleanField(default=False)
+
+    roll_from_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="roll_from_contract", on_delete=models.SET_NULL)
+    roll_to_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="roll_to_contract", on_delete=models.SET_NULL)
+    roll_from_price = models.DecimalField(max_digits = 20, decimal_places=6, default = Decimal("0.0"))
+    roll_to_price = models.DecimalField(max_digits = 20, decimal_places=6, default = Decimal("0.0"))
 
     class Meta:
         constraints = [models.UniqueConstraint(fields = ["series", "date"], name="Unique_continuous_series_date")]
@@ -191,7 +196,6 @@ class FuturesRollEvent(models.Model):
             f"{self.series.contract_symbol} rolled on {self.roll_date}"
             f"{self.from_contract.contract_code} to {self.to_contract.contract_code}"
         )    
-    
     
 class ForexPair(models.Model):
     ticker = models.CharField(max_length=20, unique = True)
@@ -338,6 +342,7 @@ class PortfolioPositionRecord(TimeStampedModel):
     ticker = models.CharField(max_length=20)
     stock = models.ForeignKey(Stock, on_delete=models.SET_NULL, blank = True, null = True)
     forex = models.ForeignKey(ForexPair, on_delete= models.SET_NULL, blank = True, null = True)
+    future = models.ForeignKey(FuturesContract, on_delete=models.SET_NULL, blank = True, null = True)
 
     quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
     avg_price = models.DecimalField(max_digits = 20, decimal_places = 4)
