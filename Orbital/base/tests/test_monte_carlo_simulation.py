@@ -277,28 +277,28 @@ if __name__ == "__main__":
     # Testing if randomize prices works when integrated with jump, t and reg
     #  Graphs the prices
 # ----------------------------------------------------------------------------------------------- # 
-    # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
-    # jump_component = JumpComponent(2, 0.05, 0.10)
-    # regime_component = RegimeComponent(prices)
-    # t_component = TComponent(df=5)
-    # price_simulator = GBMPriceSimulator(prices, JumpComponent=jump_component,
-    #                                     RegimeComponent=regime_component, TComponent=t_component)
-    # result = []
-    # num_sims = 30
-    # for _ in range(num_sims):
-    #     result.append(price_simulator.randomize_price())
-    # graph.show_price_graphs(result).show()
+    prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
+    jump_component = JumpComponent(2, 0.05, 0.10)
+    regime_component = RegimeComponent(prices)
+    t_component = TComponent(df=5)
+    price_simulator = GBMPriceSimulator(prices, JumpComponent=jump_component,
+                                        RegimeComponent=regime_component, TComponent=t_component)
+    result = []
+    num_sims = 30
+    for _ in range(num_sims):
+        result.append(price_simulator.randomize_price())
+    graph.show_price_graphs(result).show()
     
 # ----------------------------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------------------------- #
     # Testing if Monte Carlo Simulator correctly generates random backtests
 # ----------------------------------------------------------------------------------------------- # 
-    mcs = MonteCarloSimulator(backtest=backtest)
-    results = mcs.simulate(num_sims=10, df=5, exp_jumps=2,
-                           mean_log_jump_size=0.05, std_log_jump_size=0.15,
-                           is_t=True, is_regime_switching=True,
-                           is_jump_diffusion=True)
-    graph.get_monte_graph(results).show()
+    # mcs = MonteCarloSimulator(backtest=backtest)
+    # results = mcs.simulate(num_sims=10, df=5, exp_jumps=2,
+    #                        mean_log_jump_size=0.05, std_log_jump_size=0.15,
+    #                        is_t=True, is_regime_switching=True,
+    #                        is_jump_diffusion=True)
+    # graph.get_monte_graph(results).show()
     
 # ----------------------------------------------------------------------------------------------- #
     # Testing length of randomized prices should be equivalent to original price

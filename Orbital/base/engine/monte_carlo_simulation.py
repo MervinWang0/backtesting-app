@@ -286,14 +286,18 @@ class GBMPriceSimulator(PriceSimulator):
         if self.jump_component:
             self.params = self.jump_component.apply(self.params, self.prices)
 
+        # Testing
         # print(pd.DataFrame(self.params))
         # print(f"The jump contribution should not be 0 = {self.params[:, 3].sum()}")
+
         # Obtain randomzed daily change in prices (log form). Such that
         # The cum_sum represent logged change up to that day. Exponentiate to get actual change
         random_logged_returns = self.gbm()
+        print(f"This is the multiplier to initial price {np.exp(random_logged_returns.cumsum())}")
         random_prices = (self.prices[0] * np.exp(random_logged_returns.cumsum())).tolist()
+        # print(random_prices)
         random_prices.insert(0, self.prices[0])
-        
+
         # random_prices needs to have its last element be removed as index 0 = og unchanged
         # index [-1] should refer to n-1 day not n dath
         random_prices.pop()
@@ -323,7 +327,7 @@ class JumpComponent():
         self.exp_jumps = exp_jumps
         self.mean_log_jump_size = mean_log_jump_size
         self.std_log_jump_size = std_log_jump_size
-        
+
         # Testing
         self.jump_count = 0
 
@@ -339,7 +343,8 @@ class JumpComponent():
         expected_jump_size = math.exp(self.mean_log_jump_size + self.std_log_jump_size**2 / 2) - 1
         jump_contribution_lst = []
 
-        # Apply correction to mu
+        # Apply correction to mu Equivalent to (μ − σ²/2 − λk) 
+        # Where mu is arithmetic price drift, mu without ito correction
         param[:, 0] = param[:, 0] - lambda_j * expected_jump_size
 
         # Create jump contribution list
@@ -348,7 +353,7 @@ class JumpComponent():
             jump_draws = np.random.normal(loc=self.mean_log_jump_size,
                                           scale=self.std_log_jump_size, size=jumps)
             jump_contribution_lst.append(jump_draws.sum())
-            
+
             # Testing
             # print(jumps)
             # print(f"This is the length of prices {len(prices)}\n")

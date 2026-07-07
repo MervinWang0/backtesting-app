@@ -20,6 +20,9 @@ urlpatterns = [
     path("mcs_graph/", views.mcs_graph, name="mcs_graph"),
     path("backtestrunrecords/", views.backtest_run_records, name = "backtest_run_records"),
     path("stocks/", views.stock, name = "stock"),
+
+    # Non-deployment urls. For testing purposes
+    path("test/", views.test, name="test")
     # #Market data
     # path("stock_list/", views.stock_list, name = "stock_list"),
     # path("stock_detail/<str:ticker>/", views.stock_detail, name = "stock_detail"),
