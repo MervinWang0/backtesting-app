@@ -31,6 +31,14 @@ PRICE_OUTPUT_FIELD = DecimalField(
     decimal_places = 2,
 )
 
+def home(request):
+    # If user is already logged in, send them to the dashboard instead
+    # if request.user.is_authenticated:
+    #     from django.shortcuts import redirect
+    #     return redirect('dashboard')   # change to your dashboard URL name
+    return render(request, 'home.html')
+
+
 #register related
 def register_view(request):
     # if request.user.is_authenticated:

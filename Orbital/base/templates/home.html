@@ -1,0 +1,152 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PennyWise — Backtest Smarter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'base/css/home.css' %}" />
+</head>
+<body>
+
+<nav class="site-nav">
+    <div class="page-container nav-inner">
+        <a href="/" class="nav-brand">
+            <span class="nav-brand__mark">₱</span>
+            <span class="nav-brand__text">PennyWise</span>
+        </a>
+        <div class="nav-actions">
+            <a href="{% url 'login' %}" class="secondary-button nav-login">Log in</a>
+        </div>
+    </div>
+</nav>
+
+<header class="landing-hero">
+    <div class="page-container landing-hero__inner">
+        <div class="landing-hero__content">
+            <p class="eyebrow eyebrow--light">Strategise · Backtest · Learn</p>
+            <h1 class="landing-hero__title">
+                WELCOME TO <span class="landing-hero__accent">PENNYWISE</span>
+            </h1>
+            <p class="landing-hero__description">
+                The all-in-one backtesting platform that turns your trading ideas into
+                data-driven decisions. This platform is a playground for you to freely explore!
+                So what are you waiting for? Register now!
+            </p>
+            <div class="landing-hero__cta">
+                <a href="{% url 'register' %}" class="primary-button primary-button--large">
+                    Get Started
+                </a>
+                <a href="#features" class="secondary-button secondary-button--ghost">
+                    See Features ↓
+                </a>
+            </div>
+        </div>
+
+        <div class="landing-hero__stats">
+            <div class="stat-card">
+                <span class="stat-card__value">10+</span>
+                <span class="stat-card__label">Years of Data</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__value">500+</span>
+                <span class="stat-card__label">Tickers Supported</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__value">UNLIMITED</span>
+                <span class="stat-card__label">Possibilities</span>
+            </div>
+        </div>
+    </div>
+</header>
+
+<section id="features" class="features-section">
+    <div class="page-container">
+        <div class="section-heading section-heading--center">
+            <p class="eyebrow">What You Get</p>
+            <h2>Everything you need to backtest like a pro</h2>
+            <p class="features-subtitle">
+                PennyWise gives you a large range of tools with incredible flexibility, wrapped
+                in a beginner-friendly environment.
+            </p>
+        </div>
+
+        <div class="features-grid">
+            <article class="feature-card">
+                <div class="feature-card__icon">📈</div>
+                <h3>Historical Backtesting</h3>
+                <p>
+                    Run your strategy against 10+ years of OHLCV data across stocks,
+                    forex and futures. See exactly how it would have performed.
+                </p>
+            </article>
+
+            <article class="feature-card">
+                <div class="feature-card__icon">⚡</div>
+                <h3>Lightning Fast Engine</h3>
+                <p>
+                    Our optimized backtest engine processes thousands of trades
+                    and stores it for your future readings in seconds. Less waiting = more learning.
+                </p>
+            </article>
+
+            <article class="feature-card">
+                <div class="feature-card__icon">📊</div>
+                <h3>Performance Analytics</h3>
+                <p>
+                    Sharpe ratio, max drawdown, win rate, profit factor — every metric
+                    you need to evaluate your strategy.
+                </p>
+            </article>
+
+            <article class="feature-card">
+                <div class="feature-card__icon">🎲</div>
+                <h3>Monte Carlo Simulator</h3>
+                <p>
+                    Results looking too good to be true? Worry not, our monte-carlo simulator
+                    simulates how your strategy might perform against varying amounts of volatility.
+                </p>
+            </article>
+
+            <article class="feature-card">
+                <div class="feature-card__icon">💾</div>
+                <h3>Save & Compare</h3>
+                <p>
+                    Save your backtests, tweak parameters, and compare multiple runs
+                    side-by-side to find the optimal setup.
+                </p>
+            </article>
+
+            <article class="feature-card">
+                <div class="feature-card__icon">🔒</div>
+                <h3>Secure & Private</h3>
+                <p>
+                    Your strategies stay yours. Account-level isolation and encrypted
+                    storage keep your edge safe.
+                </p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="final-cta">
+    <div class="page-container final-cta__inner">
+        <h2>Ready to stop guessing and start testing?</h2>
+        <p>Join PennyWise today and turn your trading ideas into proven strategies.</p>
+        <a href="{% url 'register' %}" class="primary-button primary-button--large">
+            Register Now →
+        </a>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <div class="page-container site-footer__inner">
+        <p>© {% now "Y" %} PennyWise. An orbital project built my nus students.</p>
+    </div>
+</footer>
+
+</body>
+</html>
