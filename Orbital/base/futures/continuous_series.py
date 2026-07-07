@@ -98,6 +98,16 @@ class ContinuousFuturesSeriesBuilder:
 
             planned_roll_date = current_trading_dates[roll_index]
 
+            common_dates = sorted(price_date for price_date in (current_prices.keys() & next_prices.keys()) if price_date>=planned_roll_date and price_date <= curr_contract.expiry_date)
+
+            if not common_dates:
+                raise RuntimeError(
+                    f"No common rollover date for "
+                    f"{curr_contract.contract_code} -> "
+                    f"{next_contract.contract_code} "
+                    f"on or after {planned_roll_date}"
+                )
+
             #Gets all available dates after the planned roll date
             next_available_dates = sorted(price_date for price_date in next_prices if price_date >= planned_roll_date)
 
@@ -123,7 +133,10 @@ class ContinuousFuturesSeriesBuilder:
         used_dates : dict[date, str] = {}
 
         for index, contract in enumerate(contracts):
-            contract_price = price_map.get(contract.id)
+            contract_price = price_map.get(contract.id, {})
+
+            if not contract_price:
+                continue
 
             if index == 0:
                 start = start_date
@@ -162,7 +175,7 @@ class ContinuousFuturesSeriesBuilder:
                         volume = raw_price.volume,
 
                         adjustment_val = Decimal("0"),
-                        is_rolled = True,
+                        is_roll = True,
                     )
                 )
 

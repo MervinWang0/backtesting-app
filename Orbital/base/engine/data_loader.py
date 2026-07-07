@@ -159,27 +159,57 @@ class DataLoader:
     
     def load_futures_data(self, contract_code: str) -> list[Bar]:
         futures_history = (ContinuousFuturesPriceHistory.objects.filter(series__contract_symbol=contract_code, series__contract_index = 1, date__range=(self.start_date, self.end_date),)
-                                                            .select_related("series", "contract")
+                                                            .select_related("series", "source_contract", "roll_from_contract", "roll_to_contract")
                                                             .order_by("date"))
         bars = []
         previous_contract_code = None
+        visited_dates = set()
         for record in futures_history:
-            current_contract_code = record.contract.contract_code
+            if record.date in visited_dates:
+                raise RuntimeError(f"Duplicate date found in futures data for {contract_code}: {record.date}")
+            visited_dates.add(record.date)
+            current_contract_code = record.source_contract.contract_code
             is_roll = previous_contract_code is not None and current_contract_code != previous_contract_code
+            from_contract = record.roll_from_contract.contract_code if record.roll_from_contract is not None else previous_contract_code if is_roll else None
+            to_contract = record.roll_to_contract.contract_code if record.roll_to_contract is not None else current_contract_code if is_roll else None
+            if is_roll:
+                print(f"Roll detected on {record.date}: {from_contract} -> {to_contract}")
+                print(
+                    "FUTURES LOAD:",
+                    record.date,
+                    "series_id=",
+                    record.series.id,
+                    "source=",
+                    current_contract_code,
+                    "previous=",
+                    previous_contract_code,
+                    "detected_roll=",
+                    is_roll,
+                    "db_roll_from=",
+                    (
+                        record.roll_from_contract.contract_code
+                        if record.roll_from_contract else None
+                    ),
+                    "db_roll_to=",
+                    (
+                        record.roll_to_contract.contract_code
+                        if record.roll_to_contract else None
+                    ),
+                )
             bars.append(Bar(
-                Symbol = record.contract.contract_code,
-                Date = record.date,
-                Open = float(record.open_price),
-                High = float(record.high_price),
-                Low = float(record.low_price),
-                Close = float(record.close_price),
-                Volume = record.volume,
-                Asset_type = "FUTURES",
+                symbol = contract_code,
+                date = record.date,
+                open = float(record.open_price),
+                high = float(record.high_price),
+                low = float(record.low_price),
+                close = float(record.close_price),
+                volume = record.volume,
+                asset_type = "FUTURES",
                 source_contract_code = current_contract_code,
-                contract_multiplier = record.contract.contract_multiplier,
-                is_roll = record.is_roll,
-                roll_from_contract_code = record.roll_from_contract.contract_code if record.roll_from_contract else None,
-                roll_to_contract_code = record.roll_to_contract.contract_code if record.roll_to_contract else None,
+                contract_multiplier = float(record.source_contract.tick_multiplier),
+                is_roll = is_roll,
+                roll_from_contract_code = from_contract,
+                roll_to_contract_code = to_contract,
                 roll_from_price = float(record.roll_from_price) if record.roll_from_price is not None else None,
                 roll_to_price = float(record.roll_to_price) if record.roll_to_price is not None else None
             ))

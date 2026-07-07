@@ -156,7 +156,7 @@ class ContinuousFuturesPriceHistory(models.Model):
     series = models.ForeignKey(ContinuousFuturesSeries, on_delete=models.CASCADE, related_name="series")
     source_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="source_contract")
 
-    date = models.DateTimeField()
+    date = models.DateField()
     open_price = models.DecimalField(max_digits = 20, decimal_places=6)
     high_price = models.DecimalField(max_digits = 20, decimal_places=6)
     low_price = models.DecimalField(max_digits = 20, decimal_places=6)
@@ -169,10 +169,10 @@ class ContinuousFuturesPriceHistory(models.Model):
 
     is_roll = models.BooleanField(default=False)
 
-    roll_from_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="roll_from_contract", on_delete=models.SET_NULL)
-    roll_to_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="roll_to_contract", on_delete=models.SET_NULL)
-    roll_from_price = models.DecimalField(max_digits = 20, decimal_places=6, default = Decimal("0.0"))
-    roll_to_price = models.DecimalField(max_digits = 20, decimal_places=6, default = Decimal("0.0"))
+    roll_from_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="roll_from_contract", null=True, blank=True)
+    roll_to_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="roll_to_contract", null=True, blank=True)
+    roll_from_price = models.DecimalField(max_digits = 20, decimal_places=6, default= Decimal("0"))
+    roll_to_price = models.DecimalField(max_digits = 20, decimal_places=6, default=Decimal("0"))
 
     class Meta:
         constraints = [models.UniqueConstraint(fields = ["series", "date"], name="Unique_continuous_series_date")]
@@ -322,6 +322,7 @@ class PortfolioFillRecord(TimeStampedModel):
     backtest_run = models.ForeignKey(BacktestRun, on_delete=models.CASCADE, related_name="fill_record")
     date = models.DateField()
     ticker = models.CharField(max_length = 20)
+    source_contract_code = models.CharField(max_length=10, null=True, blank = True)
     quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
     fill_price = models.DecimalField(max_digits = 20, decimal_places = 4)
     direction = models.CharField(max_length=10, choices= DirectionType)
@@ -349,6 +350,7 @@ class PortfolioPositionRecord(TimeStampedModel):
     market_price = models.DecimalField(max_digits = 20, decimal_places = 4)
     market_value = models.DecimalField(max_digits = 20, decimal_places = 4)
     unrealised_pnl = models.DecimalField(max_digits = 20, decimal_places = 4)
+    multiplier = models.DecimalField(max_digits=20, decimal_places = 4, default = Decimal("1.0"))
     
     class Meta:
         constraints = [models.UniqueConstraint(fields = ["backtest_run", "date", "ticker"],

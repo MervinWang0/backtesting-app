@@ -39,7 +39,7 @@ class Portfolio:
 
         
         #store equity data for every time step 
-        self.equity_record: list[dict] = []
+        #self.equity_record: list[dict] = []
         self.avg_price: dict[str, float] = {ticker: 0.0 for ticker in self.data_loader.tickers}
         self.realised_pnl = 0.0
 
@@ -47,13 +47,19 @@ class Portfolio:
         self.fill_record: list[dict] = []
 
         #Stores portfolio state for each day
-        self.equity_record: list[dict] = []
+        self.equity_record = {}
+        self.position_records = {}
+        self.benchmark_records = {}
+        
+        self.asset_cache: dict[str, object] = {}
+        self.benchmark_prices: dict[str , float] = {}
+
 
         #Stores benchmark record for each day
         self.benchmark_ticker = "VOO"
         self.benchmark_quantity = None
         self.benchmark_initial_price = 0.0
-        self.benchmark_record: list[dict] = []
+
 
         #creates database for this backtest run when portfolio is intialised 
         self.backtest_run = BacktestRun.objects.create(
@@ -69,18 +75,115 @@ class Portfolio:
             tickers = list(self.data_loader.tickers),
         )
 
+        self._load_caches()
+
+
+    def _load_caches(self) -> None:
+        for ticker in self.data_loader.tickers:
+            asset_type = self.asset_type_by_ticker.get(ticker)
+            if asset_type == AssetType.STOCK:
+                self.asset_cache[ticker] = Stock.objects.filter(ticker=ticker).first()
+            elif asset_type == AssetType.FOREX:
+                self.asset_cache[ticker] = ForexPair.objects.filter(ticker=ticker).first()
+            elif asset_type == AssetType.FUTURES:
+                self.asset_cache[ticker] = FuturesContract.objects.filter(contract_code=ticker).first()
+            
+            benchmark = StockPriceHistory.objects.filter(stock__ticker=self.benchmark_ticker, date__gte=self.backtest_run.start_date, date__lte=self.backtest_run.end_date)
+
+            for record in benchmark:
+                self.benchmark_prices[record.date] = float(record.close_price)
     
     def complete_bt(self) -> None:
-        BacktestRun.objects.filter(BacktestRun = self.backtest_run).update(
-            is_completed = True,
-            completed_at = self.data_loader.get_current_datetime()
-        )
+        PortfolioEquityRecord.objects.filter(backtest_run=self.backtest_run).delete()
+        PortfolioPositionRecord.objects.filter(backtest_run=self.backtest_run).delete()
+        PortfolioFillRecord.objects.filter(backtest_run=self.backtest_run).delete()
+        BenchmarkRecord.objects.filter(backtest_run=self.backtest_run).delete()
+
+        
+        equity_records = list(self.equity_record.values())
+        position_records = list(self.position_records.values())
+        benchmark_records = list(self.benchmark_records.values())
+
+        print(f"Saving {len(self.fill_record)} fill records to database")
+        fill_obj = [
+            PortfolioFillRecord(
+                backtest_run = self.backtest_run,
+                date = record["date"],
+                ticker = record["ticker"],
+                source_contract_code = record["source_contract_code"],
+                quantity = to_decimal(record["quantity"]),
+                fill_price = to_decimal(record["fill_price"]),
+                direction = record["direction"],
+                commission = to_decimal(record["commission"]),
+                previous_quantity = to_decimal(record["previous_quantity"]),
+                new_quantity = to_decimal(record["new_quantity"]),
+                realised_pnl_day = to_decimal(record["realised_pnl_day"]),
+            ) for record in self.fill_record
+        ]
+        PortfolioFillRecord.objects.bulk_create(fill_obj, batch_size=1000)
+
+        print(f"Saving {len(self.equity_record)} equity records to database")
+        equity_obj = [
+            PortfolioEquityRecord(
+                backtest_run = self.backtest_run,
+                date = record["date"],
+                cash = to_decimal(record["cash"]),
+                holdings_value = to_decimal(record["holdings_value"]),
+                equity = to_decimal(record["equity"]),
+                realised_pnl = to_decimal(record["realised_pnl"]),
+                unrealised_pnl = to_decimal(record["unrealised_pnl"]),
+                total_commission = to_decimal(record["total_commission"]),
+                gross_exposure = to_decimal(record["gross_exposure"]),
+                net_exposure = to_decimal(record["net_exposure"]),
+                gross_exposure_leverage = to_decimal(record["gross_exposure_leverage"]),
+            ) for record in equity_records
+        ]
+        PortfolioEquityRecord.objects.bulk_create(equity_obj, batch_size=1000)
+
+        print(f"Saving {len(self.position_records)} position records to database")
+        position_obj = [
+            PortfolioPositionRecord(
+                backtest_run = self.backtest_run,
+                date = record["date"],
+                ticker = record["ticker"],
+                stock = record["stock"],
+                forex = record["forex"],
+                future = record["future"],
+                quantity = to_decimal(record["quantity"]),
+                avg_price = to_decimal(record["avg_price"]),
+                market_price = to_decimal(record["market_price"]),
+                market_value = to_decimal(record["market_value"]),
+                unrealised_pnl = to_decimal(record["unrealised_pnl"]),
+                multiplier = to_decimal(record["multiplier"]),
+            ) for record in position_records
+        ]
+        PortfolioPositionRecord.objects.bulk_create(position_obj, batch_size=1000)
+
+        print(f"Saving{len(self.benchmark_records)} benchmark records to database")
+        benchmark_obj = [
+            BenchmarkRecord(
+                backtest_run = self.backtest_run,
+                date = record["date"],
+                ticker= record["ticker"],
+                close_price = to_decimal(record["close_price"]),
+                quantity = to_decimal(record["quantity"]),
+                market_value = to_decimal(record["market_value"]),
+                unrealised_pnl = to_decimal(record["unrealised_pnl"]),
+            ) for record in benchmark_records
+        ]
+        BenchmarkRecord.objects.bulk_create(benchmark_obj, batch_size = 1000)
+
+        self.backtest_run.is_completed = True
+        self.backtest_run.completed_at = self.data_loader.get_current_datetime()
+        self.backtest_run.save(update_fields=["is_completed", "completed_at", "end_equity"])
+
+        print("Database save completed")
 
     def get_contract_multiplier(self, ticker: str) -> float:
         bar = self.data_loader.get_current_bar(ticker)
         if bar is None:
             raise ValueError(f"No price data available for {ticker}")
-        return bar.contract_multiplier
+        return bar.contract_multiplier if bar.contract_multiplier is not None else 1.0
 
     def get_source_contract_code(self, ticker: str) -> str:
         bar = self.data_loader.get_current_bar(ticker)
@@ -140,6 +243,9 @@ class Portfolio:
     def calculate_unrealised_pnl(self) -> float:
         total_unrealised_pnl = 0.0
         for ticker in self.holdings:
+            asset_type = self.asset_type_by_ticker.get(ticker)
+            if asset_type == AssetType.FUTURES:
+                continue
             total_unrealised_pnl += self.calculate_unrealised_pnl_ticker(ticker)
         return total_unrealised_pnl
     
@@ -151,7 +257,7 @@ class Portfolio:
         
         current_price = self.get_latest_price(ticker)
         avg_price = self.avg_price[ticker]
-        multiplier = self.get_contract_multiplier(ticker) if self.asset_type_by_ticker.get(ticker) == AssetType.Futures else 1.0
+        multiplier = self.get_contract_multiplier(ticker) if self.asset_type_by_ticker.get(ticker) == AssetType.FUTURES else 1.0
 
         if curr_quantity > 0:
             pnl = curr_quantity * (current_price - avg_price) * multiplier
@@ -170,14 +276,52 @@ class Portfolio:
         return pnl
 
     def calculate_futures_unrealised_pnl(self, ticker: str) -> float:
-        return sum(self.calculate_unrealised_pnl_ticker(ticker) for ticker in self.holdings if self.asset_type_by_ticker.get(ticker) == AssetType.Futures)
+        quantity = self.holdings.get(ticker, 0)
+        if quantity == 0:
+            return 0.0
+        curr_price = float(self.get_latest_price(ticker))
+        avg_price = float(self.avg_price.get(ticker, 0.0))
+        bar = self.data_loader.get_current_bar(ticker)
+        if bar is None:
+            return 0.0
+        multiplier = float(bar.contract_multiplier)
+        return (curr_price - avg_price) * quantity * multiplier
 
+    def  calculate_total_futures_unrealised_pnl(self) -> float:
+        total = 0.0
+        for ticker, quantity in self.holdings.items():
+            if quantity == 0:
+                continue
+            asset_type = self.asset_type_by_ticker.get(ticker)
+            if asset_type != AssetType.FUTURES:
+                continue
+
+            curr_price = self.get_latest_price(ticker)
+            avg_price = self.avg_price.get(ticker, 0.0)
+
+            bar = self.data_loader.get_current_bar(ticker)
+            if bar is None:
+                continue
+            multiplier = float(bar.contract_multiplier)
+            total += (curr_price - avg_price) * quantity * multiplier
+        return total
     
     def calculate_holdings_value(self) -> float:
         total_value = 0.0
         for ticker, quantity in self.holdings.items():
+            asset_type = self.asset_type_by_ticker.get(ticker)
+            if asset_type == AssetType.FUTURES:
+                continue
+            if quantity == 0:
+                continue
             price = self.data_loader.bar_lookup[ticker][self.data_loader.curr_datetime].close
-            total_value += quantity * price
+            position_value = quantity * price
+            if asset_type == AssetType.FOREX:
+                bar = self.data_loader.get_current_bar(ticker)
+                if bar is None:
+                    raise ValueError(f"No price data available for ticker {ticker} at the time of holdings value calculation.")
+                position_value = self.convert_to_account_currency(position_value, bar.quote_currency)
+            total_value += position_value
         return total_value
     
 
@@ -267,24 +411,22 @@ class Portfolio:
         new_quantity = curr_quantity + trade_quantity
         multiplier = self.get_contract_multiplier(ticker)
 
-        realised_pnl_day = self.update_position_tracker(
+        net_realised_pnl = self.update_position_tracker(
                                 ticker, 
                                 curr_quantity,
                                 trade_quantity, 
                                 event.fill_cost, 
                                 event.commission, 
-                                event.contract_multiplier,
                                 multiplier = multiplier,
         )
 
-        self.update_cash(event, realised_pnl_day)
+        self.update_cash(event, net_realised_pnl)
 
-        net_realised_pnl = realised_pnl_day - event.commission
         self.holdings[ticker] = new_quantity
-        print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
-        print(f"Current capital after fill: {self.current_capital}")
+        #print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
+        #print(f"Current capital after fill: {self.current_capital}")
         self.realised_pnl += net_realised_pnl
-        print(f"Realized PnL after fill: {self.realised_pnl}")
+        #print(f"Realized PnL after fill: {self.realised_pnl}")
 
         self.update_fill_records(event,
                             curr_quantity,
@@ -296,8 +438,8 @@ class Portfolio:
 
     def update_cash(self, fill: FillEvent, realised_pnl_day: float) -> None:
         fill_cost = fill.quantity * fill.fill_cost
-        if fill.asset_type == AssetType.Futures:
-            cash_chng = realised_pnl_day - fill.commission
+        if fill.asset_type == AssetType.FUTURES:
+            cash_chng = realised_pnl_day
         else:
             if fill.direction == "BUY":
                 cash_chng = -(fill_cost + fill.commission)
@@ -310,14 +452,13 @@ class Portfolio:
         self.total_commission += fill.commission
     
     def end_equity(self):
+        cash_value = self.calculate_cash_value()
         current_holdings = self.calculate_holdings_value()
-        end_equity = current_holdings + self.current_capital
+        futures_unrealised_pnl = self.calculate_total_futures_unrealised_pnl()
+        end_equity = current_holdings + self.current_capital + futures_unrealised_pnl
 
-        self.backtest_run.end_equity = to_decimal(end_equity)
-        self.backtest_run.save(update_fields=["end_equity"])
-
-
-
+        self.backtest_run.end_equity = end_equity
+        #self.backtest_run.save(update_fields=["end_equity"])
 
 
     #Updates average price and realized PnL for the ticker based on the new fill
@@ -368,7 +509,7 @@ class Portfolio:
         record = {
                 "date": fill.datetime,
                 "ticker": fill.ticker,
-                "source_contract_code" : self.get_source_contract_code(fill.ticker) if fill.asset_type == AssetType.Futures else None,
+                "source_contract_code" : self.get_source_contract_code(fill.ticker) if fill.asset_type == AssetType.FUTURES else None,
                 "quantity": fill.quantity,
                 "fill_price": fill.fill_cost,
                 "direction": fill.direction,
@@ -378,20 +519,19 @@ class Portfolio:
                 "realised_pnl_day": realised_pnl_day,
             }
         self.fill_record.append(record)
-        stock = Stock.objects.filter(ticker = fill.ticker).first()
 
-        PortfolioFillRecord.objects.create(
-            backtest_run = self.backtest_run,
-            date = fill.datetime,
-            ticker = fill.ticker,
-            quantity = to_decimal(fill.quantity),
-            fill_price = to_decimal(fill.fill_cost),
-            direction = fill.direction,
-            commission = to_decimal(fill.commission),
-            previous_quantity = to_decimal(prev_quantity),
-            new_quantity = to_decimal(new_quantity),
-            realised_pnl_day = to_decimal(realised_pnl_day),
-        )
+        # PortfolioFillRecord.objects.create(
+        #     backtest_run = self.backtest_run,
+        #     date = fill.datetime,
+        #     ticker = fill.ticker,
+        #     quantity = to_decimal(fill.quantity),
+        #     fill_price = to_decimal(fill.fill_cost),
+        #     direction = fill.direction,
+        #     commission = to_decimal(fill.commission),
+        #     previous_quantity = to_decimal(prev_quantity),
+        #     new_quantity = to_decimal(new_quantity),
+        #     realised_pnl_day = to_decimal(realised_pnl_day),
+        # )
 
 
     #Updates equity record for each day, should be called whenever .next_day() is called
@@ -399,9 +539,10 @@ class Portfolio:
         date = self.data_loader.get_current_datetime()
 
         holdings_value = self.calculate_holdings_value()
+        futures_unrealised_pnl = self.calculate_total_futures_unrealised_pnl()
         unrealised_pnl = self.calculate_unrealised_pnl()
         cash_value = self.calculate_cash_value()
-        total_equity = cash_value + holdings_value
+        total_equity = cash_value + holdings_value + futures_unrealised_pnl
 
         #calculates all investments long + short
         gross_exposure = 0.0
@@ -415,8 +556,17 @@ class Portfolio:
 
             asset_type = self.asset_type_by_ticker.get(ticker)
 
-            if asset_type == AssetType.FOREX:
+            if asset_type == AssetType.FUTURES:
                 bar = self.data_loader.get_current_bar(ticker)
+                if bar is None:
+                    continue
+                multiplier = float(bar.contract_multiplier)
+                exposure = price * quantity * multiplier
+
+            elif asset_type == AssetType.FOREX:
+                bar = self.data_loader.get_current_bar(ticker)
+                if bar is None:
+                    continue
                 exposure = self.convert_to_account_currency(exposure, bar.quote_currency)
             
             gross_exposure += abs(exposure)
@@ -424,10 +574,9 @@ class Portfolio:
         
         #Higher ratio = more risk, lower ratio = less risk
         gross_exposure_leverage = gross_exposure / total_equity if total_equity != 0 else 0.0
-        if asset_type == AssetType.Futures:
-            futures_unrealised_pnl = self.calculate_futures_unrealised_pnl(ticker)
-        else:
-            futures_unrealised_pnl = 0.0
+
+        other_unrealised_pnl = self.calculate_unrealised_pnl()
+        total_unrealised_pnl = futures_unrealised_pnl + other_unrealised_pnl
 
         record = {
                 "date": date,
@@ -443,23 +592,23 @@ class Portfolio:
                 "gross_exposure_leverage" : gross_exposure_leverage
             }
 
-        self.equity_record.append(record)
+        self.equity_record[date] = record
         
-        PortfolioEquityRecord.objects.update_or_create(
-            backtest_run = self.backtest_run,
-            date = date,
-            defaults = {
-                "cash": to_decimal(self.current_capital),  
-                "holdings_value": to_decimal(holdings_value),
-                "equity": to_decimal(total_equity),
-                "realised_pnl": to_decimal(self.realised_pnl),
-                "unrealised_pnl": to_decimal(unrealised_pnl),
-                "total_commission": to_decimal(self.total_commission),
-                "gross_exposure": to_decimal(gross_exposure),
-                "net_exposure": to_decimal(net_exposure),
-                "gross_exposure_leverage": to_decimal(gross_exposure_leverage),
-            }
-        )   
+        # PortfolioEquityRecord.objects.update_or_create(
+        #     backtest_run = self.backtest_run,
+        #     date = date,
+        #     defaults = {
+        #         "cash": to_decimal(self.current_capital),  
+        #         "holdings_value": to_decimal(holdings_value),
+        #         "equity": to_decimal(total_equity),
+        #         "realised_pnl": to_decimal(self.realised_pnl),
+        #         "unrealised_pnl": to_decimal(unrealised_pnl),
+        #         "total_commission": to_decimal(self.total_commission),
+        #         "gross_exposure": to_decimal(gross_exposure),
+        #         "net_exposure": to_decimal(net_exposure),
+        #         "gross_exposure_leverage": to_decimal(gross_exposure_leverage),
+        #     }
+        # )   
         self.update_position_record(date)
     
     def update_position_record(self, date: datetime) -> None:
@@ -470,31 +619,42 @@ class Portfolio:
             unrealised_pnl = self.calculate_unrealised_pnl_ticker(ticker)
 
             asset_type = self.asset_type_by_ticker.get(ticker)
-            stock = None
-            forex = None
-            future = None
-            if asset_type == AssetType.STOCK:
-                stock = Stock.objects.filter(ticker=ticker).first()
-            elif asset_type == AssetType.FOREX:
-                forex = ForexPair.objects.filter(ticker=ticker).first()
-            elif asset_type == AssetType.Futures:
-                future = FuturesContract.objects.filter(ticker=ticker).first()
+            asset_obj = self.asset_cache.get(ticker)
+            stock = asset_obj if asset_type == AssetType.STOCK else None
+            forex = asset_obj if asset_type == AssetType.FOREX else None
+            future = asset_obj if asset_type == AssetType.FUTURES else None
+
+            record = {
+                "date": date,
+                "ticker": ticker,
+                "stock": stock,
+                "forex": forex,
+                "future": future,
+                "quantity": quantity,
+                "avg_price": self.avg_price[ticker],
+                "market_price": market_price,
+                "market_value": market_value,
+                "unrealised_pnl": unrealised_pnl,
+                "multiplier": multiplier,
+            }
+
+            self.position_records[(date, ticker)] = record
             
-            PortfolioPositionRecord.objects.update_or_create(
-                backtest_run = self.backtest_run,
-                date = date,
-                ticker = ticker,
-                defaults = {
-                    "stock": stock,
-                    "forex": forex,
-                    "future": future,
-                    "quantity": to_decimal(quantity),
-                    "avg_price": to_decimal(self.avg_price[ticker]),
-                    "market_price": to_decimal(market_price),
-                    "market_value": to_decimal(market_value),
-                    "unrealised_pnl": to_decimal(unrealised_pnl),
-                },
-            )
+            # PortfolioPositionRecord.objects.update_or_create(
+            #     backtest_run = self.backtest_run,
+            #     date = date,
+            #     ticker = ticker,
+            #     defaults = {
+            #         "stock": stock,
+            #         "forex": forex,
+            #         "future": future,
+            #         "quantity": to_decimal(quantity),
+            #         "avg_price": to_decimal(self.avg_price[ticker]),
+            #         "market_price": to_decimal(market_price),
+            #         "market_value": to_decimal(market_value),
+            #         "unrealised_pnl": to_decimal(unrealised_pnl),
+            #     },
+            # )
 
 
     
@@ -508,17 +668,28 @@ class Portfolio:
             self.benchmark_quantity = to_decimal(self.initial_capital) / to_decimal(self.benchmark_initial_price)
         benchmark_unrealised_pnl = self.benchmark_quantity * (benchmark_price - self.benchmark_initial_price)
         market_value = self.benchmark_quantity * benchmark_price
-        BenchmarkRecord.objects.update_or_create(
-            backtest_run = self.backtest_run,
-            date = date,
-            defaults = {
-                "ticker": self.benchmark_ticker,
-                "close_price": to_decimal(benchmark_price),
-                "quantity": to_decimal(self.benchmark_quantity),
-                "market_value": to_decimal(market_value),
-                "unrealised_pnl": to_decimal(benchmark_unrealised_pnl),
-            }
-        )
+
+        record = {
+            "date": date,
+            "ticker": self.benchmark_ticker,
+            "close_price": benchmark_price,
+            "quantity": self.benchmark_quantity,
+            "market_value": market_value,
+            "unrealised_pnl": benchmark_unrealised_pnl,
+        }
+
+        self.benchmark_records[date] = record
+        # BenchmarkRecord.objects.update_or_create(
+        #     backtest_run = self.backtest_run,
+        #     date = date,
+        #     defaults = {
+        #         "ticker": self.benchmark_ticker,
+        #         "close_price": to_decimal(benchmark_price),
+        #         "quantity": to_decimal(self.benchmark_quantity),
+        #         "market_value": to_decimal(market_value),
+        #         "unrealised_pnl": to_decimal(benchmark_unrealised_pnl),
+        #     }
+        # )
         #print(f"Updated benchmark record for {self.benchmark_ticker} on {date}: price {benchmark_price}, quantity {self.benchmark_quantity}, market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")
 
 

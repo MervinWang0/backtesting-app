@@ -2,7 +2,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from queue import Queue
 
-from Orbital.base.engine.events import AssetType
+from base.engine.events import AssetType
+from base.futures.continuous_series import ContinuousFuturesSeriesBuilder
+from base.models import ContinuousFuturesSeries
 from base.engine.execution import executionLoader
 from base.engine.portfolio import Portfolio
 from base.engine.data_loader import DataLoader, Bar
@@ -27,7 +29,12 @@ class Backtest:
                  slippage: float = 0.0,
                  initial_capital: float = 100000.0,
                  strategy_params: dict[str, object] = None,
-                 comission: float = 0.0):
+                 comission: float = 0.0,
+                 roll_days: int = 5,
+                 continuous_contract_index: int = -1,
+                 adjustment_method: str = "BACK_ADJUSTED",
+                 build_continuous_series: bool = True,
+                 ):
         self.events = events
         self.tickers = tickers
         self.asset_type = asset_type
@@ -42,6 +49,14 @@ class Backtest:
         }
         self.commission = comission
         self.slippage = slippage
+        self.roll_days = roll_days
+        self.continuous_contract_index = continuous_contract_index
+        self.adjustment_method = adjustment_method
+        self.build_continuous_series = build_continuous_series
+        self.continuous_series: dict[str, ContinuousFuturesSeries] = {}
+        if (self.is_futures() and self.build_continuous_series): self.prepare_continuous_series()
+        self.rollover_count = 0
+        self.processed_rollovers = set()
 
         self.data_loader = DataLoader(events, tickers= tickers, start_date= self.start_date, end_date= self.end_date, asset_type=self.asset_type)
 
@@ -61,7 +76,9 @@ class Backtest:
             self.portfolio.update_equity_record()
             self.portfolio.update_benchmark_record()
         
-        print("Backtest finished; generating graph")
+        self.portfolio.complete_bt()
+        
+        #print("Backtest finished; generating graph")
         fig = get_equity_graph(self.portfolio.equity_record)
         
         fig.write_html(
@@ -69,27 +86,132 @@ class Backtest:
             auto_open=True,
             include_plotlyjs=True,
         )
-        return self.portfolio.backtest_run, self.portfolio.benchmark_record
+        return self.portfolio.backtest_run, self.portfolio.benchmark_records
+    
+    def prepare_continuous_series(self):
+        if self.roll_days < 0:
+            raise ValueError("Roll days must be a non-negative integer.")
+        
+        for root_symbol in self.tickers:
+            series, created = (ContinuousFuturesSeries.objects.get_or_create(
+                contract_symbol=root_symbol,
+                roll_days=self.roll_days,
+                rollover_rule = "DAYS_BEFORE_EXPIRY",
+                contract_index=self.continuous_contract_index,
+                adjustment_method=self.adjustment_method
+            ))
+            builder = ContinuousFuturesSeriesBuilder(series)
+
+            if created:
+                print("created")
+            
+            try:
+                price_count = builder.build(
+                    start_date = self.start_date,
+                    end_date = self.end_date,
+                )
+            except RuntimeError as e:
+                raise RuntimeError(f"Failed to build continuous series for {root_symbol}: {str(e)}")
+            
+            self.continuous_series[root_symbol] = series
+
+            print(f"Continuous series for {root_symbol} built successfully with {price_count} price records.")
     
     def is_futures(self):
-        return self.asset_type == AssetType.Futures
+        return self.asset_type == AssetType.FUTURES
     
     def futures_rollover(self):
         if not self.is_futures():
             return
         for ticker in self.tickers:
-            bar = self.data_loader.get_latest_bar(ticker)
+            bar = self.data_loader.get_current_bar(ticker)
             if bar is None:
                 continue
-            
+
+            if not bar.is_roll:
+                continue
+
+            quantity = self.portfolio.holdings.get(ticker, 0)
+            if quantity == 0:
+                print(
+                    f"{bar.date}: rollover available for {ticker}, "
+                    "but no position is currently open."
+                )
+                continue
+            multiplier = float(bar.contract_multiplier)
+
+            false_roll_effect = (
+                float(bar.roll_from_price)
+                - float(bar.roll_to_price)
+            ) * quantity * multiplier
+
+            print("\n--- ROLLOVER DEBUG ---")
+            print("Date:", bar.date)
+            print("Ticker:", ticker)
+            print(
+                "Contracts:",
+                bar.roll_from_contract_code,
+                "->",
+                bar.roll_to_contract_code,
+            )
+            print("Prices:", bar.roll_from_price, "->", bar.roll_to_price)
+            print("Quantity:", quantity)
+            print("Multiplier:", multiplier)
+            print(
+                "Potential incorrect cash effect:",
+                false_roll_effect,
+            )
+                        
             current_quantity = self.portfolio.holdings.get(ticker, 0)
+            print(
+                    f"{bar.date}: rolling {ticker} "
+                    f"{bar.roll_from_contract_code} -> "
+                    f"{bar.roll_to_contract_code}, "
+                    f"quantity={current_quantity}"
+                )
             if current_quantity == 0:
                 continue
             from_contract = bar.roll_from_contract_code
             to_contract = bar.roll_to_contract_code
             from_price = bar.roll_from_price
             to_price = bar.roll_to_price
+
+            # if not from_contract or not to_contract:
+            #     print(
+            #         f"Skipping invalid rollover for {ticker} on "
+            #         f"{bar.date}: missing contract codes."
+            #     )
+            #     continue
+
+            # if from_contract == to_contract:
+            #     print(
+            #         f"Skipping invalid rollover for {ticker} on "
+            #         f"{bar.date}: contracts are identical."
+            #     )
+            #     continue
+
+            roll = (ticker, bar.date, from_contract, to_contract)
+
+            if roll in self.processed_rollovers:
+                print(
+                    f"{bar.date}: skipping previously processed rollover "
+                    f"{ticker} {from_contract} -> {to_contract}"
+                )
+                continue
+
+            self.execute.execute_futures_roll(
+                ticker = ticker,
+                datetime = bar.date,
+                from_contract = from_contract,
+                to_contract = to_contract,
+                from_price = from_price,
+                to_price = to_price,
+                quantity = current_quantity,
+                multiplier = bar.contract_multiplier)
             
+            self.processed_rollovers.add(roll)
+            self.rollover_count += 1
+
 
 
 

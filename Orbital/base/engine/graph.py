@@ -28,7 +28,8 @@ def get_equity_graph(equity_record: list[dict[str, any]]):
     Note that these columnsa are a min requirement, having more is acceptable
     and returns a Figure objects from plotly.py. FigureObj.show() displays a graph
     '''
-    data_frame = pd.DataFrame(equity_record)
+    data_frame = pd.DataFrame(equity_record.values())
+    data_frame = data_frame.sort_values(by="date")
     fig = px.line(data_frame=data_frame, x="date", y="equity")
     return fig
 
