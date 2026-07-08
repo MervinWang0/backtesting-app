@@ -31,14 +31,14 @@ from base.engine.execution import executionLoader
 # Test configuration
 # ---------------------------------------------------------------------
 
-ROOT_SYMBOL = "ES"
+ROOT_SYMBOL = "MES"
 
 START_DATE = date(2023, 1, 1)
 END_DATE = date(2025, 12, 31)
 
 ROLL_DAYS = 5
 CONTRACT_INDEX = 1
-ADJUSTMENT_METHOD = "BACK_ADJUSTED"
+ADJUSTMENT_METHOD = "NONE"
 
 BUILD_SERIES = True
 
@@ -227,22 +227,28 @@ def run_futures_backtest():
     original_execute_rollover = backtest.execute.execute_futures_roll
 
     def tracked_execute_rollover(*args, **kwargs):
-        rollover_calls.append(kwargs.copy())
-
-        print("\nRollover execution detected:")
-        print(
-            f"  {kwargs.get('from_contract')} "
-            f"-> {kwargs.get('to_contract')}"
-        )
-        print(f"  Quantity: {kwargs.get('quantity')}")
-        print(
-            f"  Prices: {kwargs.get('from_price')} "
-            f"-> {kwargs.get('to_price')}"
-        )
-
+        from_price = kwargs.get('from_price')
+        to_price = kwargs.get('to_price')
+        quantity = kwargs.get('quantity')
+        multiplier = 50.0 # ES multiplier
+        
+        # 1. Calculate what the rollover adjustment SHOULD be
+        spread = to_price - from_price
+        expected_adjustment = -spread * multiplier * quantity 
+        
+        print("\n--- ROLLOVER DIAGNOSTICS ---")
+        print(f"Rolling {quantity} contracts: {kwargs.get('from_contract')} -> {kwargs.get('to_contract')}")
+        print(f"Prices: {from_price} -> {to_price} (Spread: {spread} points)")
+        print(f"Expected Cash Adjustment for this roll: ${expected_adjustment:,.2f}")
+        
+        # 2. Check your leverage
+        # (You will need to pass current_equity into this function or calculate it here)
+        notional_exposure = quantity * to_price * multiplier
+        print(f"Notional Exposure: ${notional_exposure:,.2f}")
+        
         return original_execute_rollover(*args, **kwargs)
 
-    backtest.execute.execute_rollover = tracked_execute_rollover
+    backtest.execute.execute_futures_roll = tracked_execute_rollover
 
     result, benchmark = backtest.run()
 

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta, datetime
 from decimal import Decimal
 from collections import defaultdict
 
@@ -98,15 +98,66 @@ class ContinuousFuturesSeriesBuilder:
 
             planned_roll_date = current_trading_dates[roll_index]
 
-            common_dates = sorted(price_date for price_date in (current_prices.keys() & next_prices.keys()) if price_date>=planned_roll_date and price_date <= curr_contract.expiry_date)
 
-            if not common_dates:
-                raise RuntimeError(
-                    f"No common rollover date for "
-                    f"{curr_contract.contract_code} -> "
-                    f"{next_contract.contract_code} "
-                    f"on or after {planned_roll_date}"
-                )
+            # 1. Helper function to force any date-like object into a standard datetime.date
+            def to_date(d):
+                if isinstance(d, str):
+                    return datetime.datetime.strptime(d, "%Y-%m-%d").date()
+                if hasattr(d, 'date'):  # Handles pandas.Timestamp and datetime.datetime
+                    return d.date()
+                return d  # Already a datetime.date
+
+            # 2. Normalize the keys to ensure the intersection actually works
+            curr_dates_norm = {to_date(k) for k in current_prices.keys()}
+            next_dates_norm = {to_date(k) for k in next_prices.keys()}
+
+            # 3. Find the true overlap
+            common_dates_norm = curr_dates_norm & next_dates_norm
+
+            tolerance_start = planned_roll_date - timedelta(days=30) # 30 days is plenty
+            tolerance_end = planned_roll_date + timedelta(days=30)
+
+            actual_roll_date = None
+
+            if common_dates_norm:
+                # Filter by tolerance
+                valid_common_dates = [d for d in common_dates_norm if tolerance_start <= d <= tolerance_end]
+                
+                if valid_common_dates:
+                    # Pick the common date closest to the planned roll date
+                    actual_roll_date = min(valid_common_dates, key=lambda d: abs((d - planned_roll_date).days))
+                else:
+                    # Fallback 1: Common dates exist, but outside the tolerance window. Pick the closest one.
+                    actual_roll_date = min(common_dates_norm, key=lambda d: abs((d - planned_roll_date).days))
+            else:
+                # FALLBACK 2: ZERO OVERLAP. Yahoo Finance has a gap in the data.
+                # Instead of crashing, just use the first available date of the NEXT contract.
+                future_next_dates = [d for d in next_dates_norm if d >= planned_roll_date]
+                
+                if future_next_dates:
+                    actual_roll_date = min(future_next_dates)
+                    print(f"WARNING: No overlapping data found for {curr_contract.contract_code} -> {next_contract.contract_code}. "
+                        f"Falling back to first available date of next contract: {actual_roll_date}")
+                else:
+                    raise RuntimeError(
+                        f"Absolutely no data available for {next_contract.contract_code} "
+                        f"on or after {planned_roll_date}"
+                    )
+
+            # planned_roll_date = current_trading_dates[roll_index]
+
+            # tolerance_start = planned_roll_date - timedelta(days = 300)
+            # tolerance_end = planned_roll_date + timedelta(days = 300)
+
+            # common_dates = sorted(price_date for price_date in (current_prices.keys() & next_prices.keys()) if price_date>=tolerance_start and price_date <= tolerance_end)
+
+            # if not common_dates:
+            #     raise RuntimeError(
+            #         f"No common rollover date for "
+            #         f"{curr_contract.contract_code} -> "
+            #         f"{next_contract.contract_code} "
+            #         f"on or after {planned_roll_date}"
+            #     )
 
             #Gets all available dates after the planned roll date
             next_available_dates = sorted(price_date for price_date in next_prices if price_date >= planned_roll_date)
@@ -131,6 +182,8 @@ class ContinuousFuturesSeriesBuilder:
         continuous_series: list[ContinuousFuturesPriceHistory] = []
 
         used_dates : dict[date, str] = {}
+
+        roll_map = {instr.roll_date: instr for instr in roll_instructions}
 
         for index, contract in enumerate(contracts):
             contract_price = price_map.get(contract.id, {})
@@ -163,6 +216,35 @@ class ContinuousFuturesSeriesBuilder:
                 
                 raw_price = contract_price[price_date]
 
+                is_roll_day = price_date in roll_map
+
+                if is_roll_day:
+                    roll_instr = roll_map[price_date]
+                    from_contract = roll_instr.from_contract
+                    to_contract = roll_instr.to_contract
+
+                    from_price_dict = price_map.get(from_contract.id, {})
+                    to_price_dict = price_map.get(to_contract.id, {})
+
+                    to_price = to_price_dict.get(price_date)
+                    from_price = from_price_dict.get(price_date)
+                    if not from_price:
+                        past_dates = [day for day in from_price_dict.keys() if day <= price_date]
+                        if past_dates:
+                            from_price = from_price_dict[max(past_dates)]
+                    if not to_price:
+                        future_dates = [day for day in to_price_dict.keys() if day >= price_date]
+                        if future_dates:
+                            to_price = to_price_dict[min(future_dates)]
+                
+                    roll_from_price = from_price.close_price if from_price else None
+                    roll_to_price = to_price.open_price if to_price else None
+                else:
+                    from_contract = None
+                    to_contract = None
+                    roll_from_price = None
+                    roll_to_price = None
+
                 continuous_series.append(
                     ContinuousFuturesPriceHistory(
                         series=self.series,
@@ -175,7 +257,11 @@ class ContinuousFuturesSeriesBuilder:
                         volume = raw_price.volume,
 
                         adjustment_val = Decimal("0"),
-                        is_roll = True,
+                        is_roll = is_roll_day,
+                        roll_from_contract = from_contract,
+                        roll_to_contract = to_contract,
+                        roll_from_price = roll_from_price,
+                        roll_to_price = roll_to_price,
                     )
                 )
 

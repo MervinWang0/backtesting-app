@@ -410,6 +410,7 @@ class Portfolio:
         trade_quantity = event.quantity if event.direction == "BUY" else -event.quantity
         new_quantity = curr_quantity + trade_quantity
         multiplier = self.get_contract_multiplier(ticker)
+        print(f"fill cost = {event.fill_cost}, multiplier = {multiplier}")
 
         net_realised_pnl = self.update_position_tracker(
                                 ticker, 

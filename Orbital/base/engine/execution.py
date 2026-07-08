@@ -114,7 +114,7 @@ class executionLoader:
             raise ValueError(f"Invalid order direction {order.direction} in limit order execution.")
         
         if can_fill:
-            price = self.slippage_adjustment(order.price)
+            price = self.slippage_adjustment(order.price, order.direction)
             commission = self.calculate_commission(order.quantity, price)
             fill = self.create_fill_event(order, price, commission)
             self.events.put(fill)
@@ -133,8 +133,6 @@ class executionLoader:
                              ):
         if quantity == 0:
             return
-        
-        quantity = abs(quantity)
 
         if quantity > 0:
             close_direction = "SELL"
@@ -142,6 +140,8 @@ class executionLoader:
         else:
             close_direction = "BUY"
             open_direction = "SELL"
+        
+        quantity = abs(quantity)
         
         adjusted_from_price = self.slippage_adjustment(from_price, close_direction)
         adjusted_to_price = self.slippage_adjustment(to_price, open_direction)
@@ -154,7 +154,7 @@ class executionLoader:
             asset_type= "FUTURES",
             quantity = quantity,
             direction = close_direction,
-            fill_cost = adjusted_from_price * multiplier,
+            fill_cost = adjusted_from_price,
             commission = close_commission
         )
 
@@ -164,7 +164,7 @@ class executionLoader:
             asset_type= "FUTURES",
             quantity = quantity,
             direction = open_direction,
-            fill_cost = adjusted_to_price * multiplier,
+            fill_cost = adjusted_to_price,
             commission = open_commission
         )
 

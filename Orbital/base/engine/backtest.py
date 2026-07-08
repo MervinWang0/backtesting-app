@@ -32,7 +32,7 @@ class Backtest:
                  comission: float = 0.0,
                  roll_days: int = 5,
                  continuous_contract_index: int = -1,
-                 adjustment_method: str = "BACK_ADJUSTED",
+                 adjustment_method: str = None,
                  build_continuous_series: bool = True,
                  ):
         self.events = events
@@ -140,9 +140,21 @@ class Backtest:
                 continue
             multiplier = float(bar.contract_multiplier)
 
-            false_roll_effect = (
-                float(bar.roll_from_price)
-                - float(bar.roll_to_price)
+            if bar.roll_from_price is None:
+                roll_from_price = float(bar.close) 
+                print(f"Warning: roll_from_price is None on {bar.date}. Using bar.close as fallback.")
+            else:
+                roll_from_price = float(bar.roll_from_price)
+
+            if bar.roll_to_price is None:
+                roll_to_price = float(bar.close)
+                print(f"Warning: roll_to_price is None on {bar.date}. Using bar.close as fallback.")
+            else:
+                roll_to_price = float(bar.roll_to_price)
+
+            roll_cash = (
+                roll_from_price
+                - roll_to_price
             ) * quantity * multiplier
 
             print("\n--- ROLLOVER DEBUG ---")
@@ -159,7 +171,7 @@ class Backtest:
             print("Multiplier:", multiplier)
             print(
                 "Potential incorrect cash effect:",
-                false_roll_effect,
+                roll_cash,
             )
                         
             current_quantity = self.portfolio.holdings.get(ticker, 0)
@@ -173,8 +185,8 @@ class Backtest:
                 continue
             from_contract = bar.roll_from_contract_code
             to_contract = bar.roll_to_contract_code
-            from_price = bar.roll_from_price
-            to_price = bar.roll_to_price
+            from_price = roll_from_price
+            to_price = roll_to_price
 
             # if not from_contract or not to_contract:
             #     print(
@@ -208,6 +220,9 @@ class Backtest:
                 to_price = to_price,
                 quantity = current_quantity,
                 multiplier = bar.contract_multiplier)
+            
+            #currency = "USD"
+            #self.portfolio.add_cash(roll_cash, currency=currency)
             
             self.processed_rollovers.add(roll)
             self.rollover_count += 1

@@ -280,7 +280,7 @@ class DataLoader:
         Returns the current bar
         '''
         if ticker not in self.latest_stock_data or not self.latest_stock_data[ticker]:
-            raise ValueError(f"No data available for ticker: {ticker} at the current time index.")
+            raise None
         return self.latest_stock_data[ticker][-1]
 
 
