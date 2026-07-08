@@ -14,6 +14,7 @@ This file is not meant to be run, instead, it just stores some code snippets.
     <link rel = 'stylesheet' href = "{% static 'base/component.css' %}">
     <link rel = 'stylesheet' href = "{% static 'base/backtest.css' %}">
     <link rel = 'stylesheet' href = "{% static 'base/variables.css' %}">
+    <script src = "{% static 'base/component.js' %}"  defer></script>
 </head>
 <body>
 {% comment %} --------------------------------------------- {% endcomment %}
@@ -28,8 +29,8 @@ progress bar is a number representing the current progress
 
 {% endcomment %}
 
-<div class='activity-value' 'progress-wrapper'>
-    <div class='loading-text'>Text</div>
+<div class='progress-wrapper'>
+    <div class='loading-text'>Backtest Not Run</div>
     <div class='progress-container'>
         <div class='progress-bar'>0%</div>
     </div>

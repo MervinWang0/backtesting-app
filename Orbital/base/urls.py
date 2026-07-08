@@ -13,7 +13,6 @@ urlpatterns = [
     path("stocks/<str:symbol>/order/", views.submit_paper_order, name= "submit_paper_order"),
     path("paper-accounts/create", views.create_paper_account, name="create_paper_account"),
     path("portfolio/", views.portfolio, name="portfolio"),
-    path("backtest_graph/", views.backtest_graph, name="backtest_graph"),
     path("backtest/", views.get_backtest, name="backtest"),
     path("backtest/monte_carlo_simulation/", views.monte_carlo_simulation,
          name="monte_carlo_simulation"),
@@ -22,7 +21,11 @@ urlpatterns = [
     path("stocks/", views.stock, name = "stock"),
 
     # Non-deployment urls. For testing purposes
-    path("test/", views.test, name="test")
+    path("test/", views.test, name="test"),
+    # Urls for fetch calls
+    path("backtest_graph/", views.backtest_graph, name="backtest_graph"),
+    path("get_quicktest_input/", views.get_quicktest_input, name="get_quicktest_input"),
+    
     # #Market data
     # path("stock_list/", views.stock_list, name = "stock_list"),
     # path("stock_detail/<str:ticker>/", views.stock_detail, name = "stock_detail"),

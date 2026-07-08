@@ -22,6 +22,21 @@
     --radius-sm: 6px;
     --radius-md: 12px;
     --radius-lg: 18px;
+
+    --fontsize-small: 1rem;
+    --fontsize-medium: 1.5rem;
+    --fontsize-large: 2rem;
+    --fontsize-huge: 3rem;
+
+    --margin-small: 0.5rem;
+    --margin-medium: 1rem;
+    --margin-large: 1.5rem;
+
+    --color-white: #f4f7fb;
+    --color-blue:#1352E4;
+    --color-orange:#F29559;
+    --color-black:#191516;
+    --color-red:#B80C09;
 }
 /* CSS Reset/ Normalize Block */
 * {
@@ -30,7 +45,7 @@
     box-sizing: border-box;
 }
 
-/* Base typography  */
+/* Base settings for every webpage  */
 html, body {
     font-family:
         Inter,
@@ -43,6 +58,7 @@ html, body {
     background: var(--background);
     padding: 0;
     margin: 0;
+    box-sizing: border-box;
 }
 
 /* Global link resets */

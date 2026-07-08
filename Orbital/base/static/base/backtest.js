@@ -4,42 +4,107 @@ function getCookie(name) {
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
 }
+//ids declared here so that making a change in html only has to be changed here
+const short_window_id = "short_window";
+const long_window_id = "long_window";
+const asset_type_id = "asset_type";
+const ticker_id = "ticker";
+const strength_id = "strength";
+const slippage_id = "slippage";
+const initial_capital_id = "initial_capital";
+const rolling_window_id = "rolling_window";
+const start_date_id = "start_date";
+const end_date_id = "end_date";
+const commission_id = "commission";
 
 // This defines some buttons that call functions
-const strategy_btn = document.getElementById("strategy")
-const run_backtest_btn = document.getElementById("run_backtest")
+const strategy_btn = document.getElementById("strategy_btn")
+const run_backtest_btn = document.getElementById("run_backtest_btn")
 const view_mcs_btn = document.getElementById("view_mcs_btn")
+const quicktest_btn = document.getElementById("quicktest_btn")
 
+// divs serving as containers
+const progress_bar_div = document.getElementById("progress_bar_container")
 // The trigger of the buttons calling the function
 strategy_btn.addEventListener("change", change_strategy)
 run_backtest_btn.addEventListener("click", run_backtest)
 view_mcs_btn.addEventListener("click", view_mcs)
+quicktest_btn.addEventListener("click", quicktest)
 
-function show_params(chosen_strategy_id){
-    const SMA = ["short_window", "long_window", "asset_type",
-        "ticker", "strength", "slippage", "initial_capital",
-        "commission", "start_date", "end_date"
+// chosen strategy id and param list have to be mutable as they change each time strategy is changed
+let chosen_strategy_id = strategy_btn.value;
+let param_list = get_param_list();
+
+// Array of input elements, used to obtain their values from webpage
+const strategy_params = [];
+let output_params = [];
+
+// These lists are for error checking the value of input
+const cannot_negative_id_list = ["short_window", "long_window", "strength", "commission", "slippage", "initial_capital",
+    "rolling_window"]
+const must_int_id_list = ["short_window", "long_window", "rolling_window"]
+
+// run_id is used to pass the entry of the backtest to MCS webpage
+let run_id = {}
+
+// Used to convert metrics to more readable form
+const percentage_outputs = ["Total Return", "Mean Daily Return", "CAGR",
+    "Max Drawdown",
+]
+
+function get_param_list(){
+    const SMA = [short_window_id, long_window_id, asset_type_id,
+        ticker_id, strength_id, slippage_id, initial_capital_id,
+        commission_id, start_date_id, end_date_id
     ]
-    const MR = ["rolling_window", "ticker", "start_date",
-        "end_date"
+    const MR = [rolling_window_id, ticker_id, start_date_id,
+        end_date_id
     ]
-    let param_list = []
+    let temp_param_list = []
+    // console.log(`This is the chosen strategy id ${chosen_strategy_id} `)
     switch(String(chosen_strategy_id)) {
         case "moving_average_crossover":
-            param_list = SMA;
+            // console.log("moving average strat reached")
+            temp_param_list = SMA;
             break;
         case "mean_reversion":
-            param_list = MR;
+            temp_param_list = MR;
             break;
     }
-    return param_list
+    // console.log(`This is the SMA list${SMA}`)
+    // console.log(`This is the MR list${MR}`)
+    // console.log(`This is the temp param list${temp_param_list}`)
+    return temp_param_list
 }
 
-function change_strategy(){
-    // First obtain the list of params for this particular strategy
-    const chosen_strategy_id = strategy_btn.value;
-    const param_list = show_params(chosen_strategy_id);
+// Turns certains sections invisible/ sets to a default state
+function reset() {
+    // Turn the progress bar and graph invisible
+    progress_bar_div.style.display = "none";
+    // progress_bar.style.background = "linear-gradient(90deg, var(--color-white), var(--color-blue))"
+    equity_graph_container.style.display = "none";
 
+    // Turn output params invisible and set all params to value 0
+    // for(const input of strategy_params) {
+    //     input.value = "";
+    // }
+    output_params = document.querySelectorAll(".output-field")
+    for(const output of output_params) {
+        output.style.display = "none";
+    }
+}
+
+
+// Used to hide the parameters not valid to the chosen strategy
+function change_strategy(){
+    reset();
+    // The progress bar and equity graph should also be hidden
+    // Each time the strategy is changed, update the button and the params
+    chosen_strategy_id = strategy_btn.value;
+    param_list = get_param_list();
+    param_list.forEach(input_id => strategy_params.push(document.getElementById(input_id)));
+
+    // console.log("Changing Strategy")
     // Iterate through the divs, and if the input id matches the params make it visible
     // Else it stays/becomes invisible
     const all_strategy_div = document.querySelectorAll(".input-field")
@@ -55,88 +120,69 @@ function change_strategy(){
         }
         
     });
-
 }
-
-// Shows strategy specific params and hides others
-// function show_params(){
-//     //  Turns chosen strategy's param visible and others invisible
-//     const all_strategy_params = document.querySelectorAll(".strategy_parameters");
-//     const chosen_strategy_id = this.value;
-//     all_strategy_params.forEach(div => {
-//         if (div.id === chosen_strategy_id){
-//             div.style.display = ""
-//         }
-//         else {
-//             div.style.display = "none";
-//         }
-//         })
-// }
 
 // Runs backtest when run button is clicked and input passed
 function run_backtest(){
-    if (!validate()) {return;}
-    graph_backtest()
-    view_mcs_btn.disabled = false
+    reset();
+    upgrade_progress(); // Sets initial state of progress bar
+    // Only show the bar after run backtest is clicked
+    progress_bar_div.style.display = "";
+    if (!validate()) {
+        state = "Error"
+        return;}
+    else {
+     // TODO create function for initializing clear state
+    // state has to be reset in the case of multiple backtest runs occuring
+    state = "Backtest Not Run";
+    progress_bar.style.animation = "pulse 1.5s infinite";
+
+    // When run_backtest occurs, the old graph should disappear, TODO create initial_state function
+    equity_graph_container.innerHTML = '';
+    graph_backtest();
+    view_mcs_btn.disabled = false;
+    }
 }
 
-const cannot_negative_id_list = ["short_window", "long_window", "strength", "commission", "slippage", "initial_capital",
-    "rolling_window"]
-const must_int_id_list = ["short_window", "long_window", "rolling_window"]
 // Checks if all the inputs of a strategy is passed
+// TODO need to update the input iteration with global array and not the
+// locally constructed array
 function validate(){
-    // Determine the strategy
-    const chosen_strategy_id = strategy_btn.value;
-    const param_list = show_params(chosen_strategy_id);
-    // For all the parameters, 
-    const all_strategy_div = document.querySelectorAll(".input-field")
-    all_strategy_div.forEach(element => {
-        let input = element.querySelector("input")
-        // console.log(param_list);
-        // console.log(element);
-        // console.log(element.querySelector("input").id);
-        // If each element's input is within inputs of the specifc strategy
-        // and if they value of the input is empty, make an alert
-        const is_visible = (input) => input.closest("div").style.display == ""
-        if(param_list.includes(input.id) && input.value == "" && is_visible(input)){
-            alert(`Please enter the require fields ${input.name}`)
-            return false;
+const isIntegerString = (str) => Number.isInteger(Number(str)) && str.trim() !== "";
+const is_visible = (input) => input.closest("div").style.display == ""
+    for(const input of strategy_params) 
+        {
+            if(param_list.includes(input.id) && input.value == "" && is_visible(input)){
+                alert(`Please enter the require fields ${input.name}`)
+                return false;
+            }
+            // Negative number error handling
+            if(cannot_negative_id_list.includes(input.id) && input.value < 0 && is_visible(input)){
+                alert(`${input.name} cannot be negative`);
+                return false;
+            }
+            // Integer number handling
+            // console.log(!Number.isInteger(input.value))
+            if(must_int_id_list.includes(input.id) && !isIntegerString(input.value) && is_visible(input)){
+                alert(`${input.name} must be an integer`);
+                return false;
+            }
         }
-        // Negative number error handling
-        if(cannot_negative_id_list.includes(input.id) && input.value < 0 && is_visible(input)){
-            alert(`${input.name} cannot be negative`);
-            return false;
-        }
-        // Integer number handling
-        const isIntegerString = (str) => Number.isInteger(Number(str)) && str.trim() !== "";
-        // console.log(!Number.isInteger(input.value))
-        if(must_int_id_list.includes(input.id) && !isIntegerString(input.value) && is_visible(input)){
-            alert(`${input.name} must be an integer`);
-            return false;
-        }
-    });
     return true;
+}
 
-}   
-
-// Convert input params into suitable format and pass to views function
-// Stores the run_id too. As an obj
-let run_id = {}
-const percentage_outputs = ["Total Return", "Mean Daily Return", "CAGR",
-    "Max Drawdown",
-]
-function graph_backtest() {
-    // Create variables needed to 
-    const chosen_strategy_id = strategy_btn.value;
-    const param_list = show_params(chosen_strategy_id)
-    // Create an array of inputs of the chosen strategy
-    const strategy_params = [];
-    param_list.forEach(input_id => strategy_params.push(document.getElementById(input_id)))
-
+// clean_params is used to pass data to fetch requests
+function clean_params(input_array) {
+    // console.log("Cleaning params")
     // CLean the params
     const cleaned_params = {};
+
+    // Ticker list is to handle situation of multiple tickers
     const ticker_lst = [];
     for(const input of strategy_params) {
+        // console.log(`This is input name ${input.name}`)
+        // console.log(`This is input value ${input.value}`)
+        // console.log(`This is input id ${input.id}`)
         if (input.name.includes("ticker")){
             ticker_lst.push(input.value);
         }
@@ -144,13 +190,32 @@ function graph_backtest() {
             cleaned_params[input.name] = input.value;
         }
     }
-    // Input is expected as a percentage but used in backtest as a multiple. 1% => 0.01
-    cleaned_params["commission"] = cleaned_params["commission"] / 100
     cleaned_params["tickers"] = ticker_lst;
-    cleaned_params['strategy_name'] = chosen_strategy_id;
-    // alert(`These are the cleaned parameters to be passed ${cleaned_params}`)
-    console.log(cleaned_params)
 
+    // Input is expected as a percentage but used in backtest as a multiple. 1% => 0.01
+    cleaned_params["commission"] = cleaned_params["commission"] / 100;
+
+    // Name is not taken as input so it has to be taken from button 
+    cleaned_params['strategy_name'] = chosen_strategy_id;
+    // console.log(`Cleaned params ${cleaned_params}`)
+    return cleaned_params
+}
+
+// Does the heavy lifting of the webpage.
+// The function sends the data to the appropriate views function.
+// It then receives the data, and graphs it 
+// TBD split metric cleaning? It may be too long
+function graph_backtest() {
+    // Set state, rather unnecessary as it's so fast it's not visible TBD if remove
+    state = "Cleaning Parameters";
+
+    cleaned_params = clean_params(strategy_params);
+    // Testing
+    // alert(`These are the cleaned parameters to be passed ${cleaned_params}`)
+    // console.log(cleaned_params)
+
+    // Update state, this state remains for a long time
+    state = "Performing Backtest";
     // Pass data to views function
     fetch("/backtest_graph/", {
         method: "POST",
@@ -160,16 +225,22 @@ function graph_backtest() {
         },
         body: JSON.stringify(cleaned_params)
     })
+
     // Turns string into JS object
     .then(response => response.json())
+
+    // Operate on the JS data, basically a dictonary
     .then(data => {
+        // Update state
+        state = "Backtest Calculated";
+
         //  For graph
         const equity_graph_container = document.getElementById('equity_graph_container');
         // Clear data
-        equity_graph_container.innerHTML = '';
         const range = document.createRange();
         const fragment = range.createContextualFragment(data["equity_graph_html"]);
         equity_graph_container.append(fragment);
+        equity_graph_container.style.display = "";
 
         // For metrics
         const metrics_container_div = document.getElementById("metrics_container");
@@ -179,12 +250,17 @@ function graph_backtest() {
         for(const div of divs) {
             div.style.display = "none";
         }
+
         // For each metric calculated turn it visible and place the value in it
         // console.log(data["metrics"])
         for(const [key, value] of Object.entries(data["metrics"])) {
-            console.log(key);
+            // console.log(key);
             let paragraph = document.getElementById(key);
-            console.log(paragraph);
+
+            // Guard against the case where the element is not found
+            if (paragraph == null) {continue;}
+
+            // console.log(paragraph);
             // Convert some of the metrics to percentage
             if (percentage_outputs.includes(key)) {
                 paragraph.innerHTML = `${(value * 100).toFixed(2)}%`;
@@ -196,8 +272,14 @@ function graph_backtest() {
             console.log(paragraph.parentElement);
         // Makes run_id a dict as needed by URLSearchParams
         run_id = {"run_id" : data["run_id"]};
+        state = "Backtest Run Complete";
         }
     })
+    // Handles the case when the backtest fails
+    .catch(error => {
+        console.error("Backtest calculation failed", error);
+        state = "Error";
+    });
 }
 
 // Simple function to open MCS link when mcs button clicked
@@ -213,4 +295,85 @@ function view_mcs() {
         // console.log(url)
         window.open(url, '_blank').focus()
     }
+}
+
+// Progress Bar JS specific to backtest.html
+let progress_bar = document.querySelector(".progress-bar");
+let loading_text = document.querySelector(".loading-text");
+let width = 0;
+let state = "Backtest Not Run"
+
+// state is updated at various points of other functions which in turn updates bar
+function upgrade_progress() {
+    console.log(`This is the state = ${state}`)
+    console.log(`This is the width = ${width}`)
+    // Other functions will update state, and this function is called once per second.
+    switch(state) {
+        case "Backtest Not Run":
+            width = 0;
+            break;
+        case "Cleaning Parameters":
+            width = 10;
+            break;
+        case "Performing Backtest":
+            width = 30;
+            break;
+        case "Backtest Calculated":
+            width = 80;
+            break;
+        case "Backtest Run Complete":
+            width = 100;
+            // The return is just to stop the repeated calls of this fn
+            // loading_text.style.animation = "none";
+            progress_bar.style.animation = "none";
+            break;
+        case "Error":
+            width = 0;
+            progress_bar.style.background= "red"
+            break;
+        default:
+            state = "Error"
+            width = 0;
+            progress_bar.style.background = "red"
+            break;
+    }
+    // Updates the progress bar
+    progress_bar.style.width = width + "%";
+    progress_bar.textContent = width + "%";
+
+    // Updates the loading text
+    loading_text.textContent = state;
+    if(state === "Backtest Run Complete") {return;}
+    if(state === "Error") {return;}
+    setTimeout(upgrade_progress, 50);
+}
+
+
+// Sets the various parameters with some random input
+function quicktest() {
+    reset();
+    // Pass param list to a view function and expect a list of values to update input with
+    fetch("/get_quicktest_input/", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(param_list)
+    })
+
+ 
+    // Parse data
+   .then(response => response.json())
+
+    // Operate on the JS data, basically a dictonary
+    .then(data => 
+        {
+        for(const input_id of param_list)
+            {
+            html_input = document.getElementById(input_id);
+            html_input.value = data[input_id]
+            }
+
+        })
 }
