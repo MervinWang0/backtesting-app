@@ -22,7 +22,7 @@ django.setup()
 from django.core.management import call_command
 
 from base.engine.events import AssetType
-from base.models import ContinuousFuturesSeries
+from base.models import ContinuousFuturesSeries, BacktestRun, FuturesContract, FuturesPriceHistory
 from base.engine.backtest import Backtest
 from base.engine.execution import executionLoader
 
@@ -198,7 +198,36 @@ def run_futures_backtest():
 
     events = Queue()
 
+    backtest_run = BacktestRun.objects.create(
+        #user = User,
+        run_name = "test",
+        strategy_name= "MovingAverageCross",
+        asset_type = "STOCK",
+        start_date = START_DATE,
+        end_date = END_DATE,
+        initial_capital = 100000.0,
+        end_equity = 0.0,
+        fixed_quantity = 5,
+        tickers = [ROOT_SYMBOL],
+    )
+
+    asset_cache = {}
+    benchmark_prices = {}
+    for ticker in [ROOT_SYMBOL]:
+        asset_type = "FUTURES"
+        asset_cache[ticker] = FuturesContract.objects.filter(root_symbol=ticker).first()
+    
+    benchmark_qs = FuturesPriceHistory.objects.filter(
+        contract__root_symbol = "VOO",
+        date__gte = START_DATE,
+        date__lte = END_DATE,
+    )
+    benchmark_prices = {record.date: float(record.close_price) for record in benchmark_qs}
+
     backtest = Backtest(
+        backtest_run= backtest_run,
+        asset_cache= asset_cache,
+        benchmark_prices= benchmark_prices,
         events=events,
         tickers=[ROOT_SYMBOL],
         asset_type=AssetType.FUTURES,
