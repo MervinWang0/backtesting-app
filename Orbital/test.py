@@ -13,7 +13,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Orbital.settings")
 django.setup()
 
 
-from base.models import Stock, StockPriceHistory
+from base.models import Stock, StockPriceHistory, BacktestRun
 from base.engine.backtest import Backtest
 
 
@@ -54,8 +54,36 @@ def check_saved_data(ticker):
 
 def run_backtest(start_date, end_date):
     events = Queue()
+    backtest_run = BacktestRun.objects.create(
+        #user = User,
+        run_name = "test",
+        strategy_name= "MovingAverageCross",
+        asset_type = "STOCK",
+        start_date = start_date,
+        end_date = end_date,
+        initial_capital = 100000.0,
+        end_equity = 0.0,
+        fixed_quantity = 5,
+        tickers = [TICKER],
+    )
+
+    asset_cache = {}
+    benchmark_prices = {}
+    for ticker in [TICKER]:
+        asset_type = "STOCK"
+        asset_cache[ticker] = Stock.objects.filter(ticker=ticker).first()
+    
+    benchmark_qs = StockPriceHistory.objects.filter(
+        stock__ticker = "VOO",
+        date__gte = start_date,
+        date__lte = end_date,
+    )
+    benchmark_prices = {record.date: float(record.close_price) for record in benchmark_qs}
 
     backtest = Backtest(
+        backtest_run= backtest_run,
+        asset_cache= asset_cache,
+        benchmark_prices= benchmark_prices, 
         events=events,
         tickers=[TICKER],
         asset_type= "STOCK",

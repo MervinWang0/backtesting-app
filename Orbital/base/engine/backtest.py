@@ -4,7 +4,7 @@ from queue import Queue
 
 from base.engine.events import AssetType
 from base.futures.continuous_series import ContinuousFuturesSeriesBuilder
-from base.models import ContinuousFuturesSeries
+from base.models import ContinuousFuturesSeries, BacktestRun
 from base.engine.execution import executionLoader
 from base.engine.portfolio import Portfolio
 from base.engine.data_loader import DataLoader, Bar
@@ -19,7 +19,11 @@ class BacktestResult:
     trade_log: list[dict]
 
 class Backtest:
-    def __init__(self, events: Queue, 
+    def __init__(self,
+                 backtest_run: BacktestRun, 
+                 asset_cache: dict,
+                 benchmark_prices: dict,
+                 events: Queue, 
                  tickers: list[str], 
                  asset_type: str,
                  start_date: datetime.date,
@@ -35,6 +39,9 @@ class Backtest:
                  adjustment_method: str = None,
                  build_continuous_series: bool = True,
                  ):
+        self.backtest_run = backtest_run
+        self.asset_cache = asset_cache
+        self.benchmark_prices = benchmark_prices
         self.events = events
         self.tickers = tickers
         self.asset_type = asset_type
@@ -61,7 +68,7 @@ class Backtest:
         self.data_loader = DataLoader(events, tickers= tickers, start_date= self.start_date, end_date= self.end_date, asset_type=self.asset_type)
 
         self.events = events
-        self.portfolio = Portfolio(self.data_loader, self.events,run_name = "test", strategy_name= "Moving Average Cross", start_date= self.start_date, end_date = self.end_date, initial_capital=self.initial_capital, quantity=5 )
+        self.portfolio = Portfolio(self.data_loader, self.events,run_name = "test", strategy_name= "Moving Average Cross", start_date= self.start_date, end_date = self.end_date,current_equity=0.0, initial_capital=self.initial_capital, quantity=5, asset_cache= asset_cache, benchmark_prices=benchmark_prices)
         self.execute = executionLoader(self.events, self.data_loader, commission=self.commission, slippage=self.slippage)
         self.strategy = MovingAverageCross(self.data_loader, self.events, self.tickers, self.strategy_params["short_window"], self.strategy_params["long_window"], self.strength)
         
@@ -76,7 +83,7 @@ class Backtest:
             self.portfolio.update_equity_record()
             self.portfolio.update_benchmark_record()
         
-        self.portfolio.complete_bt()
+        self.portfolio.complete_bt(self.backtest_run)
         
         #print("Backtest finished; generating graph")
         fig = get_equity_graph(self.portfolio.equity_record)
@@ -86,7 +93,7 @@ class Backtest:
             auto_open=True,
             include_plotlyjs=True,
         )
-        return self.portfolio.backtest_run, self.portfolio.benchmark_records
+        return self.backtest_run, self.portfolio.benchmark_records
     
     def prepare_continuous_series(self):
         if self.roll_days < 0:

@@ -14,7 +14,7 @@ def to_decimal(val) -> Decimal:
 class Portfolio:
     def __init__(self, data_loader: DataLoader, events: Queue, 
                  run_name: str, strategy_name: str, start_date: datetime, end_date: datetime,
-                 initial_capital: float =  100000.0, quantity =  5 ):#, User = None):
+                 initial_capital: float =  100000.0, quantity =  5, current_equity : Decimal = 0.0, asset_cache: dict = None, benchmark_prices: dict = None):#, User = None):
         self.data_loader = data_loader
         self.events = events
         self.initial_capital = initial_capital
@@ -23,6 +23,7 @@ class Portfolio:
             self.account_currency: initial_capital
         }
         self.current_capital = initial_capital
+        self.current_equity = current_equity
 
         self.fixed_quantity = quantity
 
@@ -51,8 +52,8 @@ class Portfolio:
         self.position_records = {}
         self.benchmark_records = {}
         
-        self.asset_cache: dict[str, object] = {}
-        self.benchmark_prices: dict[str , float] = {}
+        self.asset_cache: dict[str, object] = asset_cache
+        self.benchmark_prices: dict[str , float] = benchmark_prices
 
 
         #Stores benchmark record for each day
@@ -62,42 +63,42 @@ class Portfolio:
 
 
         #creates database for this backtest run when portfolio is intialised 
-        self.backtest_run = BacktestRun.objects.create(
-            #user = User,
-            run_name = run_name,
-            strategy_name= strategy_name,
-            asset_type = getattr(self.data_loader, "asset_type", AssetType.STOCK),
-            start_date = start_date,
-            end_date = end_date,
-            initial_capital = to_decimal(self.initial_capital),
-            end_equity = to_decimal(self.initial_capital),
-            fixed_quantity = self.fixed_quantity,
-            tickers = list(self.data_loader.tickers),
-        )
+        # self.backtest_run = BacktestRun.objects.create(
+        #     #user = User,
+        #     run_name = run_name,
+        #     strategy_name= strategy_name,
+        #     asset_type = getattr(self.data_loader, "asset_type", AssetType.STOCK),
+        #     start_date = start_date,
+        #     end_date = end_date,
+        #     initial_capital = to_decimal(self.initial_capital),
+        #     end_equity = to_decimal(self.initial_capital),
+        #     fixed_quantity = self.fixed_quantity,
+        #     tickers = list(self.data_loader.tickers),
+        # )
 
-        self._load_caches()
+        # self._load_caches()
 
 
-    def _load_caches(self) -> None:
-        for ticker in self.data_loader.tickers:
-            asset_type = self.asset_type_by_ticker.get(ticker)
-            if asset_type == AssetType.STOCK:
-                self.asset_cache[ticker] = Stock.objects.filter(ticker=ticker).first()
-            elif asset_type == AssetType.FOREX:
-                self.asset_cache[ticker] = ForexPair.objects.filter(ticker=ticker).first()
-            elif asset_type == AssetType.FUTURES:
-                self.asset_cache[ticker] = FuturesContract.objects.filter(contract_code=ticker).first()
+    # def _load_caches(self) -> None:
+    #     for ticker in self.data_loader.tickers:
+    #         asset_type = self.asset_type_by_ticker.get(ticker)
+    #         if asset_type == AssetType.STOCK:
+    #             self.asset_cache[ticker] = Stock.objects.filter(ticker=ticker).first()
+    #         elif asset_type == AssetType.FOREX:
+    #             self.asset_cache[ticker] = ForexPair.objects.filter(ticker=ticker).first()
+    #         elif asset_type == AssetType.FUTURES:
+    #             self.asset_cache[ticker] = FuturesContract.objects.filter(contract_code=ticker).first()
             
-            benchmark = StockPriceHistory.objects.filter(stock__ticker=self.benchmark_ticker, date__gte=self.backtest_run.start_date, date__lte=self.backtest_run.end_date)
+    #         benchmark = StockPriceHistory.objects.filter(stock__ticker=self.benchmark_ticker, date__gte=self.backtest_run.start_date, date__lte=self.backtest_run.end_date)
 
-            for record in benchmark:
-                self.benchmark_prices[record.date] = float(record.close_price)
+    #         for record in benchmark:
+    #             self.benchmark_prices[record.date] = float(record.close_price)
     
-    def complete_bt(self) -> None:
-        PortfolioEquityRecord.objects.filter(backtest_run=self.backtest_run).delete()
-        PortfolioPositionRecord.objects.filter(backtest_run=self.backtest_run).delete()
-        PortfolioFillRecord.objects.filter(backtest_run=self.backtest_run).delete()
-        BenchmarkRecord.objects.filter(backtest_run=self.backtest_run).delete()
+    def complete_bt(self, backtest_run : BacktestRun) -> None:
+        PortfolioEquityRecord.objects.filter(backtest_run=backtest_run).delete()
+        PortfolioPositionRecord.objects.filter(backtest_run=backtest_run).delete()
+        PortfolioFillRecord.objects.filter(backtest_run=backtest_run).delete()
+        BenchmarkRecord.objects.filter(backtest_run=backtest_run).delete()
 
         
         equity_records = list(self.equity_record.values())
@@ -107,7 +108,7 @@ class Portfolio:
         print(f"Saving {len(self.fill_record)} fill records to database")
         fill_obj = [
             PortfolioFillRecord(
-                backtest_run = self.backtest_run,
+                backtest_run = backtest_run,
                 date = record["date"],
                 ticker = record["ticker"],
                 source_contract_code = record["source_contract_code"],
@@ -125,7 +126,7 @@ class Portfolio:
         print(f"Saving {len(self.equity_record)} equity records to database")
         equity_obj = [
             PortfolioEquityRecord(
-                backtest_run = self.backtest_run,
+                backtest_run = backtest_run,
                 date = record["date"],
                 cash = to_decimal(record["cash"]),
                 holdings_value = to_decimal(record["holdings_value"]),
@@ -143,7 +144,7 @@ class Portfolio:
         print(f"Saving {len(self.position_records)} position records to database")
         position_obj = [
             PortfolioPositionRecord(
-                backtest_run = self.backtest_run,
+                backtest_run = backtest_run,
                 date = record["date"],
                 ticker = record["ticker"],
                 stock = record["stock"],
@@ -162,7 +163,7 @@ class Portfolio:
         print(f"Saving{len(self.benchmark_records)} benchmark records to database")
         benchmark_obj = [
             BenchmarkRecord(
-                backtest_run = self.backtest_run,
+                backtest_run = backtest_run,
                 date = record["date"],
                 ticker= record["ticker"],
                 close_price = to_decimal(record["close_price"]),
@@ -173,9 +174,10 @@ class Portfolio:
         ]
         BenchmarkRecord.objects.bulk_create(benchmark_obj, batch_size = 1000)
 
-        self.backtest_run.is_completed = True
-        self.backtest_run.completed_at = self.data_loader.get_current_datetime()
-        self.backtest_run.save(update_fields=["is_completed", "completed_at", "end_equity"])
+        backtest_run.is_completed = True
+        backtest_run.completed_at = self.data_loader.get_current_datetime()
+        backtest_run.end_equity = to_decimal(self.current_equity)
+        backtest_run.save(update_fields=["is_completed", "completed_at", "end_equity"])
 
         print("Database save completed")
 
@@ -456,10 +458,12 @@ class Portfolio:
         cash_value = self.calculate_cash_value()
         current_holdings = self.calculate_holdings_value()
         futures_unrealised_pnl = self.calculate_total_futures_unrealised_pnl()
-        end_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+        #end_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+        self.current_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+        return self.current_equity
 
-        self.backtest_run.end_equity = end_equity
-        #self.backtest_run.save(update_fields=["end_equity"])
+        #backtest_run.end_equity = end_equity
+
 
 
     #Updates average price and realized PnL for the ticker based on the new fill
