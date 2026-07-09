@@ -31,7 +31,7 @@ from base.engine.execution import executionLoader
 # Test configuration
 # ---------------------------------------------------------------------
 
-ROOT_SYMBOL = "MES"
+ROOT_SYMBOL = "CL"
 
 START_DATE = date(2023, 1, 1)
 END_DATE = date(2025, 12, 31)

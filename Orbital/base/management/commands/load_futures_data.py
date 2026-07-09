@@ -15,8 +15,9 @@ class Command(BaseCommand):
     }
 
     DEFAULT_FUTURES = {
-        "ES=F": {"root_symbol": "ES"},
-        "MES=F": {"root_symbol": "MES"},
+        #"ES=F": {"root_symbol": "ES"},
+        #"MES=F": {"root_symbol": "MES"},
+        "CL=F" :{"root_symbol": "CL"},
     }
 
     FUTURES_MULTIPLIERS = {
