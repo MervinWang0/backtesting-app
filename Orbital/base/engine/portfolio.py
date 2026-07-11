@@ -99,7 +99,6 @@ class Portfolio:
         PortfolioPositionRecord.objects.filter(backtest_run=backtest_run).delete()
         PortfolioFillRecord.objects.filter(backtest_run=backtest_run).delete()
         BenchmarkRecord.objects.filter(backtest_run=backtest_run).delete()
-
         
         equity_records = list(self.equity_record.values())
         position_records = list(self.position_records.values())

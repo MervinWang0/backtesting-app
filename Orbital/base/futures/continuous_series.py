@@ -99,19 +99,16 @@ class ContinuousFuturesSeriesBuilder:
             planned_roll_date = current_trading_dates[roll_index]
 
 
-            # 1. Helper function to force any date-like object into a standard datetime.date
             def to_date(d):
                 if isinstance(d, str):
                     return datetime.datetime.strptime(d, "%Y-%m-%d").date()
-                if hasattr(d, 'date'):  # Handles pandas.Timestamp and datetime.datetime
+                if hasattr(d, 'date'): 
                     return d.date()
-                return d  # Already a datetime.date
+                return d 
 
-            # 2. Normalize the keys to ensure the intersection actually works
             curr_dates_norm = {to_date(k) for k in current_prices.keys()}
             next_dates_norm = {to_date(k) for k in next_prices.keys()}
 
-            # 3. Find the true overlap
             common_dates_norm = curr_dates_norm & next_dates_norm
 
             tolerance_start = planned_roll_date - timedelta(days=30) # 30 days is plenty
@@ -120,18 +117,13 @@ class ContinuousFuturesSeriesBuilder:
             actual_roll_date = None
 
             if common_dates_norm:
-                # Filter by tolerance
                 valid_common_dates = [d for d in common_dates_norm if tolerance_start <= d <= tolerance_end]
                 
                 if valid_common_dates:
-                    # Pick the common date closest to the planned roll date
                     actual_roll_date = min(valid_common_dates, key=lambda d: abs((d - planned_roll_date).days))
                 else:
-                    # Fallback 1: Common dates exist, but outside the tolerance window. Pick the closest one.
                     actual_roll_date = min(common_dates_norm, key=lambda d: abs((d - planned_roll_date).days))
             else:
-                # FALLBACK 2: ZERO OVERLAP. Yahoo Finance has a gap in the data.
-                # Instead of crashing, just use the first available date of the NEXT contract.
                 future_next_dates = [d for d in next_dates_norm if d >= planned_roll_date]
                 
                 if future_next_dates:
@@ -159,10 +151,8 @@ class ContinuousFuturesSeriesBuilder:
             #         f"on or after {planned_roll_date}"
             #     )
 
-            #Gets all available dates after the planned roll date
             next_available_dates = sorted(price_date for price_date in next_prices if price_date >= planned_roll_date)
 
-            #Get actual date to rollover
             actual_roll_date = next_available_dates[0]
 
             instructions.append(RollInstructions(
