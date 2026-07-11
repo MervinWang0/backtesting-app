@@ -19,7 +19,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 
-def get_equity_graph(equity_record: list[dict[str, any]]) -> px.Figure:
+def get_equity_graph(equity_record: pd.DataFrame) -> px.Figure:
     '''
     This function takes in a DataFrame with the columns of
     "date"
@@ -27,8 +27,7 @@ def get_equity_graph(equity_record: list[dict[str, any]]) -> px.Figure:
     Note that these columnsa are a min requirement, having more is acceptable
     and returns a Figure objects from plotly.py. FigureObj.show() displays a graph
     '''
-    data_frame = pd.DataFrame(equity_record)
-    fig = px.line(data_frame=data_frame, x="date", y="equity")
+    fig = px.line(data_frame=equity_record, x="date", y="equity")
     return fig
 
 def get_stock_graph(stock_data: list[Bar]) -> px.Figure:

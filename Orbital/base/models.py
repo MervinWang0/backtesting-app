@@ -2,9 +2,12 @@ from django.db import models
 # from django.contrib.auth.models import User
 from django.conf import settings
 from decimal import Decimal
+from django.db import models
+# from django.contrib.auth.models import User
+from django.conf import settings
+from decimal import Decimal
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.translation import gettext_lazy as _
-
 
 #Time stamp model to track creation date/time and update date/time
 class TimeStampedModel(models.Model):
@@ -158,7 +161,7 @@ class ContinuousFuturesPriceHistory(models.Model):
     series = models.ForeignKey(ContinuousFuturesSeries, on_delete=models.CASCADE, related_name="series")
     source_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="source_contract")
 
-    date = models.DateTimeField()
+    date = models.DateField()
     open_price = models.DecimalField(max_digits = 20, decimal_places=6)
     high_price = models.DecimalField(max_digits = 20, decimal_places=6)
     low_price = models.DecimalField(max_digits = 20, decimal_places=6)
@@ -169,7 +172,12 @@ class ContinuousFuturesPriceHistory(models.Model):
 
     adjustment_val = models.DecimalField(max_digits = 20, decimal_places = 6, default = Decimal("0.0"))
 
-    is_rolled = models.BooleanField(default=False)
+    is_roll = models.BooleanField(default=False)
+
+    roll_from_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="roll_from_contract", null=True, blank=True)
+    roll_to_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="roll_to_contract", null=True, blank=True)
+    roll_from_price = models.DecimalField(max_digits = 20, decimal_places=6, default= Decimal("0"))
+    roll_to_price = models.DecimalField(max_digits = 20, decimal_places=6, default=Decimal("0"))
 
     class Meta:
         constraints = [models.UniqueConstraint(fields = ["series", "date"], name="Unique_continuous_series_date")]
@@ -193,7 +201,6 @@ class FuturesRollEvent(models.Model):
             f"{self.series.contract_symbol} rolled on {self.roll_date}"
             f"{self.from_contract.contract_code} to {self.to_contract.contract_code}"
         )    
-    
     
 class ForexPair(models.Model):
     ticker = models.CharField(max_length=20, unique = True)
@@ -329,6 +336,7 @@ class PortfolioFillRecord(TimeStampedModel):
     backtest_run = models.ForeignKey(BacktestRun, on_delete=models.CASCADE, related_name="fill_record")
     date = models.DateField()
     ticker = models.CharField(max_length = 20)
+    source_contract_code = models.CharField(max_length=10, null=True, blank = True)
     quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
     fill_price = models.DecimalField(max_digits = 20, decimal_places = 4)
     direction = models.CharField(max_length=10, choices= DirectionType)
@@ -349,12 +357,14 @@ class PortfolioPositionRecord(TimeStampedModel):
     ticker = models.CharField(max_length=20)
     stock = models.ForeignKey(Stock, on_delete=models.SET_NULL, blank = True, null = True)
     forex = models.ForeignKey(ForexPair, on_delete= models.SET_NULL, blank = True, null = True)
+    future = models.ForeignKey(FuturesContract, on_delete=models.SET_NULL, blank = True, null = True)
 
     quantity = models.DecimalField(max_digits = 20, decimal_places = 4)
     avg_price = models.DecimalField(max_digits = 20, decimal_places = 4)
     market_price = models.DecimalField(max_digits = 20, decimal_places = 4)
     market_value = models.DecimalField(max_digits = 20, decimal_places = 4)
     unrealised_pnl = models.DecimalField(max_digits = 20, decimal_places = 4)
+    multiplier = models.DecimalField(max_digits=20, decimal_places = 4, default = Decimal("1.0"))
     
     class Meta:
         constraints = [models.UniqueConstraint(fields = ["backtest_run", "date", "ticker"],
@@ -492,7 +502,7 @@ class PaperTrade(models.Model):
         ordering = ["-executed_at"]
     
     def __str__(self):
-        return f"{self.order.side} {self.quantity} fulfilled"
+        return f"{self.order.type} {self.quantity} fulfilled"
 
 
 
@@ -537,4 +547,3 @@ class PaperTrade(models.Model):
 #     equity = models.DecimalField(max_digits = 20, decimal_places = 8)
 #     pct = models.FloatField(default=0.0)
 #     drawdown = models.FloatField(default=0.0)
-

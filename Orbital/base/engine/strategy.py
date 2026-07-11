@@ -85,6 +85,7 @@ class MovingAverageCross:
             ticker = ticker,
             datetime= current_datetime,
             signal_type= current_signal,
-            strength= self.strength
+            strength= self.strength,
+            asset_type=self.data_loader.asset_type
         )
         

@@ -52,6 +52,7 @@ def mcs_graph(request) -> JsonResponse:
                         initial_capital=float(backtest_run_instance.initial_capital),
                         commission=float(backtest_run_instance.commission),
                         risk_free_rate=float(backtest_run_instance.risk_free_rate),
+                        is_mcs=True,
                         **backtest_run_instance.strategy_params)
     # print(f"This is the backtest created {backtest}")
     mcs = MonteCarloSimulator(backtest)

@@ -53,9 +53,18 @@ class Bar:
     volume: int
     asset_type: str
     
-    # For Forex
+    #For forex
     base_currency: Optional[str] = None
     quote_currency: Optional[str] = None
+
+    #For futures
+    contract_multiplier: Optional[float] = None
+    source_contract_code: Optional[str] = None
+    is_roll: Optional[bool] = False
+    roll_from_contract_code: Optional[str] = None
+    roll_to_contract_code: Optional[str] = None
+    roll_from_price: Optional[float] = None
+    roll_to_price: Optional[float] = None
 
     @staticmethod
     def to_bar(stock_price_history):

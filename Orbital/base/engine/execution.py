@@ -91,6 +91,7 @@ class ExecutionLoader:
         Encapsulates the creation of fill event
         '''
         return FillEvent(
+            asset_type=order.asset_type,
             ticker = order.ticker,
             datetime = order.datetime,
             quantity = order.quantity,

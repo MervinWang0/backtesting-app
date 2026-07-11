@@ -55,6 +55,8 @@ def backtest_graph(request) -> HttpResponse:
                         interval = "1d",
                     )
         # elif data["asset_type"] == "FOREX": TODO
+        
+        
             
 
         # Use inputs to construct some necessary parameters

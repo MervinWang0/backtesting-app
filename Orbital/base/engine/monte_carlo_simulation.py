@@ -189,6 +189,7 @@ class MonteCarloSimulator():
                                 initial_capital=self.backtest.initial_capital,
                                 commission=self.backtest.commission,
                                 risk_free_rate=self.backtest.risk_free_rate,
+                                is_mcs=self.backtest.is_mcs,
                                 **self.backtest.strategy_params)
         return mcs_backtest.run()
 
@@ -293,7 +294,7 @@ class GBMPriceSimulator(PriceSimulator):
         # Obtain randomzed daily change in prices (log form). Such that
         # The cum_sum represent logged change up to that day. Exponentiate to get actual change
         random_logged_returns = self.gbm()
-        print(f"This is the multiplier to initial price {np.exp(random_logged_returns.cumsum())}")
+        # print(f"This is the multiplier to initial price {np.exp(random_logged_returns.cumsum())}")
         random_prices = (self.prices[0] * np.exp(random_logged_returns.cumsum())).tolist()
         # print(random_prices)
         random_prices.insert(0, self.prices[0])

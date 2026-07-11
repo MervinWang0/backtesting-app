@@ -1,5 +1,6 @@
 from datetime import datetime
 from dataclasses import dataclass, field
+from typing import Optional
 from django.db import models
 
 class SignalType(models.TextChoices):
@@ -29,8 +30,9 @@ class MarketEvent:
 #Tells what it wants to do EG: Long/Short/Exit
 #Note: Exit applies to a short position as well.
 @dataclass
-class SignalEvent:
+class SignalEvent:  
     ticker: str
+    asset_type: str
     #strategy_id : str
     datetime: datetime
     signal_type : SignalType
@@ -42,10 +44,15 @@ class SignalEvent:
 @dataclass
 class OrderEvent:
     ticker: str
+    asset_type: str
     datetime: datetime
     order_type: OrderType
-    quantity: int
+    quantity: float
     direction: DirectionType
+
+    #only for limit orders, ekse 
+    limit_price: Optional[float] = None
+    
     type: str = field(default="ORDER", init=False)
 
 
@@ -53,11 +60,19 @@ class OrderEvent:
 @dataclass
 class FillEvent:
     ticker: str
+    asset_type: str
     datetime: datetime
-    quantity: int
+    quantity: float
     direction: DirectionType
     fill_cost: float
-    commission: float = 0.0
+    commission: float = 0.
+    
+    #for forex
+    base_currency: Optional[str] = None
+    quote_currency: Optional[str] = None
+
+    #For futures
+    contract_multiplier: Optional[float] = None
+    contract_code: Optional[str] = None
+    
     type: str = field(default="FILL", init=False)
-
-

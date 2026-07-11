@@ -5,7 +5,7 @@ import plotly.express as px
 import pandas as pd
 
 from base.engine.execution import ExecutionLoader
-from base.engine.portfolio import Portfolio
+from base.engine.portfolio import DatabasePortfolio, MCSPortfolio
 from base.engine.data_loader import DataLoader, DatabaseDataLoader
 from base.engine.strategy import MovingAverageCross
 import base.engine.graph as graph
@@ -38,9 +38,11 @@ class BacktestResult:
     The methods are in performance.py
     '''
     # @timed
-    def __init__(self, equity_records: list[dict[str, any]], fill_records: list[dict[str, any]],
+    def __init__(self, equity_records: dict[datetime.date, dict[str, any]], fill_records: list[dict[str, any]],
                  risk_free_rate: float):
-        self.equity_records = pd.DataFrame(equity_records)
+        data_frame = pd.DataFrame(equity_records.values())
+        data_frame = data_frame.sort_values(by="date")
+        self.equity_records = data_frame
         self.fill_records = fill_records
         self.risk_free_rate = risk_free_rate
         self.trade_log = p.fill_to_trade_log(self.fill_records)
@@ -106,6 +108,7 @@ class Backtest:
                  initial_capital: float = 100000.0,
                  commission: float = 0.0,
                  risk_free_rate: float = 2,
+                 is_mcs = False,
                  **strategy_params: dict[str, object]):
         self.data_loader = data_loader
         # In the case of MCS data loader is passed in,
@@ -130,41 +133,57 @@ class Backtest:
                                            self.strategy_params["short_window"],
                                            self.strategy_params["long_window"], self.strength)
         self.asset_type = asset_type
-        # Create a model storing the backtest
-        self.run_model = models.BacktestRun.objects.create(
-            run_name="",
-            strategy_name=self.strategy_name,
-            asset_type = self.asset_type,
-            fixed_quantity = 0,
-            risk_free_rate = self.risk_free_rate,
+        
+        # Stores this boolean for usage in methods of class
+        self.is_mcs = is_mcs
+        # If the backtest does not use MCS, the data should be stored in db
+        if not self.is_mcs:
+            # Create a model storing the backtest
+            self.run_model = models.BacktestRun.objects.create(
+                run_name="",
+                strategy_name=self.strategy_name,
+                asset_type = self.asset_type,
+                fixed_quantity = 0,
+                risk_free_rate = self.risk_free_rate,
 
-            stock = None,
-            futures = None,
-            forex = None,
+                stock = None,
+                futures = None,
+                forex = None,
 
-            start_date = self.start_date,
-            end_date = self.end_date,
-            initial_capital = self.initial_capital,
-            end_equity = 0,
+                start_date = self.start_date,
+                end_date = self.end_date,
+                initial_capital = self.initial_capital,
+                end_equity = 0,
 
-            is_completed = False,
-            completed_at = self.end_date,
+                is_completed = False,
+                completed_at = self.end_date,
 
-            #Stores list of tickers used in the backtest
-            tickers = self.tickers,
+                #Stores list of tickers used in the backtest
+                tickers = self.tickers,
 
-            # Additional parameters necessary
-            strength = strength,
-            commission = commission,
-            slippage = slippage,
-            # Encodes strategy params in a dict
-            strategy_params = strategy_params,
-        )
-        self.portfolio = Portfolio(self.data_loader, self.events,
-                                run_name="test", strategy_name="Moving Average Cross",
-                                start_date=self.start_date, end_date=self.end_date,
-                                initial_capital=self.initial_capital, quantity=5, btr_model=self.run_model,
-                                )       
+                # Additional parameters necessary
+                strength = strength,
+                commission = commission,
+                slippage = slippage,
+                # Encodes strategy params in a dict
+                strategy_params = strategy_params,
+            )
+            
+            self.portfolio = DatabasePortfolio(self.data_loader, self.events,
+                                    run_name="test", strategy_name="Moving Average Cross",
+                                    start_date=self.start_date, end_date=self.end_date,
+                                    initial_capital=self.initial_capital, quantity=5,
+                                    run_model=self.run_model)
+        else:
+            # The difference between the creation of the portfolios is that MCSPortfolio does not create a 
+            # db instance
+            self.portfolio = MCSPortfolio(self.data_loader, self.events,
+                                    run_name="test", strategy_name="Moving Average Cross",
+                                    start_date=self.start_date, end_date=self.end_date,
+                                    initial_capital=self.initial_capital, quantity=5,
+                                    )
+
+        
 
     def get_backtest_run_id(self) -> int:
         '''
@@ -184,9 +203,11 @@ class Backtest:
         result = BacktestResult(equity_records=self.portfolio.get_equity_records(),
                               fill_records=self.portfolio.get_fill_records(),
                               risk_free_rate=self.risk_free_rate)
-        self.run_model.end_equity = result.get_end_equity()
-        self.run_model.is_completed = True
-        self.run_model.save()
+        if not self.is_mcs:
+            self.portfolio.complete_bt()
+            self.run_model.end_equity = result.get_end_equity()
+            self.run_model.is_completed = True
+            self.run_model.save()
         return result
 
     # @timed
@@ -259,5 +280,3 @@ if __name__ == "__main__":
     # print(backtest2)
     btr = backtest1.run()
     btr.get_equity_graph().show()
-
-
