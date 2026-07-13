@@ -1,6 +1,12 @@
+{% load static %}
 {% block title %}
-    Log In
+
 {% endblock %}
+
+<link
+    rel="stylesheet"
+    href="{% static 'base/login.css' %}"
+>
 
 {% block content %}
     <section class="auth-wrapper">
@@ -38,12 +44,19 @@
                 </button>
             </form>
 
+            <!-- {% if not user.is_authenticated %} -->
             <div class="auth-register">
                 <p>
                     Don't have an account?
-                    <a href="{% url 'register' %}">
-                        Create one
-                    </a>
+                    <a href="{% url 'register' %}">Create one</a>
+                </p>
+            </div>
+            <!-- {% endif %} -->
+
+            <div class="auth-register">
+                <p>
+                    Don't have an account?
+                    <a href="{% url 'register' %}">Create one</a>
                 </p>
             </div>
         </div>

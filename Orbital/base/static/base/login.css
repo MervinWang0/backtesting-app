@@ -1,0 +1,140 @@
+
+.auth-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 80px);
+    padding: 40px 20px;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 440px;
+    padding: 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+
+.auth-eyebrow {
+    margin-bottom: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #f87171; 
+}
+
+.auth-header h1 {
+    margin: 0;
+    font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.login-form label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.login-form input {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 16px;
+    color: var(--text-primary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    outline: none;
+    transition: 
+        border-color 160ms ease, 
+        box-shadow 160ms ease;
+}
+
+.login-form input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgb(65 147 78 / 12%);
+}
+
+.login-form input::placeholder {
+    color: #96a0b2;
+}
+
+.form-alert {
+    padding: 12px 16px;
+    color: #dc2626;
+    background: rgb(220 38 38 / 8%);
+    border: 1px solid rgb(220 38 38 / 20%);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+
+.auth-form .primary-button {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.auth-register {
+    margin-top: 24px;
+    text-align: center;
+}
+
+.auth-register p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+
+.auth-register a {
+    color: var(--accent);
+    font-weight: 650;
+    text-decoration: none;
+    transition: color 160ms ease;
+}
+
+.auth-register a:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+}
+
+
+@media (max-width: 600px) {
+    .auth-wrapper {
+        padding: 24px 16px;
+        align-items: flex-start;
+        padding-top: 60px;
+    }
+
+    .auth-card {
+        padding: 28px;
+        border-radius: var(--radius-md);
+    }
+    
+    .auth-header h1 {
+        font-size: 1.75rem;
+    }
+}

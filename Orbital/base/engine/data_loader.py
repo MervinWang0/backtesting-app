@@ -150,7 +150,7 @@ class DataLoader(ABC):
     def date_to_datetime(date: datetime.date) -> datetime.datetime:
         return datetime.combine(date, datetime.min.time())
 
-    def load_forex_date(self, forex_pair_code: str) -> list[Bar]:
+    def load_forex_data(self, forex_pair_code: str) -> list[Bar]:
         bars: list[Bar] = []
         rows = (ForexPriceHistory.objects.filter(pair__ticker =forex_pair_code, timestamp__range=(self.start_date, self.end_date))
                 .select_related("pair")
@@ -176,21 +176,63 @@ class DataLoader(ABC):
     def load_futures_data(self, contract_code: str) -> list[Bar]:
         futures_history = (ContinuousFuturesPriceHistory.objects.filter(series__contract_symbol=contract_code,
                                                                         series__contract_index = 1,
-                                                                        series__date__range=(self.start_date, self.end_date),)
-                                                            .selected_related("series", "contract_symbol")
+                                                                        date__range=(self.start_date, self.end_date),)
+                                                            .select_related("series", "source_contract",
+                                                                            "roll_from_contract", "roll_to_contract")
                                                             .order_by("date"))
         bars = []
+        previous_contract_code = None
+        visited_dates = set()
         for record in futures_history:
+            if record.date in visited_dates:
+                raise RuntimeError(f"Duplicate date found in futures data for {contract_code}: {record.date}")
+            visited_dates.add(record.date)
+            current_contract_code = record.source_contract.contract_code
+            is_roll = previous_contract_code is not None and current_contract_code != previous_contract_code
+            from_contract = record.roll_from_contract.contract_code if record.roll_from_contract is not None else previous_contract_code if is_roll else None
+            to_contract = record.roll_to_contract.contract_code if record.roll_to_contract is not None else current_contract_code if is_roll else None
+            if is_roll:
+                print(f"Roll detected on {record.date}: {from_contract} -> {to_contract}")
+                print(
+                    "FUTURES LOAD:",
+                    record.date,
+                    "series_id=",
+                    record.series.id,
+                    "source=",
+                    current_contract_code,
+                    "previous=",
+                    previous_contract_code,
+                    "detected_roll=",
+                    is_roll,
+                    "db_roll_from=",
+                    (
+                        record.roll_from_contract.contract_code
+                        if record.roll_from_contract else None
+                    ),
+                    "db_roll_to=",
+                    (
+                        record.roll_to_contract.contract_code
+                        if record.roll_to_contract else None
+                    ),
+                )
             bars.append(Bar(
-                symbol = record.contract.contract_code,
+                symbol = contract_code,
                 date = record.date,
                 open = float(record.open_price),
-                high = float(record.High_price),
+                high = float(record.high_price),
                 low = float(record.low_price),
                 close = float(record.close_price),
                 volume = record.volume,
-                asset_type = "FUTURES"
+                asset_type = "FUTURES",
+                source_contract_code = current_contract_code,
+                contract_multiplier = float(record.source_contract.tick_multiplier),
+                is_roll = is_roll,
+                roll_from_contract_code = from_contract,
+                roll_to_contract_code = to_contract,
+                roll_from_price = float(record.roll_from_price) if record.roll_from_price is not None else None,
+                roll_to_price = float(record.roll_to_price) if record.roll_to_price is not None else None
             ))
+            previous_contract_code = current_contract_code
         return bars
 
     def next_day(self) -> None:
@@ -389,7 +431,7 @@ class DatabaseDataLoader(DataLoader):
             elif self.asset_type == "FUTURES":
                 main_bar = self.load_futures_data(ticker)
             elif self.asset_type == "FOREX":
-                main_bar = self.load_forex_date(ticker)
+                main_bar = self.load_forex_data(ticker)
             else:
                 raise ValueError(f"Unsupported asset type: {self.asset_type}")
             

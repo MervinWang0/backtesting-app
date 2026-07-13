@@ -71,7 +71,6 @@ class Command(BaseCommand):
                 print(f"Created new forex pair: {yf_symbol} - {name}")
 
             try:
-                print("trying to download data")
                 data = yf.download(
                     yf_symbol,
                     period = period,

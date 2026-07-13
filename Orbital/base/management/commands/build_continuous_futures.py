@@ -50,7 +50,7 @@ class Command(BaseCommand):
                 contract_index = 1,
                 rollover_rule = "DAYS_BEFORE_EXPIRY",
                 roll_days = roll_days,
-                adjustment_method = "NONE",
+                adjustment_method = "BACK_ADJUSTED",
         ))
 
         if created:

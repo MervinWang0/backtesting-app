@@ -176,8 +176,8 @@ class ContinuousFuturesPriceHistory(models.Model):
 
     roll_from_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="roll_from_contract", null=True, blank=True)
     roll_to_contract = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="roll_to_contract", null=True, blank=True)
-    roll_from_price = models.DecimalField(max_digits = 20, decimal_places=6, default= Decimal("0"))
-    roll_to_price = models.DecimalField(max_digits = 20, decimal_places=6, default=Decimal("0"))
+    roll_from_price = models.DecimalField(max_digits = 20, decimal_places=6, null=True, blank = True)
+    roll_to_price = models.DecimalField(max_digits = 20, decimal_places=6, null=True, blank = True)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields = ["series", "date"], name="Unique_continuous_series_date")]

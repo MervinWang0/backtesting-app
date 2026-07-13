@@ -5,7 +5,8 @@ from decimal import Decimal
 from base.engine.data_loader import DataLoader
 from base.engine.events import SignalEvent, OrderEvent, FillEvent, AssetType
 from base.models import (BacktestRun, PortfolioEquityRecord,
-PortfolioPositionRecord, PortfolioFillRecord, Stock, BenchmarkRecord, StockPriceHistory)
+PortfolioPositionRecord, PortfolioFillRecord, Stock, BenchmarkRecord, StockPriceHistory,
+ForexPair, ForexPriceHistory, FuturesContract, FuturesPriceHistory)
 from functools import wraps
 from time import time
 from abc import ABC, abstractmethod

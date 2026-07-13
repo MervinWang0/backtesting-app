@@ -12,10 +12,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Orbital.settings")
 django.setup()
 
 
-from base.models import ForexPair, ForexPriceHistory
+from base.models import ForexPair, ForexPriceHistory, BacktestRun, StockPriceHistory
 from base.engine.backtest import Backtest
 from django.utils import timezone
-from base.engine.data_loader import DatabaseDataLoader
 
 pair_symbol = "EURUSD=X"
 DOWNLOAD_DATA = False
@@ -52,31 +51,60 @@ def check_saved_data(pair_symbol):
         print("No saved rows found.")
 
 
-def run_backtest(start_date, end_date):
-    events = Queue()
-    data_loader = DatabaseDataLoader(events=events, tickers=[pair_symbol],
-                                     start_date=start_date, end_date=end_date,
-                                     asset_type="FOREX")
-    backtest = Backtest(
-        events=events,
-        tickers=[pair_symbol],
-        asset_type = "FOREX",
-        start_date=start_date,
-        end_date=end_date,
-        strategy_name="MovingAverageCross",
-        strength=1.0,
-        slippage=0.0,
-        initial_capital=100000.0,
-        short_window = 20,
-        long_window = 100,
-        comission=0.0,
-        data_loader=data_loader
-    )
+# def run_backtest(start_date, end_date):
+#     events = Queue()
+
+#     backtest_run = BacktestRun.objects.create(
+#         #user = User,
+#         run_name = "test",
+#         strategy_name= "MovingAverageCross",
+#         asset_type = "STOCK",
+#         start_date = start_date,
+#         end_date = end_date,
+#         initial_capital = 100000.0,
+#         end_equity = 0.0,
+#         fixed_quantity = 5,
+#         tickers = [pair_symbol],
+#     )
+
+#     asset_cache = {}
+#     benchmark_prices = {}
+#     for ticker in [pair_symbol]:
+#         asset_type = "FUTURES"
+#         asset_cache[ticker] = ForexPair.objects.filter(ticker=ticker).first()
+    
+#     benchmark_qs = StockPriceHistory.objects.filter(
+#         stock__ticker = "VOO",
+#         date__gte = start_date,
+#         date__lte = end_date,
+#     )
+#     benchmark_prices = {record.date: float(record.close_price) for record in benchmark_qs}
+#     events = Queue()
+#     data_loader = DatabaseDataLoader(events=events, tickers=[],
+#                                         start_date=start_date,
+#                                         end_date=end_date,
+#                                         asset_type="FOREX")
+#     backtest = Backtest(
+#         data_loader=data_loader,
+#         events=data_loader.events,
+#         tickers=[ROOT_SYMBOL],
+#         asset_type=AssetType.FUTURES,
+#         start_date=START_DATE,
+#         end_date=END_DATE,
+#         strategy_name="MovingAverageCross",
+#         strength=1.0,
+#         slippage=0.0,
+#         initial_capital=100_000.0,
+#         short_window=20,
+#         long_window=100,
+#         comission=0.0,
+
+
+#     )
 
     print("\nRunning backtest...")
     result = backtest.run()
     print("Backtest finished.")
-    # result.get_equity_graph().show()
 
     return result
 
@@ -92,3 +120,4 @@ if __name__ == "__main__":
         start_date, end_date = get_existing_date_range(pair_symbol)
 
     run_backtest(start_date, end_date)
+

@@ -141,10 +141,57 @@ class ExecutionLoader:
         else:
             return
 
+    def execute_futures_roll(self, 
+                                ticker: str,
+                                datetime: datetime,
+                                from_contract: str,
+                                to_contract: str,
+                                from_price: float,
+                                to_price: float,
+                                quantity: int,
+                                multiplier: int
+                                ):
+        if quantity == 0:
+            return
+
+        if quantity > 0:
+            close_direction = "SELL"
+            open_direction = "BUY"
+        else:
+            close_direction = "BUY"
+            open_direction = "SELL"
+        
+        quantity = abs(quantity)
+        
+        adjusted_from_price = self.slippage_adjustment(from_price, close_direction)
+        adjusted_to_price = self.slippage_adjustment(to_price, open_direction)
+        close_commission = self.calculate_commission(quantity, adjusted_from_price)
+        open_commission = self.calculate_commission(quantity, adjusted_to_price)
+
+        close_fill = FillEvent(
+            ticker = ticker,
+            datetime = datetime,
+            asset_type= "FUTURES",
+            quantity = quantity,
+            direction = close_direction,
+            fill_cost = adjusted_from_price,
+            commission = close_commission
+        )
+
+        open_fill = FillEvent(
+            ticker = ticker,
+            datetime = datetime,
+            asset_type= "FUTURES",
+            quantity = quantity,
+            direction = open_direction,
+            fill_cost = adjusted_to_price,
+            commission = open_commission
+        )
+
+        self.events.put(close_fill)
+        self.events.put(open_fill)
 
 
-    
 
 
 
-    
