@@ -47,8 +47,14 @@ class Distribution():
 
     '''
 
-    def __init__(self, data: list[float]):
-        self.data = np.sort(np.array(data))
+    def __init__(self, data: list[float] | np.array):
+        if isinstance(data, np.ndarray):
+            self.data = data
+        elif isinstance(data, list):
+            self.data = np.sort(np.array(data))
+        else:
+            raise ValueError("Distribution can only be created with list/np.ndarray"
+                             f" not the type passed, which is = {type(data)}")
 
     def get_median(self) -> float:
         return np.median(self.data)
@@ -75,14 +81,31 @@ class Distribution():
         '''
         return np.searchsorted(self.data, value, side='right') / len(self.data)
 
-    def ppf(self, probability: float) -> float:
+    def ppf(self, percentile: float) -> float:
         '''
         Takes in prob, returns number at percentile. Because empirical
         distribution is discrete, the case where the prob does not correspond
         to number has to be considered. In this case, the design choice
         is to use the nearest value in the distribution. 
         '''
-        return np.percentile(self.data, probability * 100, method="nearest")
+        return np.percentile(self.data, percentile, method="nearest")
+
+    def get_imp_metrics(self) -> dict[str, float]:
+        ''' 
+        Returns useful metrics, like the basic stats and value at some percentiles
+        '''
+        result = {}
+        result.update(Median=self.get_median())
+        result.update(Mean=self.get_mean())
+        result.update(Variance=self.get_variance())
+        result.update(Min=self.get_min())
+        result.update(Max=self.get_max())
+        result.update({"10th Percentile" : self.ppf(10)})
+        result.update({"25th Percentile" : self.ppf(25)})
+        result.update({"50th Percentile" : self.ppf(50)})
+        result.update({"75th Percentile" : self.ppf(75)})
+        result.update({"90th Percentile" : self.ppf(90)})
+        return result
 
     def distribution_graph(self) -> px.Figure:
         df = pd.DataFrame(self.data)

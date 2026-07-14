@@ -202,7 +202,7 @@
 /* A general container, for displaying activity cards using grid */
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 16px;
     padding: 8px;
 }

@@ -21,10 +21,28 @@
         </div>
     </div>
 </section>
-{% comment %} Create strategy dropdown button {% endcomment %}
-<div class="pane1" id="input_wrapper" name="input_wrapper">
+{% comment %} Store the buttons, input, and output grids in a flex column {% endcomment %}
+<div class="flex-column-container" id="input_wrapper" name="input_wrapper">
+    {% comment %} Button to run mcs simulations
+    <div class=window1 id="run_mcs_btn_container" name="run_mcs_btn_container">
+        <button class=button id="run_mcs_btn" name="run_mcs_btn">Run MCS</button>
+    </div> {% endcomment %}
+    {% comment %} Store in a div the buttons to press {% endcomment %}
+    <div class="flex-row-container">
+        {% comment %} Button to quicktest with random parameters {% endcomment %}
+        <div>
+        <button class="flex_item button"  type="button" id="quicktest_btn">Quicktest</button>
+        </div>
+
+        {% comment %} Button to run mcs simulations {% endcomment %}
+        <div class=window1 id="run_mcs_btn_container" name="run_mcs_btn_container">
+            <button class=button id="run_mcs_btn" name="run_mcs_btn">Run MCS</button>
+        </div>
+
+    </div>
+    {% comment %} Input grid {% endcomment %}
     <p class="header1">Choose parameters for simulation</p>
-    <div class="input-grid">
+    <div class="grid-container" id="input_container">
         <div class="param_element activity-value input-field checkbox_container" id="jump_diffusion_div">
             <label for="is_jump_diffusion">Jump Diffusion:
                 <input type="checkbox" id="is_jump_diffusion" name="Jump Diffusion">
@@ -52,24 +70,6 @@
             </label>
         </div>
 
-        {% comment %} <div class="param_element activity-value input-field" id="dt_div">
-            <label for="dt"  placeholder="E.g. 1">Time Step:
-                <input type="number" id="dt" name="Time Step">
-            </label>
-        </div> {% endcomment %}
-
-        <div class="param_element activity-value input-field" id="mu_div">
-            <label for="mu"  placeholder="E.g. 0.01">Simple Average Daily Return:
-                <input type="number" id="mu" name="Simple Daily Average Mean"><br>
-            </label>
-        </div>
-
-        <div class="param_element activity-value input-field" id="sigma_div">
-            <label for="sigma"  placeholder="E.g. 0.025">Average Daily Volatility:
-                <input type="number" id="sigma" name="Average Daily Volatility"><br>
-            </label>
-        </div>
-
         <div class="param_element activity-value input-field" id="df_div" style="display:none;">
             <label for="df" placeholder="5">Degree of Freedom:
                 <input type="number" id="df" name="Degree of Freedom">
@@ -94,10 +94,26 @@
             </label>
         </div>
     </div>
+
+    {% comment %} Output table Invisible in base state{% endcomment %}
+    <table class="output-container" style="display:none;" id="output_container">
+        <tr>
+            <th>Metric</th>
+            <th>Mean</th>
+            <th>Median</th>
+            <th>Variance</th>
+            <th>Minimum</th>
+            <th>Maximum</th>
+            <th>10th Percentile</th>
+            <th>25th Percentile</th>
+            <th>50th Percentile</th>
+            <th>75th Percentile</th>
+            <th>90th Percentile</th>
+        </tr>
+
+    </table>
 </div>
-<div class=window1 id="run_mcs_btn_container" name="run_mcs_btn_container">
-    <button class=button id="run_mcs_btn" name="run_mcs_btn">Run MCS</button>
-</div>
+
 
 {% comment %} Stores the mcs graph {% endcomment %}
 <div class=graph id="mcs_graph_container" name="mcs_graph_container">

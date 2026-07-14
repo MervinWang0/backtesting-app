@@ -16,7 +16,8 @@ from datetime import datetime
 from base.engine.data_loader import (DataLoader, Bar,
                                      DatabaseDataLoader,
                                      MCSDataLoader)
-from base.engine.backtest import Backtest
+from base.engine.distribution import Distribution
+from base.engine.backtest import Backtest, BacktestResult
 import numpy as np
 import math
 from scipy.stats import t as student_t
@@ -68,26 +69,33 @@ class MonteCarloSimulator():
     @timed
     def simulate(self, num_sims: int, df: float = 5, exp_jumps: int = 0, mean_log_jump_size: float = 0.05,
                  std_log_jump_size: float = 0.01, is_t: bool = True,is_regime_switching: bool = True,
-                 is_jump_diffusion: bool = True, **kwargs):
+                 is_jump_diffusion: bool = True, **kwargs) -> list[BacktestResult]:
         '''
-        Takes in a number of simulations and a degree of freedom,
-        and returns the result of the simulations.
+        Takes in various simulation metrics, returns two outputs, 
+        1. A list of BacktestResults, len <= 101, representing first 100 simulated paths
+        2. A 2d numpy array representing computed metrics
         '''
         # Stock data holds each ticker's stock info for backtest's tickers
         stock_data: dict[str, list[Bar]] = self.backtest.data_loader.get_stock_data()
 
-        # Store BackTestResult of each simulation
-        result = [self.backtest.run()]
+        # Store BackTestResult of each simulation, 
+        # graph_result stores first 100 btr for graphing
+        # metric_result stores the get_metric of each btr
+        btr = self.backtest.run()
+        graph_result = [btr]
+        fields = btr.get_metrics().keys()
+        print(f"These are the metric fields of a backtest result {fields}")
+        metric_result = {name : np.empty(num_sims) for name in fields}
 
-        # For each stock, create arrays to compute OHL prices
-        price_calc: dict[str, dict[str, np.array]] = {}
+        
 
+        # Create price simulator
         # TODO Doesn't actually support multi stock MCS currently
         for ticker in stock_data:
             # Close price of current stock
             close_price = [bar.close for bar in stock_data[ticker]]
 
-            # Initialize some parameters used for randomizing prices
+            # Initialize some default parameters used for randomizing prices
             jump_component = None
             regime_component = None
             t_component = None
@@ -107,7 +115,7 @@ class MonteCarloSimulator():
                                                 TComponent=t_component)
 
         # For each simulation
-        for _ in range(num_sims):
+        for sim_count in range(num_sims):
             # random stock data holds randomized stock data of each simulation
             random_stock_data: dict[str, list[Bar]] = {}
             random_close = price_simulator.randomize_price()
@@ -121,9 +129,27 @@ class MonteCarloSimulator():
                                                               timeline=timeline)
 
             # Once the random historical stock data is obtained, backtest using it
-            # Stores BackTestResult instances in result
-            result.append(self.run_backtest(random_stock_data=random_stock_data))
-        return result
+            # Stores first 100 BackTestResult for graphing, and the stores metrics for rest
+            simulated_backtest = self.run_backtest(random_stock_data=random_stock_data)
+            if len(graph_result) < 101:
+                graph_result.append(simulated_backtest)
+            simulated_metrics = simulated_backtest.get_metrics()
+            # Iterate through fields and update metric result with simulated result
+            for name in fields:
+                metric_result[name][sim_count] = simulated_metrics[name]
+        print("These are the metrics of the backtest")
+        print(pd.DataFrame(metric_result))
+        
+        # Convert Obtain distribution results of simulation
+        metric_lst: list[dict[str, float]] = []
+        for name in fields:
+            dist = Distribution(metric_result[name])
+            dist_metrics = {"field" : name}
+            dist_metrics.update(dist.get_imp_metrics())
+            metric_lst.append(dist_metrics)
+        print("These are the computed distributions")
+        print(pd.DataFrame(metric_lst))
+        return (graph_result, metric_lst)
 
     def price_to_bar(self, og_data: list[Bar], random_close_prices: list[float],
                      timeline: list[datetime.date]) -> list[Bar]:

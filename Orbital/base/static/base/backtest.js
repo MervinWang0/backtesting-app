@@ -25,15 +25,16 @@ const quicktest_btn = document.getElementById("quicktest_btn")
 
 // divs serving as containers
 const progress_bar_div = document.getElementById("progress_bar_container")
-// The trigger of the buttons calling the function
-strategy_btn.addEventListener("change", change_strategy)
-run_backtest_btn.addEventListener("click", run_backtest)
-view_mcs_btn.addEventListener("click", view_mcs)
-quicktest_btn.addEventListener("click", quicktest)
 
 // chosen strategy id and param list have to be mutable as they change each time strategy is changed
 let chosen_strategy_id = strategy_btn.value;
 let param_list = get_param_list();
+
+// The trigger of the buttons calling the function
+strategy_btn.addEventListener("change", change_strategy)
+run_backtest_btn.addEventListener("click", run_backtest)
+view_mcs_btn.addEventListener("click", view_mcs)
+quicktest_btn.addEventListener("click", () => quicktest(param_list))
 
 // Array of input elements, used to obtain their values from webpage
 const strategy_params = [];
@@ -350,7 +351,7 @@ function upgrade_progress() {
 
 
 // Sets the various parameters with some random input
-function quicktest() {
+function quicktest(param_list) {
     reset();
     // Pass param list to a view function and expect a list of values to update input with
     fetch("/get_quicktest_input/", {
