@@ -17,7 +17,25 @@ from datetime import datetime
 from base.engine.data_loader import DatabaseDataLoader, Bar
 import pandas as pd
 import plotly.graph_objects as go
+from functools import wraps
+from time import time
 
+def timed(f):
+    '''
+    This function is used to time any function
+    Usage syntax
+    @timed
+    def funct()
+    '''
+
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time()
+        result = f(*args, **kwds)
+        elapsed = time() - start
+        print(f"function {f.__name__} took {elapsed}")
+        return result
+    return wrapper
 
 def get_equity_graph(equity_record: pd.DataFrame) -> px.Figure:
     '''
@@ -52,6 +70,7 @@ def get_stock_graph(stock_data: list[Bar]) -> px.Figure:
     )])
     return fig
 
+@timed
 def get_monte_graph(btr_lst: list[BacktestResult]) -> px.Figure:
     '''
     This function takes in a list of backtest results, basically the ouput of MCS simulate,

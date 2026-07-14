@@ -6,9 +6,12 @@ from datetime import datetime
 from django.http import JsonResponse
 from base.engine.data_loader import DatabaseDataLoader
 from base.engine.backtest import Backtest
+from base.engine.distribution import Distribution
 from base.engine.monte_carlo_simulation import MonteCarloSimulator
 from base.models import BacktestRun
 import base.engine.graph as graph
+import numpy as np
+import pandas as pd
 
 def mcs_graph(request) -> JsonResponse:
     # Cleaning Params
@@ -57,11 +60,20 @@ def mcs_graph(request) -> JsonResponse:
                         **backtest_run_instance.strategy_params)
     mcs = MonteCarloSimulator(backtest)
 
-    print(f"This is the data passed into mcs.simulate \n{data}")
+    # print(f"This is the data passed into mcs.simulate \n{data}")
     results = mcs.simulate(**data)
     fig = graph.get_monte_graph(results[0])
     mcs_html = fig.to_html(full_html=False)
-    return JsonResponse({"mcs_graph_html" : mcs_html})
+    print("This is metrics before being passed to JS")
+    
+    # Obtain the html of the graph for a simplified version
+    # total_return_dist = Distribution(results[0])
+    
+    # simplified_graph = [results[1]]
+    # moderate_graph =
+    print(pd.DataFrame(results[1]))
+
+    return JsonResponse({"mcs_graph_html" : mcs_html, "mcs_metrics" : results[1]})
 
 def monte_carlo_simulation(request) -> HttpResponse:
     return render(request, "monte_carlo_simulation.html")

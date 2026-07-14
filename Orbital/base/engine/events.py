@@ -36,7 +36,7 @@ class SignalEvent:
     #strategy_id : str
     datetime: datetime
     signal_type : SignalType
-    strength: float
+    # strength: float [0,1]
     type: str = field(default="SIGNAL", init=False)
 
 

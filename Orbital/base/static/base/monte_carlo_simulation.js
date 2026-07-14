@@ -28,7 +28,7 @@ const cleaned_params = {"run_id" : run_id};
 
 // Create an array of inputs. Obtained by selecting all input-fields of the input grid.
 // This input list contains visible and hidden inputs
-const input_grid = document.getElementById("input_container")
+const input_grid = document.getElementById("input_container");
 const param_divs = input_grid.querySelectorAll(".input-field");
 const inputs = [];
 for(const div of param_divs){
@@ -37,7 +37,7 @@ for(const div of param_divs){
 console.log(inputs);
 
 // Obtain variables for quicktest
-const param_list = get_param_list()
+const param_list = get_param_list();
 
 // Add events to checkbox to show/hide params
 jump_diffusion_checkbox.addEventListener("change", () => show_params(jump_params_id, jump_diffusion_checkbox));
@@ -84,15 +84,78 @@ function graph_mcs() {
         const mcs_graph_container = document.getElementById('mcs_graph_container');
         // Clear data
         mcs_graph_container.innerHTML = '';
-        const range = document.createRange();
-        const fragment = range.createContextualFragment(data["mcs_graph_html"]);
+        let range = document.createRange();
+        let fragment = range.createContextualFragment(data["mcs_graph_html"]);
         console.log(`This is what html of graph looks like ${fragment}`);
-        mcs_graph_container.append(fragment);});
+        mcs_graph_container.append(fragment);
 
         // Make visible output
+        console.log(data);
+        console.log(data["mcs_metrics"]);
         output_container.style.display = "";
+        range.createContextualFragment(add_rows(data["mcs_metrics"]))
+                }
+        )
 }
 
+
+const percentage_metrics = ["Total Return", "Mean Daily Return", "CAGR",
+    "Volatility", "Max Drawdown", "Win Rate"
+]
+// This function builds the output table given the data. Returns undefined
+function add_rows(data) {
+    function isNumericString(str) {
+        return !Number.isNaN(Number(str));
+    }
+    // These row identifier is used to determine which metric the val belongs to
+    // Which is used to determine if it should be converted to %
+    let row_identifier = '';
+    let num_conversions = 0
+
+    const tbody = output_container.querySelector('tbody');
+    // Clear the table first
+    tbody.innerHTML = '';
+    // Data is an array of objects
+    // console.log(`This is the data to build rows with ${JSON.stringify(data)}`)
+    console.log(data.length)
+    data.forEach(obj => {
+        // Create a row for each object
+        const row = tbody.insertRow();
+        // For each element of the object
+        Object.values(obj).forEach(value => {
+            // console.log(`This is the value should not be null ${value}`)
+            if(isNumericString(value)) {
+                // convert to number, operate, tu
+                value = Number(value)
+                if (percentage_metrics.includes(row_identifier)) {
+                    num_conversions += 1;
+                    value = value * 100;
+                    value = value.toPrecision(5) + "%";
+                }
+                else {
+                    value = Number(value).toPrecision(5);
+                }
+
+            }
+            else {
+                console.log(`${value} could not be converted to number`);
+                row_identifier = value;
+                // Does nothing if unable to convert to number
+            }
+            // Add content to cell
+            const cell = row.insertCell();
+            cell.textContent = value;
+        });
+    });
+
+    // Testing to see that all the metrics are converted correctly
+    if (num_conversions !== percentage_metrics.length * 10) {
+        throw new RangeError("The number of metrics converted " +
+            "to percentages should be equal to number of percentage metrics"
+        + `Number of conversions = ${num_conversions} vs `
+        + `Number of percentage metrics = ${percentage_metrics.length * 10}` )
+    }
+}
 // Given an array of input ids and a checkbox, make them visible if checkbox is true
 function show_params(input_id_array, checkbox){
     for(const element_id of input_id_array) {

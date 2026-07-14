@@ -80,6 +80,7 @@ def get_win_rate(trade_log: pd.DataFrame) -> float:
     win_count = (trade_log['pnl'] > 0).sum()
     return win_count / trade_log['pnl'].count()
 
+@timed
 def get_metrics(equity_record: pd.DataFrame, risk_free_rate: float,
                 trade_log: pd.DataFrame) -> dict[str, float]:
     total_return = get_total_return(equity_record)

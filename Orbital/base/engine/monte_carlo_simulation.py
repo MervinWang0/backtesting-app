@@ -131,6 +131,8 @@ class MonteCarloSimulator():
             # Once the random historical stock data is obtained, backtest using it
             # Stores first 100 BackTestResult for graphing, and the stores metrics for rest
             simulated_backtest = self.run_backtest(random_stock_data=random_stock_data)
+            # Cap the total graphs stored for memory efficiency and because plotting a high
+            # number of graphs is very slow.
             if len(graph_result) < 101:
                 graph_result.append(simulated_backtest)
             simulated_metrics = simulated_backtest.get_metrics()
@@ -144,11 +146,11 @@ class MonteCarloSimulator():
         metric_lst: list[dict[str, float]] = []
         for name in fields:
             dist = Distribution(metric_result[name])
-            dist_metrics = {"field" : name}
+            dist_metrics = {"Field" : name}
             dist_metrics.update(dist.get_imp_metrics())
             metric_lst.append(dist_metrics)
-        print("These are the computed distributions")
-        print(pd.DataFrame(metric_lst))
+        # print("These are the computed distributions")
+        # print(pd.DataFrame(metric_lst))
         return (graph_result, metric_lst)
 
     def price_to_bar(self, og_data: list[Bar], random_close_prices: list[float],
