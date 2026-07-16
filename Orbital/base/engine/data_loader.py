@@ -280,8 +280,11 @@ class DataLoader(ABC):
         '''
         # print(len(self.latest_stock_data[ticker]))
         # print(f"This should be a number {num}")
-        if ticker not in self.latest_stock_data or len(self.latest_stock_data[ticker]) < num:
+        if ticker not in self.latest_stock_data:
             raise ValueError(f"Not enough data available for ticker: {ticker} at the current time index.")
+        if len(self.latest_stock_data[ticker]) < num:
+            raise ValueError(f"The stock data for this date: {self.curr_datetime} is outside"
+                             f" is outside range of the data loader: {self.end_date}")
         return self.latest_stock_data[ticker][-num:]
 
 
@@ -298,7 +301,7 @@ class DataLoader(ABC):
         latest_bar = self.get_current_bar(ticker)
         if not hasattr(latest_bar, value_type):
             raise ValueError(f"Invalid value type: {value_type}."
-                             f" Must be one of 'Open', 'High', 'Low', 'Close', 'Volume'.")
+                             f" Must be one of 'open', 'high', 'low', 'close', 'volume'.")
         return getattr(latest_bar, value_type)
 
   
@@ -320,12 +323,33 @@ class DataLoader(ABC):
         '''
         return self.timeline
 
+    def get_days_loaded(self) -> int:
+        ''' 
+        Returns an integer representing the number of days of data loaded
+        '''
+        return self.curr_index + 1
+
     def get_stock_data(self) -> dict[str, list[Bar]]:
         '''
         Returns the universe of stock data from start to end
         for interested tickers.
         '''
         return self.stock_data
+    
+    def get_tickers(self) -> list[str]:
+        ''' 
+        Returns a list of the tickers used by this data loader
+        '''
+        return self.tickers
+
+    def get_current_change(self, ticker: str) -> float:
+        ''' 
+        Returns the change in the close price of the previous day and
+        current day of a specified ticker
+        '''
+        return (self.stock_data[ticker][self.curr_index].close -
+                self.stock_data[ticker][self.curr_index - 1].close)
+
 
 class MCSDataLoader(DataLoader):
     '''
