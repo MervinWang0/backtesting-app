@@ -12,9 +12,22 @@ def to_decimal(val) -> Decimal:
 
 
 class Portfolio:
-    def __init__(self, data_loader: DataLoader, events: Queue, 
-                 run_name: str, strategy_name: str, start_date: datetime, end_date: datetime,
-                 initial_capital: float =  100000.0, quantity =  5, current_equity : Decimal = 0.0, asset_cache: dict = None, benchmark_prices: dict = None):#, User = None):
+    def __init__(self, data_loader: DataLoader,
+                 events: Queue, 
+                 run_name: str, 
+                 strategy_name: str, 
+                 start_date: datetime, 
+                 end_date: datetime,
+                 initial_capital: float =  100000.0, 
+                 quantity =  5, 
+                 current_equity : Decimal = 0.0, 
+                 asset_cache: dict = None, 
+                 benchmark_prices: dict = None,
+                risk_per_trade: float = 0.01,
+                max_position_pct: float = 0.20,
+                max_gross_leverage: float = 1.0,
+                default_stop_pct: float = 0.02,
+                forex_lot_size: int = 1000,):#, User = None):
         self.data_loader = data_loader
         self.events = events
         self.initial_capital = initial_capital
@@ -60,6 +73,13 @@ class Portfolio:
         self.benchmark_ticker = "VOO"
         self.benchmark_quantity = None
         self.benchmark_initial_price = 0.0
+
+        #Position sizing
+        self.risk_per_trade = risk_per_trade
+        self.max_position_pct = max_position_pct
+        self.max_gross_leverage = max_gross_leverage
+        self.default_stop_pct = default_stop_pct
+        self.forex_lot_size = forex_lot_size
 
 
         #creates database for this backtest run when portfolio is intialised 
@@ -179,6 +199,151 @@ class Portfolio:
         backtest_run.save(update_fields=["is_completed", "completed_at", "end_equity"])
 
         print("Database save completed")
+    
+
+    def get_unit_exposure(self, ticker:str, price:float):
+        asset_type = self.asset_type_by_ticker.get(ticker)
+
+        if asset_type == AssetType.FUTURES:
+            multiplier = float(self.get_contract_multiplier(ticker))
+            return price * multiplier
+
+        if asset_type == AssetType.FOREX:
+            bar = self.data_loader.get_current_bar(ticker)
+
+            if bar is None:
+                raise ValueError(
+                    f"No current forex bar available for {ticker}."
+                )
+
+            return self.convert_to_account_currency(
+                price,
+                bar.quote_currency,
+            )
+
+        return price
+    
+    def calculate_gross_exposure_excluding(
+        self,
+        excluded_ticker: str,):
+
+        gross_exposure = 0.0
+
+        for ticker, quantity in self.holdings.items():
+            if ticker == excluded_ticker or quantity == 0:
+                continue
+
+            price = float(self.get_latest_price(ticker))
+            unit_exposure = self.get_unit_exposure(ticker, price)
+
+            gross_exposure += abs(quantity) * unit_exposure
+
+        return gross_exposure
+    
+    #Calculate how much account-currency PnL is lose per unit if stop is reached
+    def calculate_unit_risk(self, ticker: str, stop_distance: float,):
+        asset_type = self.asset_type_by_ticker.get(ticker)
+
+        if asset_type == AssetType.FUTURES:
+            multiplier = float(self.get_contract_multiplier(ticker))
+            return stop_distance * multiplier
+
+        if asset_type == AssetType.FOREX:
+            bar = self.data_loader.get_current_bar(ticker)
+
+            if bar is None:
+                raise ValueError(
+                    f"No current forex bar available for {ticker}."
+                )
+
+            return self.convert_to_account_currency(
+                stop_distance,
+                bar.quote_currency,
+            )
+
+        return stop_distance
+    
+    def calculate_target_quantity(self, signal: SignalEvent):
+        ticker = signal.ticker
+        current_price = float(self.get_latest_price(ticker))
+
+        equity = float(self.end_equity())
+
+        if equity <= 0:
+            return 0.0
+
+        confidence = max(0.0, min(float(signal.strength), 1.0))
+
+        if confidence == 0:
+            return 0.0
+
+        stop_price = getattr(signal, "stop_price", None)
+
+        if stop_price is not None:
+            stop_price = float(stop_price)
+
+            if signal.signal_type == "LONG" and stop_price >= current_price:
+                raise ValueError(
+                    f"LONG stop price {stop_price} must be below "
+                    f"current price {current_price}."
+                )
+
+            if signal.signal_type == "SHORT" and stop_price <= current_price:
+                raise ValueError(
+                    f"SHORT stop price {stop_price} must be above "
+                    f"current price {current_price}."
+                )
+
+            stop_distance = abs(current_price - stop_price)
+
+        else:
+            # Fall back to a percentage stop when the strategy does not provide a specific stop
+            stop_distance = current_price * self.default_stop_pct
+
+        if stop_distance <= 0:
+            return 0.0
+
+        #for example 100,000 equity * 1% risk * 80% confidence = $800 risk.
+        risk_budget = equity * self.risk_per_trade * confidence
+
+        unit_risk = self.calculate_unit_risk(
+            ticker=ticker,
+            stop_distance=stop_distance,
+        )
+
+        if unit_risk <= 0:
+            return 0.0
+
+        quantity_by_risk = risk_budget / unit_risk
+
+        # Limit exposure for one ticker.
+        unit_exposure = self.get_unit_exposure(
+            ticker=ticker,
+            price=current_price,
+        )
+
+        if unit_exposure <= 0:
+            return 0.0
+
+        maximum_ticker_exposure = equity * self.max_position_pct
+        quantity_by_ticker_limit = (maximum_ticker_exposure / unit_exposure)
+
+        # Limit total portfolio exposure.
+        existing_other_exposure = (self.calculate_gross_exposure_excluding(ticker))
+
+        maximum_portfolio_exposure = (equity * self.max_gross_leverage)
+
+        available_portfolio_exposure = max(0.0,maximum_portfolio_exposure - existing_other_exposure)
+
+        quantity_by_portfolio_limit = (available_portfolio_exposure / unit_exposure)
+
+        target_quantity = min(
+            quantity_by_risk,
+            quantity_by_ticker_limit,
+            quantity_by_portfolio_limit,
+        )
+
+        return target_quantity
 
     def get_contract_multiplier(self, ticker: str) -> float:
         bar = self.data_loader.get_current_bar(ticker)
@@ -192,8 +357,6 @@ class Portfolio:
             raise ValueError(f"No price data available for {ticker}")
         return bar.source_contract_code
     
-
-
     def add_cash(self, amount: float, currency: str) -> None:
         if currency not in self.cash_reserves:
             self.cash_reserves[currency] = 0.0
@@ -326,26 +489,63 @@ class Portfolio:
         return total_value
     
 
-    def generate_order(self, signal: SignalEvent) -> OrderEvent:
+    # def generate_order(self, signal: SignalEvent) -> OrderEvent:
+    #     ticker = signal.ticker
+    #     signal_type = signal.signal_type
+    #     stock_quantity = self.holdings[ticker]
+    #     order_quantity = self.fixed_quantity * signal.strength
+
+    #     if order_quantity <= 0:
+    #         raise ValueError(f"Invalid order quantity {order_quantity} generated from signal strength {signal.strength}. Order quantity must be positive.")
+        
+    #     if signal_type == 'LONG':
+    #         return self.generate_long_order(ticker, stock_quantity, order_quantity, signal.datetime)
+        
+    #     elif signal_type == 'SHORT':
+    #         return self.generate_short_order(ticker, stock_quantity, order_quantity,signal.datetime)
+        
+    #     elif signal_type == 'EXIT':
+    #         return self.generate_exit_order(ticker, stock_quantity, exit_frac = signal.strength, dt = signal.datetime)
+       
+    #     else:
+    #         raise ValueError(f"Invalid signal type {signal_type} in signal event. Expected 'LONG', 'SHORT', or 'EXIT'.")
+    
+    def generate_order(self, signal: SignalEvent):
         ticker = signal.ticker
         signal_type = signal.signal_type
-        stock_quantity = self.holdings[ticker]
-        order_quantity = self.fixed_quantity * signal.strength
+        current_quantity = self.holdings[ticker]
 
-        if order_quantity <= 0:
-            raise ValueError(f"Invalid order quantity {order_quantity} generated from signal strength {signal.strength}. Order quantity must be positive.")
+        if signal_type == "EXIT":
+            return self.generate_exit_order(ticker, current_quantity, exit_frac=signal.strength, dt = signal.datetime)
         
-        if signal_type == 'LONG':
-            return self.generate_long_order(ticker, stock_quantity, order_quantity, signal.datetime)
+        if signal_type not in {"LONG", "SHORT"}:
+            raise ValueError(
+                f"Invalid signal type {signal_type}"
+                "Expected 'LONG', 'SHORT', or 'EXIT'"
+            )       
         
-        elif signal_type == 'SHORT':
-            return self.generate_short_order(ticker, stock_quantity, order_quantity,signal.datetime)
+        target_qty = self.calculate_target_quantity(signal)
+
+        if target_qty <= 0:
+            raise ValueError(f"Invalid quantity {target_qty}")
         
-        elif signal_type == 'EXIT':
-            return self.generate_exit_order(ticker, stock_quantity, exit_frac = signal.strength, dt = signal.datetime)
-       
+        if signal_type == "LONG":
+            target_qty = target_qty
         else:
-            raise ValueError(f"Invalid signal type {signal_type} in signal event. Expected 'LONG', 'SHORT', or 'EXIT'.")
+            target_qty = -target_qty
+
+        order_qty = target_qty - current_quantity
+
+        direction = "BUY" if order_qty >= 0 else "SELL"
+
+        return OrderEvent(
+            ticker=ticker,
+            asset_type=self.asset_type_by_ticker.get(ticker),
+            datetime=signal.datetime,
+            order_type="MKT",
+            quantity= abs(order_qty),
+            direction=direction,
+        )
 
     def generate_long_order(self, ticker: str, stock_quantity: int, order_quantity: int, dt: datetime) -> OrderEvent:
         if stock_quantity >= 0:
@@ -399,6 +599,33 @@ class Portfolio:
             quantity = buy_or_sell_quantity,
             direction = direction
         )
+    
+
+    def generate_exit_order(self, ticker: str, current_quantity: float, exit_frac: float, dt: datetime):
+        if current_quantity == 0:
+            return None
+
+        if not 0 < exit_frac <= 1:
+            raise ValueError(
+                f"Invalid exit fraction {exit_frac}"
+            )
+
+        if exit_frac == 1.0:
+            exit_quantity = abs(current_quantity)
+
+        if exit_quantity <= 0:
+            return None
+
+        direction = "SELL" if current_quantity > 0 else "BUY"
+
+        return OrderEvent(
+            ticker=ticker,
+            asset_type=self.asset_type_by_ticker.get(ticker),
+            datetime=dt,
+            order_type="MKT",
+            quantity=exit_quantity,
+            direction=direction,
+        )
 
 
     def update_fill(self, event: FillEvent) -> None:
@@ -425,10 +652,10 @@ class Portfolio:
         self.update_cash(event, net_realised_pnl)
 
         self.holdings[ticker] = new_quantity
-        #print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
-        #print(f"Current capital after fill: {self.current_capital}")
+        print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
+        print(f"Current capital after fill: {self.current_capital}")
         self.realised_pnl += net_realised_pnl
-        #print(f"Realized PnL after fill: {self.realised_pnl}")
+        print(f"Realized PnL after fill: {self.realised_pnl}")
 
         self.update_fill_records(event,
                             curr_quantity,

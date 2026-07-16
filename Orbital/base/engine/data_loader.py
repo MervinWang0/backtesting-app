@@ -133,7 +133,7 @@ class DataLoader:
             ))
         return bars
     
-    def load_forex_date(self, forex_pair_code: str) -> list[Bar]:
+    def load_forex_data(self, forex_pair_code: str) -> list[Bar]:
         bars: list[Bar] = []
         rows = (ForexPriceHistory.objects.filter(pair__ticker =forex_pair_code, timestamp__range=(self.start_date, self.end_date))
                 .select_related("pair")
@@ -228,7 +228,7 @@ class DataLoader:
             elif self.asset_type == "FUTURES":
                 main_bar = self.load_futures_data(ticker)
             elif self.asset_type == "FOREX":
-                main_bar = self.load_forex_date(ticker)
+                main_bar = self.load_forex_data(ticker)
             else:
                 raise ValueError(f"Unsupported asset type: {self.asset_type}")
             
