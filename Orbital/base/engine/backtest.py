@@ -7,7 +7,7 @@ import pandas as pd
 from base.engine.execution import ExecutionLoader
 from base.engine.portfolio import DatabasePortfolio, MCSPortfolio
 from base.engine.data_loader import DataLoader, DatabaseDataLoader
-from base.engine.strategy import MovingAverageCross
+from base.engine.strategy import (MovingAverageCross, MeanReversion, Strategy)
 from base.futures.continuous_series import ContinuousFuturesSeriesBuilder
 from base.engine.events import AssetType
 from base.models import ContinuousFuturesSeries
@@ -17,7 +17,21 @@ import base.models as models
 from functools import wraps
 from time import time
 
-
+def initialize_strategy(name: str,
+                    data_loader: DataLoader,
+                    strength: float = 1,
+                    **strategy_params) -> Strategy:
+    
+    if name == "Moving Average Cross":
+        return MovingAverageCross(data_loader=data_loader,
+                                  events=data_loader.events,
+                                  tickers=data_loader.tickers,
+                                  **strategy_params)
+    if name == "Mean Reversion":
+        return MeanReversion(data_loader=data_loader,
+                             strength=strength,
+                             **strategy_params)
+        
 
 def timed(f):
     '''
@@ -141,7 +155,8 @@ class Backtest:
         self.adjustment_method = adjustment_method
         self.build_continuous_series = build_continuous_series
         self.continuous_series: dict[str, ContinuousFuturesSeries] = {}
-        if (self.is_futures() and self.build_continuous_series): self.prepare_continuous_series()
+        if (self.is_futures() and self.build_continuous_series):
+            self.prepare_continuous_series()
         self.rollover_count = 0
         self.processed_rollovers = set()
 
@@ -150,9 +165,10 @@ class Backtest:
 
         self.execute = ExecutionLoader(self.events, self.data_loader, commission=self.commission,
                                        slippage=self.slippage)
-        self.strategy = MovingAverageCross(self.data_loader, self.events, self.tickers,
-                                           self.strategy_params["short_window"],
-                                           self.strategy_params["long_window"], self.strength)
+        self.strategy = initialize_strategy(name=strategy_name,
+                                            data_loader=data_loader,
+                                            strength=strength,
+                                            strategy_params=strategy_params)
         self.asset_type = asset_type
         
         # Stores this boolean for usage in methods of class
@@ -240,6 +256,8 @@ class Backtest:
         from signal generation to orders to fill update
         '''
         while not self.events.empty():
+            print(f"These are tickers, {len(self.data_loader.latest_stock_data['GOOGL'])}")
+            print(f"These are tickers, {len(self.data_loader.latest_stock_data['AAPL'])}")
             event = self.events.get()
             if event is None:
                 continue
@@ -253,6 +271,7 @@ class Backtest:
             elif event.type == "ORDER":
                 self.execute.execute(event)
             elif event.type == "FILL":
+                print("Executing fill order")
                 self.portfolio.update_fill(event)
 
     def is_futures(self):
@@ -416,6 +435,7 @@ class Backtest:
             f"This is slippage = {self.slippage}")
 
 if __name__ == "__main__":
+# Moving Average Cross test
     data = {'short_window': int(5.0),
             'long_window': int(10.0),
             'asset_type': 'STOCK',
@@ -426,26 +446,44 @@ if __name__ == "__main__":
             'start_date': datetime.fromisoformat("2024-01-01").date(),
             'end_date': datetime.fromisoformat("2025-01-01").date(),
             'tickers': ['AAPL'],
-            'strategy_name': 'moving_average_crossover'}
-    start_date = datetime.fromisoformat("2024-01-01").date()
-    end_date = datetime.fromisoformat("2025-01-01").date()
-    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], start_date,
-                             end_date, "STOCK")
+            'strategy_name': 'Moving Average Crossover'}
+    # start_date = datetime.fromisoformat("2024-01-01").date()
+    # end_date = datetime.fromisoformat("2025-01-01").date()
+    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], data['start_date'],
+                             data['end_date'], "STOCK")
     backtest1 = Backtest(
                         events=data_loader.events,
                         data_loader=data_loader,
                         **data
                         )
-    backtest2 = Backtest(events=data_loader.events,
-                        tickers=['AAPL'],
-                        start_date=start_date,
-                        end_date=end_date,
-                        strategy_name="moving_average_crossover",
+    # print(backtest1)
+    # print(backtest2)
+    btr = backtest1.run()
+    btr.get_equity_graph().show()
+    
+# Mean Reversion test
+    data = {'short_window': int(5.0),
+            'long_window': int(10.0),
+            'asset_type': 'STOCK',
+            'strength': 1.0,
+            'slippage': 0.0,
+            'initial_capital': 100000.0,
+            'commission': 0.0,
+            'start_date': datetime.fromisoformat("2024-01-01").date(),
+            'end_date': datetime.fromisoformat("2025-01-01").date(),
+            'tickers': ['AAPL'],
+            'strategy_name': 'Moving Average Crossover'}
+    # start_date = datetime.fromisoformat("2024-01-01").date()
+    # end_date = datetime.fromisoformat("2025-01-01").date()
+    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], data['start_date'],
+                             data['end_date'], "STOCK")
+    backtest1 = Backtest(
+                        events=data_loader.events,
                         data_loader=data_loader,
-                        short_window=10,
-                        long_window=15
+                        **data
                         )
     # print(backtest1)
     # print(backtest2)
     btr = backtest1.run()
     btr.get_equity_graph().show()
+    

@@ -84,23 +84,23 @@ def check_saved_data(pair_symbol):
 #                                         start_date=start_date,
 #                                         end_date=end_date,
 #                                         asset_type="FOREX")
-#     backtest = Backtest(
-#         data_loader=data_loader,
-#         events=data_loader.events,
-#         tickers=[ROOT_SYMBOL],
-#         asset_type=AssetType.FUTURES,
-#         start_date=START_DATE,
-#         end_date=END_DATE,
-#         strategy_name="MovingAverageCross",
-#         strength=1.0,
-#         slippage=0.0,
-#         initial_capital=100_000.0,
-#         short_window=20,
-#         long_window=100,
-#         comission=0.0,
+    # backtest = Backtest(
+    #     data_loader=data_loader,
+    #     events=data_loader.events,
+    #     tickers=[ROOT_SYMBOL],
+    #     asset_type=AssetType.FUTURES,
+    #     start_date=START_DATE,
+    #     end_date=END_DATE,
+    #     strategy_name="MovingAverageCross",
+    #     strength=1.0,
+    #     slippage=0.0,
+    #     initial_capital=100_000.0,
+    #     short_window=20,
+    #     long_window=100,
+    #     comission=0.0,
 
 
-#     )
+    # )
 
     print("\nRunning backtest...")
     result = backtest.run()

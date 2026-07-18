@@ -30,6 +30,9 @@ PRICE_OUTPUT_FIELD = DecimalField(
     decimal_places = 2,
 )
 
+def home(request):
+    return render(request, 'home.html')
+
 #register related
 def register_view(request):
     # if request.user.is_authenticated:

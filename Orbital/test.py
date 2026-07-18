@@ -55,6 +55,7 @@ def run_backtest(start_date, end_date):
     events = Queue()
 
     backtest = Backtest(
+        asset_type="STOCK",
         events=events,
         tickers=[TICKER],
         start_date=datetime(2023, 1, 1),
@@ -63,12 +64,10 @@ def run_backtest(start_date, end_date):
         strength=1.0,
         slippage=0.0,
         initial_capital=100000.0,
-        strategy_params={
-            "short_window": 20,
-            "long_window": 100,
-        },
-        data_loader=DatabaseDataLoader(events=Queue(),
-                                                    tickers=["AAPL"],
+        short_window= 20,
+        long_window= 100,
+        data_loader=DatabaseDataLoader(events=events,
+                                                    tickers=["AAPL", 'GOOGL'],
                                                     start_date=start_date,
                                                     end_date=end_date,
                                                     asset_type="STOCK"),
@@ -92,4 +91,5 @@ if __name__ == "__main__":
     else:
         start_date, end_date = get_existing_date_range(TICKER)
 
-    run_backtest(start_date, end_date)
+    btr = run_backtest(start_date, end_date)
+    btr.get_equity_graph().show()

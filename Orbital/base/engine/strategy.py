@@ -219,22 +219,23 @@ class Strategy(ABC):
     def obtain_market_condition(self, logic: str, rsi_config: RSIConfig,
                                 bollinger_config: BollingerConfig,
                                 z_config: ZConfig):
-        ''' 
+        '''
         logic is used to combine signals to buy/sell
 
         and => buy/sell when market conditions are same
         majority => buy/sell based on majority
+        
+        Returns decision which is either, none, buy or sell
         '''
-        condition = None
-        if logic == "and":
+        # condition determine threshold of signals agreeing to buy/sell
+        condition = 0
+        if logic == "AND":
             condition = 3
-        elif logic == "majority":
+        elif logic == "MAJORITY":
             condition = 2
         else:
             raise ValueError("The logic is not correctly specified"
                              " for obtaining market condition")
-        # Result stores the buy/sell dict stores extra args
-        result : tuple[str, dict] = ()
 
         # market conditions stores the condition of the market
         # as determined by different indicators
@@ -250,19 +251,58 @@ class Strategy(ABC):
             if market == 'overbought':
                 count += 1
             elif market == 'oversold':
-                count += 1
+                count -= 1
+
+        # Decision is either buy, sell or none
+        decision = None
+        if count >= abs(condition):
+            if condition > 0:
+                decision = 'LONG'
+            elif condition < 0:
+                decision = 'SHORT'
         
-        
+        return decision
+
+
 
 class MeanReversion(Strategy):
     ''' 
     This class carries out a mean reverting trading strategy
     '''
-    def __init__(self, data_loader: DataLoader, rsi_config):
+    def __init__(self, data_loader: DataLoader, rsi_config: RSIConfig,
+                 bollinger_config: BollingerConfig, z_config:ZConfig,
+                 logic: str = "MAJORITY", strength: float = 1):
         super().__init__(data_loader)
+        self.rsi_config = rsi_config
+        self.bollinger_config = bollinger_config
+        self.z_config = ZConfig
+        self.logic = logic
 
     def generate_signal(self):
-        return super().generate_signal()
+        '''
+        This method generates a signal for each day in the backtest,
+        Should work for multiple tickers.
+        TODO add in variable strength calculation
+        '''
+        # Operate on all tickers passed in
+        for ticker in self.tickers:
+            decision = self.obtain_market_condition(logic=self.logic,
+                                                    rsi_config=self.rsi_config,
+                                                    bollinger_config=self.bollinger_config,
+                                                    z_config=self.z_config=)
+            # Returns None if not buying/selling
+            if decision is not None:
+                signal = SignalEvent(ticker=self.tickers,
+                                   asset_type=self.data_loader.asset_type,
+                                   datetime=self.data_loader.get_current_datetime(),
+                                   signal_type=decision,
+                                   strength=self.strength
+                                   )
+                print("This is the signal generated for the mean "
+                      f"reversion strategy {signal}")
+                return signal
+    
+
         
 class MovingAverageCross:
     def __init__(self, data_loader: DataLoader, events: Queue,

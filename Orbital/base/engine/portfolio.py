@@ -41,7 +41,13 @@ class Portfolio(ABC):
     '''
     def __init__(self, data_loader: DataLoader, events: Queue, 
                  run_name: str, strategy_name: str, start_date: datetime, end_date: datetime,
-                 initial_capital: float =  100000.0, quantity =  5, ):#, User = None):
+                 initial_capital: float =  100000.0, quantity =  5,
+                risk_per_trade: float = 0.01,
+                current_equity : Decimal = 0.0,
+                max_position_pct: float = 0.20,
+                max_gross_leverage: float = 1.0,
+                default_stop_pct: float = 0.02,
+                forex_lot_size: int = 1000,):#, User = None):
         self.data_loader = data_loader
         self.events = events
         self.initial_capital = initial_capital
@@ -50,9 +56,7 @@ class Portfolio(ABC):
             self.account_currency: initial_capital
         }
         self.current_capital = initial_capital
-
-        self.fixed_quantity = quantity
-
+        self.current_equity = current_equity
         self.holdings : dict[str, float] = {
             ticker: 0 for ticker in self.data_loader.tickers
         }
@@ -87,7 +91,12 @@ class Portfolio(ABC):
         self.benchmark_quantity = None
         self.benchmark_initial_price = 0.0
 
-
+        #Position sizing
+        self.risk_per_trade = risk_per_trade
+        self.max_position_pct = max_position_pct
+        self.max_gross_leverage = max_gross_leverage
+        self.default_stop_pct = default_stop_pct
+        self.forex_lot_size = forex_lot_size
 
     def get_contract_multiplier(self, ticker: str) -> float:
         bar = self.data_loader.get_current_bar(ticker)
@@ -233,59 +242,42 @@ class Portfolio(ABC):
                 position_value = self.convert_to_account_currency(position_value, bar.quote_currency)
             total_value += position_value
         return total_value
-    
 
-    def generate_order(self, signal: SignalEvent) -> OrderEvent:
+    def generate_order(self, signal: SignalEvent):
         ticker = signal.ticker
         signal_type = signal.signal_type
-        stock_quantity = self.holdings[ticker]
-        order_quantity = self.fixed_quantity * signal.strength
+        current_quantity = self.holdings[ticker]
 
-        if order_quantity <= 0:
-            raise ValueError(f"Invalid order quantity {order_quantity} generated from signal strength {signal.strength}. Order quantity must be positive.")
+        if signal_type == "EXIT":
+            return self.generate_exit_order(ticker, current_quantity, exit_frac=signal.strength, dt = signal.datetime)
         
-        if signal_type == 'LONG':
-            return self.generate_long_order(ticker, stock_quantity, order_quantity, signal.datetime)
+        if signal_type not in {"LONG", "SHORT"}:
+            raise ValueError(
+                f"Invalid signal type {signal_type}"
+                "Expected 'LONG', 'SHORT', or 'EXIT'"
+            )       
         
-        elif signal_type == 'SHORT':
-            return self.generate_short_order(ticker, stock_quantity, order_quantity,signal.datetime)
-        
-        elif signal_type == 'EXIT':
-            return self.generate_exit_order(ticker, stock_quantity, exit_frac = signal.strength, dt = signal.datetime)
-       
-        else:
-            raise ValueError(f"Invalid signal type {signal_type} in signal event. Expected 'LONG', 'SHORT', or 'EXIT'.")
+        target_qty = self.calculate_target_quantity(signal)
 
-    def generate_long_order(self, ticker: str, stock_quantity: int, order_quantity: int, dt: datetime) -> OrderEvent:
-        if stock_quantity >= 0:
-            #If current position is flat or long, buy more
-            buy_quantity = order_quantity
+        if target_qty <= 0:
+            raise ValueError(f"Invalid quantity {target_qty}")
+        
+        if signal_type == "LONG":
+            target_qty = target_qty
         else:
-            #If current position is short, buy to cover existing short position and open a new long position
-            buy_quantity = abs(stock_quantity) + order_quantity
+            target_qty = -target_qty
+
+        order_qty = target_qty - current_quantity
+
+        direction = "BUY" if order_qty >= 0 else "SELL"
+
         return OrderEvent(
-            ticker = ticker,
-            asset_type = self.asset_type_by_ticker.get(ticker),
-            datetime = dt,
-            order_type = "MKT",
-            quantity = buy_quantity,
-            direction = "BUY"
-        )
-    
-    def generate_short_order(self, ticker: str, stock_quantity: int, order_quantity: int, dt: datetime) -> OrderEvent:
-        if stock_quantity <= 0:
-            #If current position is flat or short, sell more
-            sell_quantity = order_quantity
-        else:
-            #If current position is long, sell to reduce the existing long position
-            sell_quantity = stock_quantity + order_quantity
-        return OrderEvent(
-            ticker = ticker,
-            asset_type = self.asset_type_by_ticker.get(ticker),
-            datetime = dt,
-            order_type = "MKT",
-            quantity = sell_quantity,
-            direction = "SELL"
+            ticker=ticker,
+            asset_type=self.asset_type_by_ticker.get(ticker),
+            datetime=signal.datetime,
+            order_type="MKT",
+            quantity= abs(order_qty),
+            direction=direction,
         )
 
     def generate_exit_order(self, ticker: str, stock_quantity: int, exit_frac: float, dt: datetime) -> OrderEvent:
@@ -565,6 +557,150 @@ class Portfolio(ABC):
         # {date}: price {benchmark_price}, quantity {self.benchmark_quantity},
         # market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")
 
+    # Position sizing methods
+    def get_unit_exposure(self, ticker:str, price:float):
+        asset_type = self.asset_type_by_ticker.get(ticker)
+
+        if asset_type == AssetType.FUTURES:
+            multiplier = float(self.get_contract_multiplier(ticker))
+            return price * multiplier
+
+        if asset_type == AssetType.FOREX:
+            bar = self.data_loader.get_current_bar(ticker)
+
+            if bar is None:
+                raise ValueError(
+                    f"No current forex bar available for {ticker}."
+                )
+
+            return self.convert_to_account_currency(
+                price,
+                bar.quote_currency,
+            )
+
+        return price
+    
+    def calculate_gross_exposure_excluding(
+        self,
+        excluded_ticker: str,):
+
+        gross_exposure = 0.0
+
+        for ticker, quantity in self.holdings.items():
+            if ticker == excluded_ticker or quantity == 0:
+                continue
+
+            price = float(self.get_latest_price(ticker))
+            unit_exposure = self.get_unit_exposure(ticker, price)
+
+            gross_exposure += abs(quantity) * unit_exposure
+
+        return gross_exposure
+    
+    #Calculate how much account-currency PnL is lose per unit if stop is reached
+    def calculate_unit_risk(self, ticker: str, stop_distance: float,):
+        asset_type = self.asset_type_by_ticker.get(ticker)
+
+        if asset_type == AssetType.FUTURES:
+            multiplier = float(self.get_contract_multiplier(ticker))
+            return stop_distance * multiplier
+
+        if asset_type == AssetType.FOREX:
+            bar = self.data_loader.get_current_bar(ticker)
+
+            if bar is None:
+                raise ValueError(
+                    f"No current forex bar available for {ticker}."
+                )
+
+            return self.convert_to_account_currency(
+                stop_distance,
+                bar.quote_currency,
+            )
+
+        return stop_distance
+    
+    def calculate_target_quantity(self, signal: SignalEvent):
+        ticker = signal.ticker
+        current_price = float(self.get_latest_price(ticker))
+
+        equity = float(self.end_equity())
+
+        if equity <= 0:
+            return 0.0
+
+        confidence = max(0.0, min(float(signal.strength), 1.0))
+
+        if confidence == 0:
+            return 0.0
+
+        stop_price = getattr(signal, "stop_price", None)
+
+        if stop_price is not None:
+            stop_price = float(stop_price)
+
+            if signal.signal_type == "LONG" and stop_price >= current_price:
+                raise ValueError(
+                    f"LONG stop price {stop_price} must be below "
+                    f"current price {current_price}."
+                )
+
+            if signal.signal_type == "SHORT" and stop_price <= current_price:
+                raise ValueError(
+                    f"SHORT stop price {stop_price} must be above "
+                    f"current price {current_price}."
+                )
+
+            stop_distance = abs(current_price - stop_price)
+
+        else:
+            # Fall back to a percentage stop when the strategy does not provide a specific stop
+            stop_distance = current_price * self.default_stop_pct
+
+        if stop_distance <= 0:
+            return 0.0
+
+        #for example 100,000 equity * 1% risk * 80% confidence = $800 risk.
+        risk_budget = equity * self.risk_per_trade * confidence
+
+        unit_risk = self.calculate_unit_risk(
+            ticker=ticker,
+            stop_distance=stop_distance,
+        )
+
+        if unit_risk <= 0:
+            return 0.0
+
+        quantity_by_risk = risk_budget / unit_risk
+
+        # Limit exposure for one ticker.
+        unit_exposure = self.get_unit_exposure(
+            ticker=ticker,
+            price=current_price,
+        )
+
+        if unit_exposure <= 0:
+            return 0.0
+
+        maximum_ticker_exposure = equity * self.max_position_pct
+        quantity_by_ticker_limit = (maximum_ticker_exposure / unit_exposure)
+
+        # Limit total portfolio exposure.
+        existing_other_exposure = (self.calculate_gross_exposure_excluding(ticker))
+
+        maximum_portfolio_exposure = (equity * self.max_gross_leverage)
+
+        available_portfolio_exposure = max(0.0,maximum_portfolio_exposure - existing_other_exposure)
+
+        quantity_by_portfolio_limit = (available_portfolio_exposure / unit_exposure)
+
+        target_quantity = min(
+            quantity_by_risk,
+            quantity_by_ticker_limit,
+            quantity_by_portfolio_limit,
+        )
+
+        return target_quantity
 
         
     def get_fill_records(self):
@@ -676,10 +812,11 @@ class DatabasePortfolio(Portfolio):
         cash_value = self.calculate_cash_value()
         current_holdings = self.calculate_holdings_value()
         futures_unrealised_pnl = self.calculate_total_futures_unrealised_pnl()
-        end_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+        #end_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+        self.current_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+        return self.current_equity
 
-        self.backtest_run.end_equity = end_equity
-        #self.backtest_run.save(update_fields=["end_equity"])
+        #backtest_run.end_equity = end_equity
     
     def _load_caches(self) -> None:
         for ticker in self.data_loader.tickers:
@@ -704,6 +841,55 @@ class DatabasePortfolio(Portfolio):
         and some attributes, it is abstract because it in MCSPortfolio, 
         the parts that update the db records are removed.
         '''
+        print("Updating fill")
+        if event.type != "FILL":
+            raise ValueError(f"Invalid event type {event.type} in fill update. Expected 'FILL'.")
+        
+        ticker = event.ticker
+
+        curr_quantity = self.holdings.get(ticker, 0)
+        trade_quantity = event.quantity if event.direction == "BUY" else -event.quantity
+        new_quantity = curr_quantity + trade_quantity
+        multiplier = self.get_contract_multiplier(ticker)
+
+        net_realised_pnl = self.update_position_tracker(
+                                ticker, 
+                                curr_quantity,
+                                trade_quantity, 
+                                event.fill_cost, 
+                                event.commission, 
+                                multiplier = multiplier,
+        )
+
+        self.update_cash(event, net_realised_pnl)
+
+        self.holdings[ticker] = new_quantity
+        print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
+        print(f"Current capital after fill: {self.current_capital}")
+        self.realised_pnl += net_realised_pnl
+        print(f"Realized PnL after fill: {self.realised_pnl}")
+
+        self.update_fill_records(event,
+                            curr_quantity,
+                            new_quantity,
+                            realised_pnl_day= net_realised_pnl)
+        self.end_equity()
+
+class MCSPortfolio(Portfolio):
+    ''' 
+    This portfolio is used for many simulations are thus does not save the data
+    to maintain efficiency
+    
+    This portfolio is the same as the parent class, Compared to DatabasePortfolio it
+    just lacks a run_model as it does not need to save data to the db.
+    '''
+
+    def update_fill(self, event: FillEvent) -> None:
+        ''' 
+        This version of update fill lacks the self.end_equity because the db records
+        are not saved
+        '''
+        print("Updating fields MCS")
         if event.type != "FILL":
             raise ValueError(f"Invalid event type {event.type} in fill update. Expected 'FILL'.")
         
@@ -736,49 +922,3 @@ class DatabasePortfolio(Portfolio):
                             new_quantity,
                             realised_pnl_day= net_realised_pnl)
         self.end_equity()
-
-class MCSPortfolio(Portfolio):
-    ''' 
-    This portfolio is used for many simulations are thus does not save the data
-    to maintain efficiency
-    
-    This portfolio is the same as the parent class, Compared to DatabasePortfolio it
-    just lacks a run_model as it does not need to save data to the db.
-    '''
-
-    def update_fill(self, event: FillEvent) -> None:
-        ''' 
-        This version of update fill lacks the self.end_equity because the db records
-        are not saved
-        '''
-        if event.type != "FILL":
-            raise ValueError(f"Invalid event type {event.type} in fill update. Expected 'FILL'.")
-        
-        ticker = event.ticker
-
-        curr_quantity = self.holdings.get(ticker, 0)
-        trade_quantity = event.quantity if event.direction == "BUY" else -event.quantity
-        new_quantity = curr_quantity + trade_quantity
-        multiplier = self.get_contract_multiplier(ticker)
-
-        net_realised_pnl = self.update_position_tracker(
-                                ticker, 
-                                curr_quantity,
-                                trade_quantity, 
-                                event.fill_cost, 
-                                event.commission, 
-                                multiplier = multiplier,
-        )
-
-        self.update_cash(event, net_realised_pnl)
-
-        self.holdings[ticker] = new_quantity
-        #print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
-        #print(f"Current capital after fill: {self.current_capital}")
-        self.realised_pnl += net_realised_pnl
-        #print(f"Realized PnL after fill: {self.realised_pnl}")
-
-        self.update_fill_records(event,
-                            curr_quantity,
-                            new_quantity,
-                            realised_pnl_day= net_realised_pnl)

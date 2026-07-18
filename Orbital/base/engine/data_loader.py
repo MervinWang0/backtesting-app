@@ -122,6 +122,7 @@ class DataLoader(ABC):
         #Data structures to hold loaded data
         #This will store all available data for each stock
         self.stock_data: dict[str, list[Bar]] = {}
+
         #This will store data from the beginning up till the current time index for each stock
         self.latest_stock_data: dict[str, list[Bar]] = {}
 
