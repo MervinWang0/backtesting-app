@@ -21,7 +21,7 @@ from base.engine.strategy import(
                                 BollingerConfig,
                                 ZConfig,
 )
-
+from base.engine.data_loader import DatabaseDataLoader
 
 def timed(f):
     '''
@@ -42,53 +42,182 @@ def timed(f):
 
 if __name__ == "__main__":
 # Moving Average Cross test
-    data = {'short_window': int(5.0),
-            'long_window': int(10.0),
-            'asset_type': 'STOCK',
-            'strength': 1.0,
-            'slippage': 0.0,
-            'initial_capital': 100000.0,
-            'commission': 0.0,
-            'start_date': datetime.fromisoformat("2024-01-01").date(),
-            'end_date': datetime.fromisoformat("2025-01-01").date(),
-            'tickers': ['AAPL'],
-            'strategy_name': 'Moving Average Crossover'}
-    # start_date = datetime.fromisoformat("2024-01-01").date()
-    # end_date = datetime.fromisoformat("2025-01-01").date()
-    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], data['start_date'],
-                             data['end_date'], "STOCK")
-    backtest1 = Backtest(
-                        events=data_loader.events,
-                        data_loader=data_loader,
-                        **data
-                        )
-    # print(backtest1)
-    # print(backtest2)
-    btr = backtest1.run()
-    btr.get_equity_graph().show()
+    # data = {'short_window': int(5.0),
+    #         'long_window': int(10.0),
+    #         'asset_type': 'STOCK',
+    #         'strength': 1.0,
+    #         'slippage': 0.0,
+    #         'initial_capital': 100000.0,
+    #         'commission': 0.0,
+    #         'start_date': datetime.fromisoformat("2024-01-01").date(),
+    #         'end_date': datetime.fromisoformat("2025-01-01").date(),
+    #         'tickers': ['AAPL'],
+    #         'strategy_name': 'Moving Average Crossover'}
+    # # start_date = datetime.fromisoformat("2024-01-01").date()
+    # # end_date = datetime.fromisoformat("2025-01-01").date()
+    # data_loader = DatabaseDataLoader(Queue(), ["AAPL"], data['start_date'],
+    #                          data['end_date'], "STOCK")
+    # backtest1 = Backtest(
+    #                     events=data_loader.events,
+    #                     data_loader=data_loader,
+    #                     **data
+    #                     )
+    # # print(backtest1)
+    # # print(backtest2)
+    # btr = backtest1.run()
+    # btr.get_equity_graph().show()
     
 # Mean Reversion test
-    data = {'short_window': int(5.0),
-            'long_window': int(10.0),
+
+    # data = {
+    #         'rsi_window' : 14,
+    #         'rsi_oversold' : 40,
+    #         'bollinger_window' : 20,
+    #         'z_window' : 20,
+    #         'asset_type': 'STOCK',
+    #         'strength': 1.0,
+    #         'slippage': 0.0,
+    #         'initial_capital': 100000.0,
+    #         'commission': 0.0,
+    #         'start_date': datetime.fromisoformat("2025-01-01").date(),
+    #         'end_date': datetime.fromisoformat("2025-05-01").date(),
+    #         'tickers': ['TSLA'],
+    #         'strategy_name': 'Mean Reversion'}
+    # data_loader = DatabaseDataLoader(Queue(), data['tickers'], data['start_date'],
+    #                          data['end_date'], "STOCK")
+    # backtest1 = Backtest(
+    #                     events=data_loader.events,
+    #                     data_loader=data_loader,
+    #                     **data
+    #                     )
+    # # print(backtest1)
+    # # print(backtest2)
+    # btr = backtest1.run()
+    # btr.get_equity_graph().show()
+    # # prices = [bar.close for bar in data_loader.latest_stock_data['TSLA']]
+    # # print(f"This is the rsi {backtest1.strategy.rsi['TSLA']}")
+    # # print(f"these are the prices {prices}")
+    
+# EMA Test
+
+    # data = {
+    #         'asset_type': 'STOCK',
+    #         'strength': 1.0,
+    #         'slippage': 0.0,
+    #         'initial_capital': 100000.0,
+    #         'commission': 0.0,
+    #         'start_date': datetime.fromisoformat("2025-01-01").date(),
+    #         'end_date': datetime.fromisoformat("2026-01-01").date(),
+    #         'tickers': ['TSLA'],
+    #         'strategy_name': 'MACD'}
+    # data_loader = DatabaseDataLoader(Queue(), data['tickers'], data['start_date'],
+    #                          data['end_date'], "STOCK")
+    # backtest1 = Backtest(
+    #                     events=data_loader.events,
+    #                     data_loader=data_loader,
+    #                     **data
+    #                     )
+    # btr = backtest1.run()
+    # btr.get_equity_graph().show()
+
+# Breakout Testing
+    # data = {
+    #         'asset_type': 'STOCK',
+    #         'strength': 1.0,
+    #         'slippage': 0.0,
+    #         'initial_capital': 100000.0,
+    #         'commission': 0.0,
+    #         'start_date': datetime.fromisoformat("2025-01-01").date(),
+    #         'end_date': datetime.fromisoformat("2026-01-01").date(),
+    #         'tickers': ['TSLA'],
+    #         'strategy_name': 'Breakout'}
+
+    # data_loader = DatabaseDataLoader(Queue(), data['tickers'], data['start_date'],
+    #                          data['end_date'], "STOCK")
+
+    # backtest1 = Backtest(
+    #                     events=data_loader.events,
+    #                     data_loader=data_loader,
+    #                     **data
+    #                     )
+
+    # btr = backtest1.run()
+    # btr.get_equity_graph().show()
+
+# Momentum Triple testing
+    # data = {
+    #         'asset_type': 'STOCK',
+    #         'strength': 1.0,
+    #         'slippage': 0.0,
+    #         'initial_capital': 100000.0,
+    #         'commission': 0.0,
+    #         'start_date': datetime.fromisoformat("2025-01-01").date(),
+    #         'end_date': datetime.fromisoformat("2026-01-01").date(),
+    #         'tickers': ['TSLA'],
+    #         'strategy_name': 'Momentum'}
+
+    # data_loader = DatabaseDataLoader(Queue(), data['tickers'], data['start_date'],
+    #                          data['end_date'], "STOCK")
+
+    # backtest1 = Backtest(
+    #                     events=data_loader.events,
+    #                     data_loader=data_loader,
+    #                     **data
+    #                     )
+
+    # btr = backtest1.run()
+    # btr.get_equity_graph().show()
+
+# Rate of Change Strategy
+
+    data = {
             'asset_type': 'STOCK',
             'strength': 1.0,
             'slippage': 0.0,
             'initial_capital': 100000.0,
             'commission': 0.0,
-            'start_date': datetime.fromisoformat("2024-01-01").date(),
-            'end_date': datetime.fromisoformat("2025-01-01").date(),
-            'tickers': ['AAPL'],
-            'strategy_name': 'Moving Average Crossover'}
-    # start_date = datetime.fromisoformat("2024-01-01").date()
-    # end_date = datetime.fromisoformat("2025-01-01").date()
-    data_loader = DatabaseDataLoader(Queue(), ["AAPL"], data['start_date'],
+            'start_date': datetime.fromisoformat("2025-01-01").date(),
+            'end_date': datetime.fromisoformat("2026-01-01").date(),
+            'tickers': ['TSLA'],
+            'strategy_name': 'Rate Of Change'}
+
+    data_loader = DatabaseDataLoader(Queue(), data['tickers'], data['start_date'],
                              data['end_date'], "STOCK")
+
     backtest1 = Backtest(
                         events=data_loader.events,
                         data_loader=data_loader,
                         **data
                         )
-    # print(backtest1)
-    # print(backtest2)
+
     btr = backtest1.run()
     btr.get_equity_graph().show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

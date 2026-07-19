@@ -278,6 +278,8 @@ class DataLoader(ABC):
         '''
         Takes in a ticker and a number, returns the past num bars of the
         ticker in a list, sorted from oldest to latest
+
+        Inclusive of current day
         '''
         # print(len(self.latest_stock_data[ticker]))
         # print(f"This should be a number {num}")

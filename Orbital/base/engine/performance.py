@@ -345,8 +345,9 @@ def handle_partial_close(open_trades: dict[str, list[dict[str, any]]],
                         })
 
     # Add the partially closed trade to open_trades (it was removed earlier)
+    # print(f"This is the open trade {open_trade}")
     new_record = {
-            "date": open_trade['start_date'],
+            "date": open_trade['date'],
             "ticker": open_trade['ticker'],
             "quantity": open_trade['quantity'] - quantity_close,
             "fill_price": open_trade['fill_price'],
