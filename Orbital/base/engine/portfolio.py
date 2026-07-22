@@ -257,7 +257,7 @@ class Portfolio:
                 )
 
             return self.convert_to_account_currency(
-                stop_distance,
+                stop_distance, 
                 bar.quote_currency,
             )
 

@@ -1,0 +1,156 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% comment %} Creates title of page {% endcomment %}
+{% block title %}
+    Backtestor
+{% endblock %}
+
+{%block content%}
+<link rel = 'stylesheet' href = "{% static 'base/variables.css' %}">
+<link rel = 'stylesheet' href = "{% static 'base/component.css' %}">
+<link rel = 'stylesheet' href = "{% static 'base/backtest.css' %}">
+<script src = "{% static 'base/backtest.js' %}"  defer></script>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+
+{% comment %} Creating a header for the page {% endcomment %}
+<section class = "market-hero">
+    <div class =  "page-container market-hero__inner">
+        <div>
+            <p class = "eyebrow"> The Best!</p>
+
+            <h1>Pennywise Backtestor</h1>
+
+        </div>
+    </div>
+</section>
+
+{% comment %} container stores all the elements of backtest webpage {% endcomment %}
+<div class="flex-column-container" name="input_container" id="input_container">
+    {% comment %} At the top is a choose strategy row {% endcomment %}
+    <div class='activity-value'>
+        <label for="strategy">Choose a Strategy</label>
+        <select name="strategy" id="strategy_btn">
+            <option value="none">--Select--</option>
+            <option value="moving_average_crossover">Moving Average Crossover</option>
+            <option value="mean_reversion">Mean Reversion</option>
+            <option value="breakout_trading">Breakout Trading</option>
+            <option value="Paris Trading">Paris Trading</option>
+        </select>
+    </div>
+    {% comment %} Store in a div the buttons to press {% endcomment %}
+    <div class="flex-row-container">
+        {% comment %} Button to quicktest with random parameters {% endcomment %}
+        <div>
+        <button class="flex_item button"  type="button" id="quicktest_btn">Quicktest</button>
+        </div>
+        {% comment %} Button to submit strategy params and run backtest {% endcomment %}
+        <div>
+        <button class="flex_item button" type="button" id="run_backtest_btn">Run Backtest</button>
+        </div>
+
+        {% comment %} Button to access Monte Carlo Sim {% endcomment %}
+        <div>
+        <button class="flex_item button" type="button" id="view_mcs_btn" disabled>View MCS</button>
+        </div>
+
+    </div>
+
+    {% comment %} Strategy params input{% endcomment %}
+    <div class='strategy_parameters grid-container'>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1 ">Short Window:</label>
+            <input type="number" placeholder="e.g. 5, 10" name="short_window" id="short_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1 ">Long Window:</label>
+            <input type="number" placeholder="e.g. 20, 50, 100" class="strategy_input" name="long_window" id="long_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">                        
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "A unique abbreviation used to identify a company"
+                >Asset Type:</span></label>
+            <input type="text" placeholder="e.g. STOCK, FOREX" class="strategy_input" name="asset_type" id="asset_type">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Ticker:</label>
+            <input type="text" placeholder="e.g. AAPL, MSFT" class="strategy_input" name="ticker" id="ticker">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Strength:</label>
+            <input type="number" placeholder="e.g. 1, 10, 50" class="strategy_input" name="strength" id="strength">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Slippage:</label>
+            <input type="number" placeholder="e.g. 0.05, a percentage of price" 
+            class="strategy_input" name="slippage" id="slippage">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Initial Capital:</label>
+            <input type="number" placeholder="e.g. 100,000" class="strategy_input" 
+            name="initial_capital" id="initial_capital">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Commission:</label>
+            <input type="number" placeholder="e.g. 0.01, a percentage of each trade" 
+            class="strategy_input" name="commission" id="commission">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Rolling Window:</label>
+            <input type="number" class="strategy_input" name="rolling_window" id="rolling_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">Start Date:</label>
+            <input type="date" class="strategy_input" name="start_date" id="start_date">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+            <label class="label1">End Date:</label>
+            <input type="date" class="strategy_input" name="end_date" id="end_date">
+        </div>
+    </div>
+
+    {% comment %} flex-grid to store output fields {% endcomment %}
+    <div class="grid-container" id="metrics_container">
+        <div class="output-field activity-value" style="display:none;">
+            <h3>Total Return:</h3>
+            <p id="Total Return"></p>
+        </div>
+        <div class="output-field activity-value" style="display:none;">
+            <h3>Mean Daily Return:</h3>
+            <p id="Mean Daily Return"></p>
+        </div>
+        <div class="output-field activity-value" style="display:none;">
+            <h3>CAGR:</h3>
+            <p id="CAGR"></p>
+        </div>
+        <div class="output-field activity-value" style="display:none;">
+            <h3>Volatility:</h3>
+            <p id="Volatility"></p>
+        </div>
+        <div class="output-field activity-value" style="display:none;">
+            <h3>Sharpe Ratio:</h3>
+            <p id="Sharpe Ratio"></p>
+        </div>
+        <div class="output-field activity-value" style="display:none;">
+            <h3>Max Drawdown:</h3>
+            <p id="Max Drawdown"></p>
+        </div>
+    </div>
+
+
+    {% comment %} New div to store graph {% endcomment %}
+    <div class="flex_item" name="equity_graph_container" id="equity_graph_container">
+    </div>
+
+    {% comment %} Creates the progress bar {% endcomment %}
+    <div class='progress-wrapper' style= "display:none;" id="progress_bar_container">
+        <div class='loading-text'>Backtest Not Run</div>
+        <div class='progress-container'>
+            <div class='progress-bar'>0%</div>
+        </div>
+    </div>
+
+</div>
+{% endblock%}

@@ -21,6 +21,12 @@ class AssetType(models.TextChoices):
     FUTURES = "FUTURES", "Futures"
     FOREX = "FOREX", "Forex"
 
+class PairAction(models.TextChoices):
+    OPEN_LONG_SPREAD = "OPEN_LONG_SPREAD"  #Buy Y, sell X
+    OPEN_SHORT_SPREAD = "OPEN_SHORT_SPREAD" #Buy x, sell Y
+    CLOSE_PAIR = "CLOSE_PAIR"
+
+
 #dataclass to track whenever a new bar is generated
 @dataclass
 class MarketEvent:
@@ -78,4 +84,20 @@ class FillEvent:
     
     type: str = field(default="FILL", init=False)
 
+
+
+@dataclass
+class PairSignalEvent:
+    pair_id: set
+    datetime: datetime
+
+    y_ticker: str
+    x_ticker: str
+
+    action: PairAction
+    hedge_ratio: float
+    z_score: float
+    strength: float = 1.0
+
+    type: str = field(default="PAIR", init=False)
 

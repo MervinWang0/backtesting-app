@@ -1,0 +1,68 @@
+/* This file contains css settings used for all html files *//* Global Variables  */
+:root {
+    --background: #f4f7fb;
+    --surface: #ffffff;
+    --surface-secondary: #eef3f8;
+
+    --border-primary:rgb(59 130 246 / 35%);
+
+    --text-primary: #172033;
+    --text-secondary: #657087;
+    --border: #dce3ec;
+
+    --accent: #41934e;
+    --accent-hover: #c5d81d;
+
+    --positive: #16803c;
+    --negative: #dc2626;
+
+    --shadow-sm: 0 2px 8px rgb(15 23 42 / 6%);
+    --shadow-md: 0 12px 30px rgb(15 23 42 / 10%);
+
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+
+    --fontsize-small: 1rem;
+    --fontsize-medium: 1.5rem;
+    --fontsize-large: 2rem;
+    --fontsize-huge: 3rem;
+
+    --margin-small: 0.5rem;
+    --margin-medium: 1rem;
+    --margin-large: 1.5rem;
+
+    --color-white: #f4f7fb;
+    --color-blue:#1352E4;
+    --color-orange:#F29559;
+    --color-black:#191516;
+    --color-red:#B80C09;
+}
+/* CSS Reset/ Normalize Block */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Base settings for every webpage  */
+html, body {
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    color: var(--text-primary);
+    background: var(--background);
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+/* Global link resets */
+a {
+    color: inherit;
+    text-decoration: none;
+}

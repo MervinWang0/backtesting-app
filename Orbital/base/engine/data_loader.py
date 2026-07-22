@@ -92,7 +92,7 @@ class DataLoader:
         #This will store all available data for each stock
         self.stock_data: dict[str, list[Bar]] = {}
         #This will store data from the beginning up till the current time index for each stock
-        self.latest_stock_data: dict[str, list[Bar]] = {} 
+        self.latest_stock_data: dict[str, list[Bar]] = {}
 
         #Optimisation: Fast lookup for each ticker for each date in the bar data
         self.bar_lookup: dict[str, dict[datetime.date, Bar]] = {}
