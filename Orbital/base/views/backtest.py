@@ -9,6 +9,7 @@ from base.engine.data_loader import DatabaseDataLoader
 from base.engine.backtest import Backtest
 from base.models import StockPriceHistory, Stock
 from django.core.management import call_command
+import re 
 
 def get_backtest(request) -> HttpResponse:
     '''
@@ -27,22 +28,30 @@ def backtest_graph(request) -> HttpResponse:
         print("Entered backtest_graph")
         data: dict[str: any] = json.loads(request.body)
         # Cleaning data
-        # Extra conversion, during debugging short/long window being float causes
-        # The backtest runs to fail
+        # data has to be converted to int/float before running backtest
+        # This is done using regex to seach the string for extensionability
+        int_pattern = re.compile(r'^[+-]?\d+$')
+        float_pattern = re.compile(r'^[+-]?(\d+\.\d*|\.\d+)([eE][+-]?\d+)?$')
         int_params = ['short_window', 'long_window']
         # Dates have to be converted to datetime.date
         data["start_date"] = datetime.strptime(data["start_date"], "%Y-%m-%d")
         data["end_date"] = datetime.strptime(data["end_date"], "%Y-%m-%d")
         # Convert certain parameters to numeric and others ignore
         for key in data:
-            try:
-                if key in int_params:
-                    data[key] = int(data[key])
-                else:
-                    data[key] = float(data[key])
-            except Exception:
-                pass
-        print(data)
+            value = data[key]
+            # If the data is not in string, it does not need to be converted
+            if not isinstance(value, str):
+                continue
+            if int_pattern.match(value):
+                data[key] = int(value)
+            elif float_pattern.match(value):
+                data[key] = float(value)
+            else:
+                print(f"The value is neither matches int nor float,"
+                      f" but is a string value = {value}")
+            
+        print("This is the data to be used in backtest"
+              f" = {data}")
         # Checks if stock data exists for ticker in period otherwise download
         period = get_yf_period(data["start_date"], data["end_date"])
         if data["asset_type"] == "STOCK":

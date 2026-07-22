@@ -6,10 +6,8 @@
 {% endblock %}
 
 {%block content%}
-<link rel = 'stylesheet' href = "{% static 'base/variables.css' %}">
-<link rel = 'stylesheet' href = "{% static 'base/component.css' %}">
-<link rel = 'stylesheet' href = "{% static 'base/backtest.css' %}">
-<script src = "{% static 'base/backtest.js' %}"  defer></script>
+<link rel = 'stylesheet' href = "{% static 'base/css/backtest.css' %}">
+<script src = "{% static 'base/js/backtest.js' %}"  defer></script>
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 
 {% comment %} Creating a header for the page {% endcomment %}
@@ -25,16 +23,19 @@
 </section>
 
 {% comment %} container stores all the elements of backtest webpage {% endcomment %}
-<div class="flex-column-container" name="input_container" id="input_container">
+<div class="flex-column-container" >
     {% comment %} At the top is a choose strategy row {% endcomment %}
     <div class='activity-value'>
         <label for="strategy">Choose a Strategy</label>
         <select name="strategy" id="strategy_btn">
             <option value="none">--Select--</option>
-            <option value="moving_average_crossover">Moving Average Crossover</option>
-            <option value="mean_reversion">Mean Reversion</option>
-            <option value="breakout_trading">Breakout Trading</option>
-            <option value="Paris Trading">Paris Trading</option>
+            <option value="Moving Average Crossover">Moving Average Crossover</option>
+            <option value="Mean Reversion">Mean Reversion</option>
+            <option value="MACD">Moving Average Convergence Divergence</option>
+            <option value="Breakout">Breakout Trading</option>
+            <option value="Momentum">Momentum Trading</option>
+            <option value="Rate Of Change">Rate Of Change</option>
+            <option value="Stochastic Oscillator">Stochastic Oscillator</option>
         </select>
     </div>
     {% comment %} Store in a div the buttons to press {% endcomment %}
@@ -56,58 +57,266 @@
     </div>
 
     {% comment %} Strategy params input{% endcomment %}
-    <div class='strategy_parameters grid-container'>
+    <div class='container grid-container' name="input_container" id="input_container"
+    style= "display:none;">
+    {% comment %} Common input fields {% endcomment %}
         <div class='input-field activity-value' style="display:none;">
-            <label class="label1 ">Short Window:</label>
-            <input type="number" placeholder="e.g. 5, 10" name="short_window" id="short_window">
-        </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1 ">Long Window:</label>
-            <input type="number" placeholder="e.g. 20, 50, 100" class="strategy_input" name="long_window" id="long_window">
-        </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Asset Type:</label>
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "The type of the asset used for trading, common options include 
+                        stocks, currencies(forex), or futures and so on."
+                >Asset Type:</span>
             <input type="text" placeholder="e.g. STOCK, FOREX" class="strategy_input" name="asset_type" id="asset_type">
         </div>
         <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Ticker:</label>
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "A unique abbreviation used to identify a company"
+                >Ticker:</span>
             <input type="text" placeholder="e.g. AAPL, MSFT" class="strategy_input" name="ticker" id="ticker">
         </div>
         <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Strength:</label>
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "A value between 0 and 1, which acts as a modifier on the risk a strategy 
+                        can take"
+                >Strength:</span>
             <input type="number" placeholder="e.g. 1, 10, 50" class="strategy_input" name="strength" id="strength">
         </div>
         <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Slippage:</label>
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "Slippage represents a difference between the desired price to sell/buy
+                        an asset at and the actual price that it is bought/sold at. It is impacted by various
+                         factors such as the latency of the network, the bids at that time and so on."
+                >Slippage:</span>
             <input type="number" placeholder="e.g. 0.05, a percentage of price" 
             class="strategy_input" name="slippage" id="slippage">
         </div>
         <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Initial Capital:</label>
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "The amount of money to start the trading with."
+                >Initial Capital:</span>
             <input type="number" placeholder="e.g. 100,000" class="strategy_input" 
             name="initial_capital" id="initial_capital">
         </div>
         <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Commission:</label>
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "Commission is an amount taken from each trade by the brokerage."
+                >Commission:</span>
             <input type="number" placeholder="e.g. 0.01, a percentage of each trade" 
             class="strategy_input" name="commission" id="commission">
         </div>
         <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Rolling Window:</label>
-            <input type="number" class="strategy_input" name="rolling_window" id="rolling_window">
-        </div>
-        <div class='input-field activity-value' style="display:none;">
-            <label class="label1">Start Date:</label>
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "Start date is when the trading starts."
+                >Start Date:</span>
             <input type="date" class="strategy_input" name="start_date" id="start_date">
         </div>
         <div class='input-field activity-value' style="display:none;">
-            <label class="label1">End Date:</label>
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "End date is when to stop trading."
+                >End Date:</span>
             <input type="date" class="strategy_input" name="end_date" id="end_date">
         </div>
-    </div>
+        {% comment %} Strategy specific input fields 
+        moving average cross => short window, long window,
+        mean reversion => rsi window, bollinger window, z window, rsi_oversold,
+        rsi_overbought, z_lower, z_upper, logic
+        macd => short, medium, long, window
+        breakout => donchian window
+        momentum => short, medium, long window same as macd, rsi window, Does not use 
+        overbought oversold 
+        rate_of_change => roc_window
+        stochastic oscillator => stoc_window
+
+        7-21 rsi window 
+        10-50 bollinger-window 
+        10-60 z-window donchian
+        5-20 mac_short, 
+        {% endcomment %}
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "The short window is used to determine the short signal."
+                >Moving Average Crossover Short Window:</span>
+            <input type="number" placeholder="e.g. 5, 15, 30" class="strategy_input" 
+            name="mac_short_window" id="mac_short_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "The long window is used to determine the long signal."
+                >Moving Average Crossover Long Window:</span>
+            <input type="number" placeholder="e.g. 20, 50, 100" class="strategy_input" 
+            name="mac_long_window" id="mac_long_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "RSI window is used to determine the range of dates to 
+                        calculate the rsi value."
+                >RSI Window:</span>
+            <input type="number" placeholder="e.g. 7-21" class="strategy_input" 
+            name="rsi_window" id="rsi_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "Bollinger window is used to determine the range of 
+                        days to look back at to determine the bollinger values of each day."
+                >Bollinger Window:</span>
+            <input type="number" placeholder="e.g. 10-50" class="strategy_input" 
+            name="bollinger_window" id="bollinger_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "Z window represents the days to look back each day to
+                         determine the Z score of each day"
+                >Z Window:</span>
+            <input type="number" placeholder="e.g. 10-60" class="strategy_input" 
+            name="z_window" id="z_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "The RSI Indicator ranges from [0, 100]. 
+                        It's value predicts if an asset has been oversold or overbought,
+                        the specific threshold for an overbought condition 
+                        can be configured, although typically 70 is used."
+                >RSI Overbought Threshold</span>
+            <input type="number" placeholder="60-80" class="strategy_input" 
+            name="rsi_overbought" id="rsi_overbought">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "The RSI Indicator ranges from [0, 100]. 
+                        It's value predicts if an asset has been oversold or overbought,
+                        the specific threshold for an oversold condition 
+                        can be configured, although typically 30 is used."
+                >RSI Oversold:</span>
+            <input type="number" placeholder="e.g. 20-40" class="strategy_input" 
+            name="rsi_oversold" id="rsi_oversold">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "The Z score predicts if an asset is oversold or overbought.
+                        Typically a upper threshold of 2, when crossed above indicates overbought.
+                         While a lower threshold of -2, when crossed below, indicates oversold."
+                >Z Upper Threshold:</span>
+            <input type="number" placeholder="e.g. 2/3" class="strategy_input" 
+            name="z_upper" id="z_upper">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "The Z score predicts if an asset is oversold or overbought.
+                        Typically a upper threshold of 2, when crossed above indicates overbought.
+                         While a lower threshold of -2, when crossed below, indicates oversold."
+                >Z Lower Threshold:</span>
+            <input type="number" placeholder="e.g. -2/-3" class="strategy_input" 
+            name="z_lower" id="z_lower">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "Our implementation of the Mean Reversion Strategy uses a 
+                        few indicators to predict the state of the market. Logic is used to handle 
+                        the cases when the indicators have differing predictions. 10Either MAJOIRTY,
+                        a majority of indicators agree, or AND, all indicators agree.
+                        
+                        Note that while AND is a safer option, it may result in very few trades."
+                >Mean Reversion Logic</span>
+            <input type="str" placeholder="e.g. MAJORITY / AND" class="strategy_input" 
+            name="mean_reversion_logic" id="mean_reversion_logic">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "The shortest window taken in by MACD typically 9 days"
+                >MACD Short Window:</span>
+            <input type="number" placeholder="e.g. 5-10" class="strategy_input" 
+            name="macd_short" id="macd_short">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "The medium window taken in by MACD typically 12 days"
+                >MACD Medium Window:</span>
+            <input type="number" placeholder="e.g. 11-20" class="strategy_input" 
+            name="macd_medium" id="macd_medium">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "The longest window taken in by MACD typically 26 days"
+                >MACD Long Window:</span>
+            <input type="number" placeholder="e.g. 21-30" class="strategy_input" 
+            name="macd_long" id="macd_long">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "For Breakout trading, one method of identifying support and 
+                        resistance levels is to use donchian channels. Which takes a window as input for 
+                        calculation."
+                >Donchian Window:</span>
+            <input type="number" placeholder="e.g. 21-30" class="strategy_input" 
+            name="donchian_window" id="donchian_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "Rate of change window is the number of days to look back to calculate 
+                        the rate of change."
+                >Rate Of Change window:</span>
+            <input type="number" placeholder="e.g. 21-30" class="strategy_input" 
+            name="roc_window" id="roc_window">
+        </div>
+        <div class='input-field activity-value' style="display:none;">
+                <span
+                        class= "term-tip term-tip--left term-tip--above"
+                        tabindex= "0"
+                        data-tooltip= "The window to calculate metrics for the 
+                        stochastic oscillator."
+                >Stochastic Oscillator Window:</span>
+            <input type="number" placeholder="e.g. 21-30" class="strategy_input" 
+            name="stoc_window" id="stoc_window">
+        </div>
 
     {% comment %} flex-grid to store output fields {% endcomment %}
-    <div class="grid-container" id="metrics_container">
+    <div class="container grid-container" id="output_container"
+    style= "display:none;">
         <div class="output-field activity-value" style="display:none;">
             <h3>Total Return:</h3>
             <p id="Total Return"></p>
@@ -136,11 +345,12 @@
 
 
     {% comment %} New div to store graph {% endcomment %}
-    <div class="flex_item" name="equity_graph_container" id="equity_graph_container">
+    <div class="container" name="equity_graph_container" id="equity_graph_container"
+    style= "display:none;">
     </div>
 
     {% comment %} Creates the progress bar {% endcomment %}
-    <div class='progress-wrapper' style= "display:none;" id="progress_bar_container">
+    <div class='container progress-wrapper' style= "display:none;" id="progress_bar_container">
         <div class='loading-text'>Backtest Not Run</div>
         <div class='progress-container'>
             <div class='progress-bar'>0%</div>
@@ -148,4 +358,133 @@
     </div>
 
 </div>
+
+
+
+
+
+
+
+
+{% comment %} Tooptip script,  {% endcomment %}
+<script>
+(() => {
+    const tooltip = document.createElement("div");
+    tooltip.className = "term-tip-floating";
+    tooltip.setAttribute("role", "tooltip");
+
+    document.body.appendChild(tooltip);
+    document.documentElement.classList.add("js-term-tooltips");
+
+    let activeTerm = null;
+    let hideTimeout = null;
+
+    function placeTooltip() {
+        if (!activeTerm) return;
+
+        const termRect = activeTerm.getBoundingClientRect();
+        const tipRect = tooltip.getBoundingClientRect();
+
+        const gap = 10;
+        const viewportPadding = 10;
+
+        let left = termRect.left + termRect.width / 2 - tipRect.width / 2;
+
+        left = Math.max(
+            viewportPadding,
+            Math.min(left, window.innerWidth - tipRect.width - viewportPadding)
+        );
+
+        let top = termRect.top - tipRect.height - gap;
+
+        // If there is no room above, show below the term
+        if (top < viewportPadding) {
+            top = termRect.bottom + gap;
+        }
+
+        // Keep it inside the viewport vertically
+        top = Math.max(
+            viewportPadding,
+            Math.min(top, window.innerHeight - tipRect.height - viewportPadding)
+        );
+
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+    }
+
+    function showTooltip(term) {
+        const text = term.getAttribute("data-tooltip");
+
+        if (!text) return;
+
+        clearTimeout(hideTimeout);
+
+        activeTerm = term;
+        tooltip.textContent = text;
+
+        placeTooltip();
+        tooltip.classList.add("is-visible");
+    }
+
+    function scheduleHideTooltip() {
+        clearTimeout(hideTimeout);
+
+        hideTimeout = setTimeout(() => {
+            activeTerm = null;
+            tooltip.classList.remove("is-visible");
+        }, 80);
+    }
+    document.addEventListener("mouseover", (event) => {
+        const term = event.target.closest(".term-tip");
+
+        if (term) {
+            showTooltip(term);
+        }
+    });
+
+    document.addEventListener("mouseout", (event) => {
+        const term = event.target.closest(".term-tip");
+
+        if (!term) return;
+
+        const nextTarget = event.relatedTarget;
+
+        if (!nextTarget || !term.contains(nextTarget)) {
+            scheduleHideTooltip();
+        }
+    });
+
+    document.addEventListener("focusin", (event) => {
+        const term = event.target.closest(".term-tip");
+
+        if (term) {
+            showTooltip(term);
+        }
+    });
+
+    document.addEventListener("focusout", (event) => {
+        const term = event.target.closest(".term-tip");
+
+        if (term) {
+            scheduleHideTooltip();
+        }
+    });
+
+    window.addEventListener(
+        "scroll",
+        () => {
+            if (activeTerm) {
+                placeTooltip();
+            }
+        },
+        { capture: true, passive: true }
+    );
+
+    window.addEventListener("resize", () => {
+        if (activeTerm) {
+            placeTooltip();
+        }
+    });
+})();
+</script>
 {% endblock%}

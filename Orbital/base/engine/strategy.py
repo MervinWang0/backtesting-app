@@ -8,6 +8,8 @@ from time import time
 import numpy as np
 import pandas as pd
 from dataclasses import dataclass
+import math
+
 def timed(f):
     '''
     This function is used to time any function
@@ -27,6 +29,7 @@ def timed(f):
 
 # Config classes to reduce the number of args passed into
 # functions at once
+
 @dataclass
 class RSIConfig:
     window: int
@@ -51,7 +54,8 @@ class ZConfig:
 class Strategy(ABC):
     def __init__(self,
                  data_loader: DataLoader,
-                 strength: float = 1):
+                 strength: float = 1,
+                 ):
         ''' 
         Some attributes are common to all trading strategies.
         1. data_loader
@@ -100,6 +104,28 @@ class Strategy(ABC):
     # These methods are used to calculate metrics
 
 
+    def get_percent_k_d_list(self, window: int, ticker: str) -> pd.Series:
+        ''' 
+        Generates the entire list at the start using pd
+        
+        Note that the current day is excluded from calculating
+        '''
+        data = self.data_loader.stock_data[ticker]
+        high = pd.Series([bar.high for bar in data])
+        low = pd.Series([bar.low for bar in data])
+        close = pd.Series([bar.close for bar in data])
+        df = pd.DataFrame()
+
+        # Store the highest and lowest prices each day looking back window days
+        # Conventional definition does not require shift
+        df['upper'] = high.rolling(window=window).max()
+        df['lower'] = low.rolling(window=window).min()
+        df['close'] = close
+        df['k'] = (df['close'] - df['lower']) / (df['upper'] - df['lower']) * 100
+        df['d'] = df['k'].rolling(window=3).mean()
+        print(f'These are the k d lines \n{df.to_string()}')
+        return df
+
     def get_roc(self, window: int, ticker: str) -> float:
         ''' 
         This method obtains price roc 
@@ -114,9 +140,12 @@ class Strategy(ABC):
                                                 window=window + 1)
         if curr_price is None or price_n_days_ago is None:
             return None
-        n_price = price_n_days_ago.pop().close
+        # print(len(price_n_days_ago))
+        n_price = price_n_days_ago.pop(0).close
         roc = (curr_price - n_price) / n_price * 100
-        print(f"This is the roc {roc}")
+        # print(f"This is price n days ago {n_price}")
+        # print(f"This is the curr price = {curr_price}")
+        # print(f"This is the roc {roc}")
         return roc
 
     def get_donchian_channels(self, window:int, ticker:str) -> pd.DataFrame:
@@ -129,7 +158,7 @@ class Strategy(ABC):
         low = pd.Series([bar.low for bar in data])
         df = pd.DataFrame()
         df['upper'] = high.rolling(window=window).max().shift(1)
-        df['lower'] = low.rolling(window=window).max().shift(1)
+        df['lower'] = low.rolling(window=window).min().shift(1)
         df['middle'] = (df['upper'] + df['lower']) / 2
         print(f'These are the donchian channels {df.to_string()}')
         return df
@@ -407,7 +436,19 @@ class Strategy(ABC):
               f"This is the decision from the market = {decision}")
         return decision
 
-
+    def get_k_signal(self, k: float):
+        ''' 
+        Uses standard overbought and oversold threshold to determine
+        if the k value indicates the market is overbought or oversold
+        '''
+        if k > 100 or k < 0:
+            raise ValueError("k cannot be above 100 or below 0")
+        if k > 80:
+            return "overbought"
+        if k < 20:
+            return "oversold"
+        else:
+            return "neutral"
 
 class MeanReversion(Strategy):
     ''' 
@@ -426,8 +467,9 @@ class MeanReversion(Strategy):
                  rsi_overbought : int = 70,
                  z_lower: float = -2,
                  z_upper: float = 2,
-                 logic: str = "MAJORITY",
-                 strength: float = 1):
+                 mean_reversion_logic: str = "MAJORITY",
+                 strength: float = 1,
+                 **kwargs):
         super().__init__(data_loader)
         self.rsi_window = rsi_window
         self.rsi_oversold = rsi_oversold
@@ -436,7 +478,7 @@ class MeanReversion(Strategy):
         self.z_window = z_window
         self.z_upper = z_upper
         self.z_lower = z_lower
-        self.logic = logic
+        self.logic = mean_reversion_logic
         for ticker in self.tickers:
             self.prev_AG[ticker] = None
             self.prev_AL[ticker] = None
@@ -491,9 +533,10 @@ class MACDStrategy(Strategy):
     def __init__(self,
                  data_loader,
                  strength: float = 1,
-                 short_window: int = 9,
-                 medium_window: int = 12,
-                 long_window: int = 26):
+                 macd_short: int = 9,
+                 macd_medium: int = 12,
+                 macd_long: int = 26,
+                 **kwargs):
         super().__init__(data_loader)
         self.medium_ema = {}
         self.long_ema = {}
@@ -501,10 +544,10 @@ class MACDStrategy(Strategy):
         self.prev_state = {}
         self.signal = {}
         for ticker in self.tickers:
-            self.medium_ema[ticker] = self.get_ema_list(window=medium_window, ticker=ticker)
-            self.long_ema[ticker] = self.get_ema_list(window=long_window, ticker=ticker)
+            self.medium_ema[ticker] = self.get_ema_list(window=macd_medium, ticker=ticker)
+            self.long_ema[ticker] = self.get_ema_list(window=macd_long, ticker=ticker)
             self.MACD[ticker] = self.medium_ema[ticker] - self.long_ema[ticker]
-            self.signal[ticker] = self.MACD[ticker].ewm(span=short_window, adjust=False).mean()
+            self.signal[ticker] = self.MACD[ticker].ewm(span=macd_short, adjust=False).mean()
             print(f"This is the MACD line {self.MACD[ticker]}")
             print(f"This is the Signal line {self.signal[ticker]}")
 
@@ -564,7 +607,8 @@ class BreakoutStrategy(Strategy):
     def __init__(self,
                  data_loader,
                  strength = 1,
-                 donchian_window: int = 20):
+                 donchian_window: int = 20,
+                 **kwargs):
         super().__init__(data_loader, strength)
         self.high = {}
         self.low = {}
@@ -610,7 +654,8 @@ class MomentumStrategy(MACDStrategy):
                  short_window = 9,
                  medium_window = 12,
                  long_window = 26,
-                 rsi_window: int = 14,):
+                 rsi_window: int = 14,
+                 **kwargs):
         super().__init__(data_loader, strength, short_window,
                          medium_window, long_window)
         self.rsi_window = rsi_window
@@ -684,7 +729,8 @@ class RateOfChangeStrategy(Strategy):
     ROC is a momentum strategy, measuring price acceleration
     '''
     def __init__(self, data_loader, strength = 1,
-                 roc_window: int = 12):
+                 roc_window: int = 12,
+                 **kwargs):
         super().__init__(data_loader, strength)
         self.roc_window = roc_window
         self.prev_roc = {}
@@ -697,15 +743,17 @@ class RateOfChangeStrategy(Strategy):
         Exits when ROC crosses back below 0
         '''
 
-        # roc cannot be computed before days loaded is >= window
-        if self.data_loader.get_days_loaded() + 1 < self.roc_window:
+        print(self.data_loader.get_days_loaded())
+        # roc window requires window + 1 days to be laoded to calculate
+        if self.data_loader.get_days_loaded() < self.roc_window + 1:
             return None
 
-        # When days loaded == window, roc can be calc but no trade
-        if self.data_loader.get_days_loaded() + 1 == self.roc_window:
+        # roc can be calculated but no trades can occur
+        if self.data_loader.get_days_loaded() == self.roc_window + 1:
             roc = self.get_roc(window=self.roc_window,
                                ticker=ticker)
             self.prev_roc[ticker] = roc
+            # print(f"This is prev_roc {self.prev_roc[ticker]}")
             return None
 
         # Use a simple MA as a filter for false signals
@@ -721,10 +769,10 @@ class RateOfChangeStrategy(Strategy):
         curr_close = self.data_loader.get_current_bar_value(ticker=ticker,
                                                             value_type='close')
         filtered = curr_close > ma_20
-        print(f"This is the prev roc = {self.prev_roc[ticker]}")
-        print(f"This is the new roc = {self.prev_roc[ticker]}")
+        # print(f"This is the prev roc = {self.prev_roc[ticker]}")
+        # print(f"This is the new roc = {new_roc}")
         if self.prev_roc[ticker] < 0 and new_roc > 0 and filtered:
-            decision = "BUY"
+            decision = "LONG"
         elif self.prev_roc[ticker] > 0 and new_roc < 0:
             decision = "EXIT"
         else:
@@ -742,16 +790,82 @@ class RateOfChangeStrategy(Strategy):
         print(f"This is the signalEvent: {signal}")
         return signal
 
-
+class StochasticOscillatorStrategy(Strategy):
+    ''' 
+    - The stochastic oscillator is a momentum indicator that measures
+    the relationship between an asset's closing price and it's high and low
+    price over a window
+	- It uses two lines, %K and %D, %K is the current value,
+    %D is a 3-day SMA of %K for smoothing
+    '''
+    def __init__(self, data_loader, strength = 1, stoc_window: int = 14,
+                 **kwargs):
+        super().__init__(data_loader, strength)
+        self.stoc_window = stoc_window
+        self.k_d_list = {}
+        self.prev_state = {}
+        for ticker in self.tickers:
+            self.k_d_list[ticker] = self.get_percent_k_d_list(window=stoc_window,
+                                                              ticker=ticker)
+            self.prev_state[ticker] = None
         
+        
+    def generate_signal(self, ticker: str):
+        ''' 
+        There are multiple ways of generating signals based on k and d lines,
+        But the current implemntation looks at the k
+        
+        Then previous state was in overbought/oversold market and 
+        current price crosses the threshold, long/short
+        '''
+        index = self.data_loader.curr_index
+        k_indicator = self.k_d_list[ticker]['k'][index]
+        print(f"This is the k_indicator {k_indicator}")
+
+        # If the data has not been calculated yet return none
+        if k_indicator is None or math.isnan(k_indicator):
+            return None
+        
+        # First time k_signal is computed store it and don't trade
+        k_signal = self.get_k_signal(k_indicator)
+        if self.prev_state[ticker] is None:
+            self.prev_state[ticker] = k_signal
+            return None
+
+        # If previous state is neutral signal not generated
+        if self.prev_state[ticker] == "neutral":
+            self.prev_state[ticker] = k_signal
+            return None
+        
+        crossover = self.prev_state[ticker] != k_signal
+        if crossover and self.prev_state[ticker] == "overbought":
+            self.prev_state[ticker] = k_signal
+            decision = "SHORT"
+        elif crossover and self.prev_state[ticker] == "oversold":
+            self.prev_state[ticker] = k_signal
+            decision = "LONG"
+        else: 
+            self.prev_state[ticker] = k_signal
+            return None
+        signal = SignalEvent(ticker=ticker,
+                            asset_type=self.data_loader.asset_type,
+                            datetime=self.data_loader.get_current_datetime(),
+                            signal_type=decision,
+                            strength=self.strength
+                            )
+        print("This is the signal generated for the Stochastic "
+                f"Oscillator strategy {signal}")
+        return signal
+    
 class MovingAverageCross:
     def __init__(self, data_loader: DataLoader, events: Queue,
-                 tickers: list[str], short_window, long_window, strength: float = 1.0):
+                 tickers: list[str], mac_short_window, mac_long_window, strength: float = 1.0,
+                 comission: float = 0, **kwargs):
         self.data_loader = data_loader
         self.events = events
         self.tickers = tickers
-        self.short_window = short_window
-        self.long_window = long_window
+        self.short_window = mac_short_window
+        self.long_window = mac_long_window
         self.strength = strength
         self.previous_signal = {ticker: None for ticker in tickers}
 

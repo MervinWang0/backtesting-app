@@ -13,7 +13,8 @@ from base.engine.strategy import (MovingAverageCross,
                                   MACDStrategy,
                                   BreakoutStrategy,
                                   MomentumStrategy,
-                                  RateOfChangeStrategy)
+                                  RateOfChangeStrategy,
+                                  StochasticOscillatorStrategy)
 from base.futures.continuous_series import ContinuousFuturesSeriesBuilder
 from base.engine.events import AssetType
 from base.models import ContinuousFuturesSeries
@@ -28,7 +29,7 @@ def initialize_strategy(name: str,
                     strength: float = 1,
                     **strategy_params) -> Strategy:
     
-    if name == "Moving Average Cross":
+    if name == "Moving Average Crossover":
         return MovingAverageCross(data_loader=data_loader,
                                   events=data_loader.events,
                                   tickers=data_loader.tickers,
@@ -54,6 +55,10 @@ def initialize_strategy(name: str,
         return RateOfChangeStrategy(data_loader=data_loader,
                                     strength=strength,
                                     **strategy_params)
+    if name == "Stochastic Oscillator":
+        return StochasticOscillatorStrategy(data_loader=data_loader,
+                                            strength=strength,
+                                            **strategy_params)
         
 
 def timed(f):

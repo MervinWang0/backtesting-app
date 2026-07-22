@@ -5,17 +5,33 @@ function getCookie(name) {
     if (parts.length === 2) return parts.pop().split(';').shift();
 }
 //ids declared here so that making a change in html only has to be changed here
-const short_window_id = "short_window";
-const long_window_id = "long_window";
+// common ids
 const asset_type_id = "asset_type";
 const ticker_id = "ticker";
 const strength_id = "strength";
 const slippage_id = "slippage";
 const initial_capital_id = "initial_capital";
-const rolling_window_id = "rolling_window";
 const start_date_id = "start_date";
 const end_date_id = "end_date";
 const commission_id = "commission";
+
+// Strategy specific
+const short_window_id = "mac_short_window";
+const long_window_id = "mac_long_window";
+const rsi_window = "rsi_window";
+const bollinger_window = "bollinger_window";
+const z_window = "z_window";
+const rsi_overbought = "rsi_overbought";
+const rsi_oversold = "rsi_oversold";
+const z_upper = "z_upper";
+const z_lower = "z_lower"
+const mean_reversion_logic = "mean_reversion_logic";
+const macd_short = "macd_short";
+const macd_medium = "macd_medium";
+const macd_long = "macd_long";
+const donchian_window = "donchian_window";
+const roc_window = "roc_window";
+const stoc_window = "stoc_window";
 
 // This defines some buttons that call functions
 const strategy_btn = document.getElementById("strategy_btn")
@@ -33,6 +49,7 @@ let param_list = get_param_list();
 // The trigger of the buttons calling the function
 strategy_btn.addEventListener("change", change_strategy)
 run_backtest_btn.addEventListener("click", run_backtest)
+run_backtest_btn.addEventListener("click", show_output)
 view_mcs_btn.addEventListener("click", view_mcs)
 quicktest_btn.addEventListener("click", () => quicktest(param_list))
 
@@ -41,9 +58,10 @@ const strategy_params = [];
 let output_params = [];
 
 // These lists are for error checking the value of input
-const cannot_negative_id_list = ["short_window", "long_window", "strength", "commission", "slippage", "initial_capital",
-    "rolling_window"]
-const must_int_id_list = ["short_window", "long_window", "rolling_window"]
+const cannot_negative_id_list = ["mac_short_window", "mac_long_window", 
+    "strength", "commission", "slippage", "initial_capital", short_window_id,
+long_window_id, rsi_window]
+const must_int_id_list = ["mac_short_window", "mac_long_window"]
 
 // run_id is used to pass the entry of the backtest to MCS webpage
 let run_id = {}
@@ -53,23 +71,54 @@ const percentage_outputs = ["Total Return", "Mean Daily Return", "CAGR",
     "Max Drawdown",
 ]
 
+const common_parameters = [asset_type_id, ticker_id, strength_id, slippage_id,
+    initial_capital_id, commission_id, start_date_id, end_date_id
+]
+const moving_avg_cross = [...common_parameters, short_window_id, long_window_id
+];
+
+const mean_reversion = [...common_parameters, rsi_window,
+    bollinger_window, z_window, rsi_overbought, rsi_oversold, z_upper,
+    z_lower, mean_reversion_logic
+];
+
+const macd = [...common_parameters, macd_short, macd_medium, macd_long];
+
+const breakout = [...common_parameters, donchian_window];
+
+const momentum = [...common_parameters, macd_short, macd_medium, macd_long,
+    rsi_window
+];
+const rate_of_change = [...common_parameters, roc_window];
+
+const stoch_osc = [...common_parameters, stoc_window];
+// Get the element that serves as a container for inputs to hide/show
+const input_container = document.getElementById("input_container")
 function get_param_list(){
-    const SMA = [short_window_id, long_window_id, asset_type_id,
-        ticker_id, strength_id, slippage_id, initial_capital_id,
-        commission_id, start_date_id, end_date_id
-    ]
-    const MR = [rolling_window_id, ticker_id, start_date_id,
-        end_date_id
-    ]
-    let temp_param_list = []
+    let temp_param_list = [];
     // console.log(`This is the chosen strategy id ${chosen_strategy_id} `)
     switch(String(chosen_strategy_id)) {
-        case "moving_average_crossover":
+        case "Moving Average Crossover":
             // console.log("moving average strat reached")
-            temp_param_list = SMA;
+            temp_param_list = moving_avg_cross;
             break;
-        case "mean_reversion":
-            temp_param_list = MR;
+        case "Mean Reversion":
+            temp_param_list = mean_reversion;
+            break;
+        case "MACD":
+            temp_param_list = macd;
+            break;
+        case "Breakout":
+            temp_param_list = breakout;
+            break;
+        case "Momentum":
+            temp_param_list = momentum;
+            break;
+        case "Rate Of Change":
+            temp_param_list = rate_of_change;
+            break;
+        case "Stochastic Oscillator":
+            temp_param_list = stoch_osc;
             break;
     }
     // console.log(`This is the SMA list${SMA}`)
@@ -78,30 +127,63 @@ function get_param_list(){
     return temp_param_list
 }
 
-// Turns certains sections invisible/ sets to a default state
+// Hides the outputs
+function hide_output() {
+        // divs stores the output fields
+        const output_container_div = document.getElementById("output_container");
+        output_container_div.style.display = "none";
+        // const divs = output_container_div.querySelectorAll(".output-field");
+
+        // // Make each div invisible
+        // for(const div of divs) {
+        //     div.style.display = "none";
+        // }
+}
+
+function clear_input() {
+    // Turns the value of each input field to blank
+    const divs = input_container.querySelectorAll(".input-field");
+
+        // Make each input blank 
+        for(const div of divs) {
+            div.querySelector("input").value = "";
+        }
+}
+// Used when switching strategy, should hide, output, graph, progress bar,
+// and set input params to empty
 function reset() {
     // Turn the progress bar and graph invisible
     progress_bar_div.style.display = "none";
-    // progress_bar.style.background = "linear-gradient(90deg, var(--color-white), var(--color-blue))"
     equity_graph_container.style.display = "none";
 
-    // Turn output params invisible and set all params to value 0
-    // for(const input of strategy_params) {
-    //     input.value = "";
-    // }
-    output_params = document.querySelectorAll(".output-field")
-    for(const output of output_params) {
-        output.style.display = "none";
-    }
+    // Turns the progress bar to a blue background, in case of error.
+    progress_bar.style.background = "linear-gradient(90deg, var(--color-white), var(--color-blue))";
+
+    // Make the progress bar start from initial state
+    state = "Backtest Not Run";
+
+    // Turn output params invisible
+    hide_output()
+
+    // Turn each input field blank
+    clear_input()
 }
 
 
 // Used to hide the parameters not valid to the chosen strategy
 function change_strategy(){
+    // Hide and clear params, and output metrics/graph
     reset();
-    // The progress bar and equity graph should also be hidden
-    // Each time the strategy is changed, update the button and the params
     chosen_strategy_id = strategy_btn.value;
+
+    // This turns the container holding inputs inivisble if strategy is none
+    if (chosen_strategy_id !== "none") {
+        input_container.style.display = "";
+    }
+    else {
+        input_container.style.display = "none";
+    }
+
     param_list = get_param_list();
     param_list.forEach(input_id => strategy_params.push(document.getElementById(input_id)));
 
@@ -125,12 +207,13 @@ function change_strategy(){
 
 // Runs backtest when run button is clicked and input passed
 function run_backtest(){
-    reset();
     upgrade_progress(); // Sets initial state of progress bar
     // Only show the bar after run backtest is clicked
     progress_bar_div.style.display = "";
     if (!validate()) {
         state = "Error"
+        output_container.style.display = "none";
+        progress_bar_div.style.display = "none";
         return;}
     else {
      // TODO create function for initializing clear state
@@ -244,12 +327,13 @@ function graph_backtest() {
         equity_graph_container.style.display = "";
 
         // For metrics
-        const metrics_container_div = document.getElementById("metrics_container");
-        const divs = metrics_container_div.querySelectorAll(".output-field");
+        const output_container_div = document.getElementById("output_container");
+        const divs = output_container_div.querySelectorAll(".output-field");
 
-        // Turn all metric paragraphs blank first
+        // Make the value of each metric field an empty string 
         for(const div of divs) {
-            div.style.display = "none";
+            para = div.querySelector("p");
+            para.innerHTML = "";
         }
 
         // For each metric calculated turn it visible and place the value in it
@@ -269,8 +353,9 @@ function graph_backtest() {
             else {
                 paragraph.innerHTML = `${value.toFixed(4)}`;
             }
+            // Make the div storing the metric visible
             paragraph.parentElement.style.display = '';
-            console.log(paragraph.parentElement);
+            // console.log(paragraph.parentElement);
         // Makes run_id a dict as needed by URLSearchParams
         run_id = {"run_id" : data["run_id"]};
         state = "Backtest Run Complete";
@@ -349,6 +434,11 @@ function upgrade_progress() {
     setTimeout(upgrade_progress, 50);
 }
 
+// Just a simple function that displays the output grid
+function show_output() {
+    let output_container = document.getElementById("output_container");
+    output_container.style.display = "";
+}
 
 // Sets the various parameters with some random input
 function quicktest(param_list) {

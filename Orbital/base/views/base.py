@@ -32,46 +32,70 @@ def get_quicktest_input(request) -> JsonResponse:
             status=405  # Method Not Allowed
         )
 
-# Used in quicktest
-def get_rand(case: str) -> int|float|datetime.date:
+def get_random_ticker():
     ''' 
+    Makes a db call and gets a random ticker from S&P500
+    '''
+    rand_int = random.randint(1, 500)
+    ticker = Stock.objects.values('ticker').get(id=rand_int)['ticker']
+    print(f"This is the randomized ticker = {ticker}")
+    return ticker
+
+PARAM_RANGES = {
+    "asset_type": lambda: "STOCK",
+    "strength": lambda: random.uniform(0, 1),
+    "slippage": lambda: random.uniform(0, 0.05),
+    "initial_capital": lambda: random.uniform(50000, 250000),
+    "start_date": lambda: (datetime(2023, 1, 1) + timedelta(days=random.randint(1, 364))).date(),
+    "end_date": lambda: (datetime(2024, 1, 1) + timedelta(days=random.randint(1, 365))).date(),
+    "commission": lambda: random.uniform(0.001, 0.01),
+    "num_sims": lambda: random.randint(50, 500),
+    "df": lambda: random.randint(3, 8),
+    "exp_jumps": lambda: random.randint(1, 3),
+    "mean_log_jump_size": lambda: random.uniform(0.03, 0.06),
+    "std_log_jump_size": lambda: random.uniform(0.08, 0.12),
+
+    # Moving average crossover
+    "mac_short_window": lambda: random.randint(5, 10),
+    "mac_long_window": lambda: random.randint(11, 30),
+
+    # Mean reversion
+    "rsi_window": lambda: random.randint(7, 21),
+    "bollinger_window": lambda: random.randint(10, 50),
+    "z_window": lambda: random.randint(10, 60),
+    "rsi_overbought": lambda: random.randint(60, 80),
+    "rsi_oversold": lambda: random.randint(20, 40),
+    "z_upper": lambda: random.randint(2, 3),
+    "z_lower": lambda: -random.randint(2, 3),
+    "mean_reversion_logic": lambda: random.choice(["AND", "MAJORITY"]),
+
+    # MACD
+    "macd_short": lambda: random.randint(5, 15),
+    "macd_medium": lambda: random.randint(20, 35),
+    "macd_long": lambda: random.randint(35, 50),
+
+    # Donchian breakout
+    "donchian_window": lambda: random.randint(10, 55),
+
+    # Rate Of Change
+    "roc_window": lambda: random.randint(10, 20),
+    
+    # Stochastic
+    "stoc_window": lambda: random.randint(10, 21),
+}
+
+def get_rand(case: str) -> int | float | datetime.date | str:
+    '''
     Matches each id and returns a random value suitable for that id
     '''
-    if "short_window" == case:
-        return random.randint(1, 10)
-    if "long_window" == case:
-        return random.randint(11, 30)
-    if "asset_type" == case:
-        return "STOCK"
-    if "ticker" == case:
-        rand_int = random.randint(1,500)
-        print(f"This should be dict of ticker: name "
-              f"{Stock.objects.values('ticker').get(id=rand_int)}")
-        return Stock.objects.values('ticker').get(id=rand_int)['ticker']
-    if "strength" == case:
-        return random.randint(1,10)
-    if "slippage" == case:
-        return random.uniform(0, 0.05)
-    if "initial_capital" == case:
-        return random.uniform(50000, 250000)
-    if "rolling_window" == case:
-        return random.randint(11, 30)
-    if "start_date" == case:
-        start_date = datetime(2023, 1, 1)
-        return (start_date + timedelta(days=random.randint(1,364))).date()
-    if "end_date" == case:
-        end_date = datetime(2024, 1, 1)
-        return (end_date + timedelta(days=random.randint(1,365))).date()
-    if "commission" == case:
-        return random.uniform(0.001, 0.01)
-    if "num_sims" == case:
-        return random.randint(50, 500)
-    if "df" == case:
-        return random.randint(3,8)
-    if "exp_jumps" == case:
-        return random.randint(1,3)
-    if "mean_log_jump_size" == case:
-        return random.uniform(0.03, 0.06)
-    if "std_log_jump_size" == case:
-        return random.uniform(0.08, 0.12)
+    # For multiple tickers if ticker in ticker1, ticker2...
+    if "ticker" in case:
+        return get_random_ticker()
 
+    # Check if case is in the randomizable params
+    print(f"This is the case to be randomized = {case}")
+    if case not in PARAM_RANGES:
+        raise ValueError(f"Unknown parameter: {case}")
+
+    # When case is found return it
+    return PARAM_RANGES[case]()

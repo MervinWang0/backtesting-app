@@ -37,6 +37,7 @@ class SignalEvent:
     datetime: datetime
     signal_type : SignalType
     strength: float # [0,1]
+    stop_price: float | None = None
     type: str = field(default="SIGNAL", init=False)
 
 

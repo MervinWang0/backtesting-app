@@ -44,9 +44,9 @@ class Portfolio(ABC):
                  initial_capital: float =  100000.0, quantity =  5,
                 risk_per_trade: float = 0.01,
                 current_equity : Decimal = 0.0,
-                max_position_pct: float = 0.20,
-                max_gross_leverage: float = 1.0,
-                default_stop_pct: float = 0.02,
+                max_position_pct: float = 1, #0.20
+                max_gross_leverage: float = 2.0, #1
+                default_stop_pct: float = 0.02 , #0.02,
                 forex_lot_size: int = 1000,):#, User = None):
         self.data_loader = data_loader
         self.events = events
@@ -282,6 +282,8 @@ class Portfolio(ABC):
 
     def generate_exit_order(self, ticker: str, stock_quantity: int, exit_frac: float, dt: datetime) -> OrderEvent:
         if stock_quantity == 0:
+            # I made a change here such it just returns None because a Signal may return Exit before LONG/SHORT
+            return None
             raise ValueError(f"No existing position in {ticker} to exit.")
         if exit_frac < 0 or exit_frac > 1:
             raise ValueError(f"Invalid exit fraction {exit_frac}. Must be between 0 and 1.")
