@@ -14,9 +14,8 @@ from django.db.models.functions import Cast, NullIf
 from django.core.paginator import Paginator
 from base.services.paperTrading import execute_order
 from base.engine.graph import get_ohlv_graph2
-from base.forms import PaperAccountCreation
+from base.forms import PaperAccountCreation, RegisterForm
 from django.urls import reverse
-from .forms import RegisterForm
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 
@@ -32,12 +31,7 @@ PRICE_OUTPUT_FIELD = DecimalField(
 )
 
 def home(request):
-    # If user is already logged in, send them to the dashboard instead
-    # if request.user.is_authenticated:
-    #     from django.shortcuts import redirect
-    #     return redirect('dashboard')   # change to your dashboard URL name
     return render(request, 'home.html')
-
 
 #register related
 def register_view(request):
@@ -371,36 +365,36 @@ def data_exists(symbol, start_date, end_date):
 
     return True    
 
-def backtest_run(request):
-    start_date = request.POST.get("start_date")
-    end_date = request.POST.get("end_date")
-    ticker = request.POST.get("ticker","").upper().strip()
+# def backtest_run(request):
+#     start_date = request.POST.get("start_date")
+#     end_date = request.POST.get("end_date")
+#     ticker = request.POST.get("ticker","").upper().strip()
 
-    start_date_fixed = datetime.strptime(start_date, "%Y-%m-%d").date()
-    end_date_fixed = datetime.strptime(end_date, "%Y-%m-%d").date()
+#     start_date_fixed = datetime.strptime(start_date, "%Y-%m-%d").date()
+#     end_date_fixed = datetime.strptime(end_date, "%Y-%m-%d").date()
 
-    period = get_yf_period(start_date_fixed, end_date_fixed)
+#     period = get_yf_period(start_date_fixed, end_date_fixed)
 
-    if not data_exists(ticker, start_date_fixed, end_date_fixed):
-        call_command(
-            "load_stock_data",
-            symbol = ticker,
-            period = period,
-            interval = "1d",
-        )
+#     if not data_exists(ticker, start_date_fixed, end_date_fixed):
+#         call_command(
+#             "load_stock_data",
+#             symbol = ticker,
+#             period = period,
+#             interval = "1d",
+#         )
 
-    events = Queue()
+#     events = Queue()
 
-    backtest = Backtest(
-        events = events,
-        tickers = [ticker],
-        start_date = start_date_fixed,
-        end_date = end_date_fixed,
-        strategy_name= "MAC",
-    )
+#     backtest = Backtest(
+#         events = events,
+#         tickers = [ticker],
+#         start_date = start_date_fixed,
+#         end_date = end_date_fixed,
+#         strategy_name= "MAC",
+#     )
 
-    backtest_run = backtest.run()
-    return redirect(f"/backtestrunrecords/?run_id={backtest_run.id}")
+#     backtest_run = backtest.run()
+#     return redirect(f"/backtestrunrecords/?run_id={backtest_run.id}")
 
 def backtest_run_records(request):
     run_id = request.GET.get("run_id")
@@ -475,6 +469,3 @@ def portfolio(request):
     }
 
     return render(request, "portfolio.html", context)
-
-
-

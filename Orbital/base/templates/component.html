@@ -1,0 +1,67 @@
+{% comment %}
+This files is to store default configurations of buttons, and so on which can be used 
+across different html files.
+
+This file is not meant to be run, instead, it just stores some code snippets. 
+(Technically it can run for testing, but it is not meant to be shown to users)
+
+{% endcomment %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<html>
+<head>
+    <link rel = 'stylesheet' href = "{% static 'base/css/component.css' %}">
+    <link rel = 'stylesheet' href = "{% static 'base/css/backtest.css' %}">
+    <link rel = 'stylesheet' href = "{% static 'base/css/variables.css' %}">
+    <script src = "{% static 'base/js/component.js' %}"  defer></script>
+</head>
+<body>
+{% comment %} --------------------------------------------- {% endcomment %}
+{% comment %}
+Progress wrapper stores all the components 
+
+Loading text div stores text that updates as the progress moves 
+
+progress container stores the background of the progress bar 
+
+progress bar is a number representing the current progress
+
+{% endcomment %}
+
+{% comment %} <div class='progress-wrapper'>
+    <div class='loading-text'>Backtest Not Run</div>
+    <div class='progress-container'>
+        <div class='progress-bar'>0%</div>
+    </div>
+</div> {% endcomment %}
+{% comment %} --------------------------------------------- {% endcomment %}
+
+{% comment %} 
+This is the html for a datalist
+{% endcomment %}
+<span
+    class= "term-tip term-tip--left term-tip--above"
+    tabindex= "0"
+    data-tooltip= "Description">
+Title:
+</span>
+<input type="text" id="browser-choice" name="browser" list="browsers" placeholder="Type or select...">
+<datalist id="browsers">
+  <option value="Google Chrome"></option>
+  <option value="Mozilla Firefox"></option>
+  <option value="Microsoft Edge"></option>
+  <option value="Safari"></option>
+  <option value="Opera"></option>
+</datalist>
+
+
+
+
+
+
+
+
+
+</body>
+</html>
