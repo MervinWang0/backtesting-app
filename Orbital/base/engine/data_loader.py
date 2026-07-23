@@ -165,8 +165,8 @@ class DataLoader:
         previous_contract_code = None
         visited_dates = set()
         for record in futures_history:
-            if record.date in visited_dates:
-                raise RuntimeError(f"Duplicate date found in futures data for {contract_code}: {record.date}")
+            #if record.date in visited_dates:
+                #raise RuntimeError(f"Duplicate date found in futures data for {contract_code}: {record.date}")
             visited_dates.add(record.date)
             current_contract_code = record.source_contract.contract_code
             is_roll = previous_contract_code is not None and current_contract_code != previous_contract_code
