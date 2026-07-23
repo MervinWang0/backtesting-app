@@ -1,0 +1,208 @@
+/* =========================================
+   Stock Details Page Styles
+   ========================================= */
+
+.stock-details {
+    width: min(1180px, calc(100% - 40px));
+    margin-inline: auto;
+    padding-block: 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+/* Header */
+.stock-details h1 {
+    margin: 0;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+/* Data Table */
+.stock-detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.stock-detail-table th,
+.stock-detail-table td {
+    padding: 16px 20px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.stock-detail-table th {
+    color: var(--text-secondary);
+    background: var(--surface-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.stock-detail-table td {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Targets both correct 'tbody' and the typo 'body' in the template */
+.stock-detail-table tbody tr:last-child td,
+.stock-detail-table body tr:last-child td {
+    border-bottom: 0;
+}
+
+/* Graph Container */
+.stock-graph {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Order Form Card */
+.order-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.order-form > div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.order-form label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.order-form select,
+.order-form input[type="number"] {
+    height: 46px;
+    padding: 0 16px;
+    color: var(--text-primary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+    font-size: 1rem;
+}
+
+.order-form select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23657087' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 40px;
+}
+
+.order-form select:focus,
+.order-form input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgb(65 147 78 / 12%); /* Matches --accent color */
+}
+
+/* Buy / Sell Buttons Container */
+.Buy_Sell_Button {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.buy-button,
+.sell-button {
+    flex: 1;
+    min-height: 48px;
+    padding: 0 24px;
+    font-weight: 650;
+    font-size: 1rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    border: 1px solid transparent;
+    color: white;
+}
+
+.buy-button {
+    background: var(--positive);
+}
+
+.buy-button:hover {
+    background: #146c32; /* Slightly darker green */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgb(22 128 60 / 30%);
+}
+
+.sell-button {
+    background: var(--negative);
+}
+
+.sell-button:hover {
+    background: #b91c1c; /* Slightly darker red */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgb(220 38 38 / 30%);
+}
+
+/* Empty States / Fallback Messages */
+.stock-details > p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    padding: 24px;
+    background: var(--surface-secondary);
+    border-radius: var(--radius-md);
+    text-align: center;
+    border: 1px dashed var(--border);
+    margin: 0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 600px) {
+    .stock-details {
+        width: min(100% - 24px, 1180px);
+        padding-block: 32px;
+    }
+    
+    .stock-detail-table th,
+    .stock-detail-table td {
+        padding: 12px 16px;
+        font-size: 0.9rem;
+    }
+    
+    .order-form {
+        padding: 24px;
+    }
+    
+    .Buy_Sell_Button {
+        flex-direction: column;
+    }
+    
+    .buy-button,
+    .sell-button {
+        width: 100%;
+    }
+}

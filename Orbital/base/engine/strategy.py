@@ -72,6 +72,7 @@ class Strategy(ABC):
         self.prev_AG: dict[str, float] = {}
         self.prev_AL: dict[str, float] = {}
         self.rsi = {}
+        
 
 
     @abstractmethod
@@ -250,6 +251,9 @@ class Strategy(ABC):
             # Obtain AG and AL
             new_ag = abs(price_change[price_change > 0].sum() / window)
             new_al = abs(price_change[price_change < 0].sum() / window)
+            if new_ag is None or new_al is None:
+                raise ValueError("al and ag should not be none")
+            
             rs = new_ag / new_al
             rsi = int(100 - (100/ (1 + rs)))
             print(f"This is rsi, it should be an int :{rsi}")
@@ -649,15 +653,16 @@ class MomentumStrategy(MACDStrategy):
     
     It relies on the logic or buying high and selling hihger
     '''
-    def __init__(self, data_loader,
-                 strength = 1,
-                 short_window = 9,
-                 medium_window = 12,
-                 long_window = 26,
+    def __init__(self,
+                 data_loader,
+                 strength: float = 1,
+                 macd_short: int = 9,
+                 macd_medium: int = 12,
+                 macd_long: int = 26,
                  rsi_window: int = 14,
                  **kwargs):
-        super().__init__(data_loader, strength, short_window,
-                         medium_window, long_window)
+        super().__init__(data_loader, strength, macd_short,
+                         macd_medium, macd_long)
         self.rsi_window = rsi_window
         self.ema_21 = {}
         for ticker in self.tickers:

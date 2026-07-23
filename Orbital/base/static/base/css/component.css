@@ -278,6 +278,20 @@
     border-color: #7c3aed;
 }
 
+
+/* Styling of dropdown boxes */
+.dropdown {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 1rem;
+    border: 2px solid var(--color-black);
+    border-radius: 8px;
+    background-color: var(--color-white);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
 /* Strategy selector styling */
 #strategy_btn {
     width: 100%;
@@ -698,3 +712,5 @@ html {
         transition: none;
     }
 }
+
+/* Combo box html */

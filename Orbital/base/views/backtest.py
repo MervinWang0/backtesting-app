@@ -7,7 +7,9 @@ from datetime import datetime, timedelta
 from django.http import JsonResponse
 from base.engine.data_loader import DatabaseDataLoader
 from base.engine.backtest import Backtest
-from base.models import StockPriceHistory, Stock
+from base.engine.execution import ExecutionLoader
+from base.models import (StockPriceHistory, Stock,
+ContinuousFuturesSeries)
 from django.core.management import call_command
 import re 
 
@@ -32,10 +34,9 @@ def backtest_graph(request) -> HttpResponse:
         # This is done using regex to seach the string for extensionability
         int_pattern = re.compile(r'^[+-]?\d+$')
         float_pattern = re.compile(r'^[+-]?(\d+\.\d*|\.\d+)([eE][+-]?\d+)?$')
-        int_params = ['short_window', 'long_window']
         # Dates have to be converted to datetime.date
-        data["start_date"] = datetime.strptime(data["start_date"], "%Y-%m-%d")
-        data["end_date"] = datetime.strptime(data["end_date"], "%Y-%m-%d")
+        data["start_date"] = datetime.strptime(data["start_date"], "%Y-%m-%d").date()
+        data["end_date"] = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
         # Convert certain parameters to numeric and others ignore
         for key in data:
             value = data[key]
@@ -63,6 +64,26 @@ def backtest_graph(request) -> HttpResponse:
                         period = period,
                         interval = "1d",
                     )
+        # For Futures, there is a step of stiching the contracts before the
+        # backtest can be run.
+        elif data["asset_type"] == "FUTURES":
+            data["roll_days"] = 5
+            data["continuous_contract_index"] = 1
+            data["adjustment_method"] = "NONE"
+            for i, ticker in enumerate(data['tickers']):
+                create_series_configuration(ticker=data['tickers'][i],
+                                            start_date=data['start_date'],
+                                            end_date=data['end_date'])
+                build_continuous_futures_series(ticker=data['tickers'][i],
+                                                start_date=data['start_date'],
+                                                end_date=data['end_date'])
+                check_continuous_series(ticker=data['tickers'][i],
+                                                start_date=data['start_date'],
+                                                end_date=data['end_date'])
+                test_rollover_event_queue(ticker=data['tickers'][i],
+                                                start_date=data['start_date'],
+                                                end_date=data['end_date'])
+
         # elif data["asset_type"] == "FOREX": TODO
         
         
@@ -134,3 +155,215 @@ def get_yf_period(start_date, end_date):
         return "10y"
     else:
         return "max"
+
+
+# Functions for handling Futures backtest
+def create_series_configuration(ticker: str,
+                                start_date : datetime.date,
+                                end_date : datetime.date,
+                                # The other parameters could be adjusted in the future
+                                roll_days: int = 5,
+                                rollover_rule: str = "DAYS_BEFORE_EXPIRY",
+                                contract_index: int = 1,
+                                adjustment_method: str = "NONE") -> ContinuousFuturesSeries:
+    """
+    Ensures the continuous-futures configuration exists before running
+    the management command.
+    """
+    ROOT_SYMBOL = ticker
+
+    START_DATE = start_date
+    END_DATE = end_date
+
+    ROLL_DAYS = roll_days
+    CONTRACT_INDEX = contract_index
+    ADJUSTMENT_METHOD = adjustment_method
+    ROLLOVER_RULE = rollover_rule
+
+    series, created = ContinuousFuturesSeries.objects.get_or_create(
+        contract_symbol=ROOT_SYMBOL,
+        roll_days=ROLL_DAYS,
+        rollover_rule=ROLLOVER_RULE,
+        contract_index=CONTRACT_INDEX,
+        adjustment_method=ADJUSTMENT_METHOD,
+    )
+
+    if created:
+        print(f"Created continuous-series configuration for {ROOT_SYMBOL}.")
+    else:
+        print(f"Using existing continuous-series configuration for {ROOT_SYMBOL}.")
+
+    return series
+
+def build_continuous_futures_series(ticker: str,
+                                start_date : datetime.date,
+                                end_date : datetime.date,
+                                # The other parameters could be adjusted in the future
+                                roll_days: int = 5,) -> None:
+    """
+    Runs:
+
+        python manage.py build_continuous_series
+
+    This version assumes your command reads the saved
+    ContinuousFuturesSeries configurations from the database.
+    """
+    ROOT_SYMBOL = ticker
+
+    START_DATE = start_date
+    END_DATE = end_date
+
+    ROLL_DAYS = roll_days
+    print("\n--- BUILDING CONTINUOUS SERIES ---")
+    print(f"Root symbol: {ROOT_SYMBOL}")
+    print(f"Date range: {START_DATE} to {END_DATE}")
+
+    call_command(
+        "build_continuous_futures",
+        root_symbol = ROOT_SYMBOL,
+        roll_days = ROLL_DAYS,
+        start=START_DATE.isoformat(),
+        end=END_DATE.isoformat(),
+    )
+
+    print("Continuous-series command completed.")
+
+def check_continuous_series(ticker: str,
+                                start_date : datetime.date,
+                                end_date : datetime.date,
+                                # The other parameters could be adjusted in the future
+                                roll_days: int = 5,
+                                rollover_rule: str = "DAYS_BEFORE_EXPIRY",
+                                contract_index: int = 1,
+                                adjustment_method: str = "NONE") -> ContinuousFuturesSeries:
+    print("\n--- CONTINUOUS SERIES CHECK ---")
+    ROOT_SYMBOL = ticker
+
+    START_DATE = start_date
+    END_DATE = end_date
+
+    ROLL_DAYS = roll_days
+    CONTRACT_INDEX = contract_index
+    ADJUSTMENT_METHOD = adjustment_method
+    ROLLOVER_RULE = rollover_rule
+    try:
+        series = ContinuousFuturesSeries.objects.get(
+            contract_symbol=ROOT_SYMBOL,
+            roll_days=ROLL_DAYS,
+            rollover_rule="DAYS_BEFORE_EXPIRY",
+            contract_index=CONTRACT_INDEX,
+            adjustment_method=ADJUSTMENT_METHOD,
+        )
+    except ContinuousFuturesSeries.DoesNotExist as exc:
+        raise RuntimeError(
+            f"No ContinuousFuturesSeries was found for {ROOT_SYMBOL}."
+        ) from exc
+
+    print(f"Series ID: {series.pk}")
+    print(f"Contract symbol: {series.contract_symbol}")
+    print(f"Roll days: {series.roll_days}")
+    print(f"Contract index: {series.contract_index}")
+    print(f"Adjustment method: {series.adjustment_method}")
+
+    return series
+
+def test_rollover_event_queue(ticker: str,
+                                start_date : datetime.date,
+                                end_date : datetime.date,) -> None:
+    """
+    Tests execute_rollover independently of the full backtest.
+
+    A long position of 5 contracts should create:
+
+        SELL 5 old contracts
+        BUY 5 new contracts
+    """
+    print("\n--- ROLLOVER EVENT QUEUE TEST ---")
+    ROOT_SYMBOL = ticker
+
+    START_DATE = start_date
+    END_DATE = end_date
+    events = Queue()
+
+    # execute_rollover does not use DataLoader if rollover prices are
+    # supplied directly, so None is sufficient for this isolated test.
+    execution = ExecutionLoader(
+        events=events,
+        data_loader=None,
+        commission=0.0,
+        slippage=0.0,
+    )
+
+    execution.execute_futures_roll(
+        ticker=ROOT_SYMBOL,
+        datetime=START_DATE,
+        from_contract="ESH25",
+        to_contract="ESM25",
+        from_price=6000.00,
+        to_price=6005.00,
+        quantity=5,
+        multiplier=50.0,
+    )
+
+    if events.qsize() != 2:
+        raise AssertionError(
+            f"Expected 2 rollover fills, but found {events.qsize()}."
+        )
+
+    close_fill = events.get()
+    open_fill = events.get()
+
+    print("Close fill:")
+    print(
+        f"  {close_fill.direction} "
+        f"{close_fill.quantity} "
+        f"at {close_fill.fill_cost}"
+    )
+
+    print("Open fill:")
+    print(
+        f"  {open_fill.direction} "
+        f"{open_fill.quantity} "
+        f"at {open_fill.fill_cost}"
+    )
+
+    assert close_fill.type == "FILL"
+    assert close_fill.direction == "SELL"
+    assert close_fill.quantity == 5
+    #assert close_fill.fill_cost == 6000.00
+
+    assert open_fill.type == "FILL"
+    assert open_fill.direction == "BUY"
+    assert open_fill.quantity == 5
+    #assert open_fill.fill_cost == 6005.00
+
+    print("Rollover event queue test passed.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

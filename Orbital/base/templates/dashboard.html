@@ -2,15 +2,11 @@
 {% load static %}
 
 {% block title %}
-    Dashboard
+    U.S. Stock Market
 {% endblock %}
 
 {% block content %}
-<link rel = 'stylesheet' href = "{% static 'base/css/variables.css' %}">
-<link rel = "stylesheet" href = "{% static 'base/css/dashboard.css' %}">
-<link rel = 'stylesheet' href = "{% static 'base/css/component.css' %}">
-<script src = "{% static 'base/js/dashboard.js' %}" defer></script>
-<script src = "{% static 'base/js/stock.js' %}" defer></script>
+
 <section class = "market-hero">
     <div class =  "page-container market-hero__inner">
         <div>
@@ -20,7 +16,7 @@
 
             <p class = "market-hero__description">
                 Heatmap for stocks
-            </p>
+            </p>    
         </div>
     </div>
 </section>
@@ -87,7 +83,7 @@
         </strong>
 
         <div class="summary-card">
-            <span class=""summary-label>
+            <span class="summary-label">
                 Available cash
             </span>
 
@@ -98,6 +94,20 @@
     </div>
 {% endif %}
 
+<section class = "portfolio-summary-section">
+    <div class = "section-heading">
+        <div>
+            <h2>Margin Account</h2>
+        </div>
+        <div class = "total-assests">
+            <h3>Total Assets . </h3>
+        </div>
+        <div class = "todays-pnl">
+            Today's PnL
+        </div>
+    </div>
+</section>
+
 <section class = "page-container heatmap-section">
     <div class = "section-heading">
         <div>
@@ -107,16 +117,25 @@
 
         <div class = "activity-values">
             <div class = "activity-value">
-                <h3>Top 5 in Share volume</h3>
+                <h3>                               
+                     <span
+                        class= "term-tip term-tip--left term-tip--below"
+                        tabindex= "0"
+                        data-tooltip= "Total number of shares traded the previous day"
+                    >
+                    Top 5 in Share volume
+                </span></h3>
                 <table class = "activity-table">
                     <thead>
                         <tr>
-                            <th>Rank</th>
+                            <th>
+                                Rank
+                            </th>
                             <th>Stock</th>
                             <th>Volume traded</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <body>
                         {% for stock in most_active_traded %}
                             <tr>
                                 <td>{{ forloop.counter }}</td>
@@ -128,11 +147,17 @@
                                 <td colspan = "3">No price data available</td>
                             </tr>
                         {% endfor %}
-                    </tbody>
+                    </body>
                 </table>
             </div>
             <div class = "activity-value">
-                <h3>Top 5 in Dollar Volume</h3>
+                <h3>
+                    <span
+                        class= "term-tip term-tip--left term-tip--below"
+                        tabindex= "0"
+                        data-tooltip= "Dollar volume is the total monetary value of shares traded in a security during a specific period. 
+                        It is calculated by multiplying the number of shares traded by the share price"
+                    >Top 5 in Dollar Volume</span></h3>
                 <table class = "activity-table">
                     <thead>
                         <tr>
@@ -211,12 +236,38 @@
             <table class = "stock-table">
                 <thead>
                     <tr>
-                        <th scope="col">Symbol</th>
+                        <th scope="col">
+                        <span
+                        class= "term-tip term-tip--left term-tip--below"
+                        tabindex= "0"
+                        data-tooltip= "A unique abbreviation used to identify a company"
+                    >
+                            Symbol</span></th>
                         <th scope="col">Company</th>
-                        <th scope="col" class="price-column">Price</th>
-                        <th scope="col" class="change-column">Change</th>
-                        <th scope="col" class="percentage-column">Percentage Change</th>
-                        <th scope="col" class="volume-column">Volume</th>
+                        <th scope="col" class="price-column">
+                        <span
+                        class= "term-tip term-tip--left term-tip--below"
+                        tabindex= "0"
+                        data-tooltip= "Price of the stock at the latest closing price"
+                        >Price</span></th>
+                        <th scope="col" class="change-column">
+                         <span
+                        class= "term-tip term-tip--left term-tip--below"
+                        tabindex= "0"
+                        data-tooltip= "Change in price from yesterdays closing price to todays closing price"
+                        >Change</span></th>
+                        <th scope="col" class="percentage-column">
+                        <span
+                        class= "term-tip term-tip--left term-tip--below"
+                        tabindex= "0"
+                        data-tooltip= "Change in price from yesterdays closing price to todays closing price as a percentage"
+                        >Percentage Change</span></th>
+                        <th scope="col" class="volume-column">
+                            <span
+                        class= "term-tip term-tip--left term-tip--below"
+                        tabindex= "0"
+                        data-tooltip= "Total volume traded during the latest market period"
+                        >Volume</span></th>
                     </tr>
                 </thead>
 
@@ -323,6 +374,128 @@
         {% endif %}
     </div>
 </section>
+
+<script>
+(() => {
+    const tooltip = document.createElement("div");
+    tooltip.className = "term-tip-floating";
+    tooltip.setAttribute("role", "tooltip");
+
+    document.body.appendChild(tooltip);
+    document.documentElement.classList.add("js-term-tooltips");
+
+    let activeTerm = null;
+    let hideTimeout = null;
+
+    function placeTooltip() {
+        if (!activeTerm) return;
+
+        const termRect = activeTerm.getBoundingClientRect();
+        const tipRect = tooltip.getBoundingClientRect();
+
+        const gap = 10;
+        const viewportPadding = 10;
+
+        let left = termRect.left + termRect.width / 2 - tipRect.width / 2;
+
+        left = Math.max(
+            viewportPadding,
+            Math.min(left, window.innerWidth - tipRect.width - viewportPadding)
+        );
+
+        let top = termRect.top - tipRect.height - gap;
+
+        // If there is no room above, show below the term
+        if (top < viewportPadding) {
+            top = termRect.bottom + gap;
+        }
+
+        // Keep it inside the viewport vertically
+        top = Math.max(
+            viewportPadding,
+            Math.min(top, window.innerHeight - tipRect.height - viewportPadding)
+        );
+
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+    }
+
+    function showTooltip(term) {
+        const text = term.getAttribute("data-tooltip");
+
+        if (!text) return;
+
+        clearTimeout(hideTimeout);
+
+        activeTerm = term;
+        tooltip.textContent = text;
+
+        placeTooltip();
+        tooltip.classList.add("is-visible");
+    }
+
+    function scheduleHideTooltip() {
+        clearTimeout(hideTimeout);
+
+        hideTimeout = setTimeout(() => {
+            activeTerm = null;
+            tooltip.classList.remove("is-visible");
+        }, 80);
+    }
+
+    document.addEventListener("mouseover", (event) => {
+        const term = event.target.closest(".term-tip");
+
+        if (term) {
+            showTooltip(term);
+        }
+    });
+
+    document.addEventListener("mouseout", (event) => {
+        const term = event.target.closest(".term-tip");
+
+        if (!term) return;
+
+        const nextTarget = event.relatedTarget;
+
+        if (!nextTarget || !term.contains(nextTarget)) {
+            scheduleHideTooltip();
+        }
+    });
+
+    document.addEventListener("focusin", (event) => {
+        const term = event.target.closest(".term-tip");
+
+        if (term) {
+            showTooltip(term);
+        }
+    });
+
+    document.addEventListener("focusout", (event) => {
+        const term = event.target.closest(".term-tip");
+
+        if (term) {
+            scheduleHideTooltip();
+        }
+    });
+
+    window.addEventListener(
+        "scroll",
+        () => {
+            if (activeTerm) {
+                placeTooltip();
+            }
+        },
+        { capture: true, passive: true }
+    );
+
+    window.addEventListener("resize", () => {
+        if (activeTerm) {
+            placeTooltip();
+        }
+    });
+})();
+</script>
 {% endblock %}
 
 

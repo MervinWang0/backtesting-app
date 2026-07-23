@@ -29,13 +29,39 @@ progress bar is a number representing the current progress
 
 {% endcomment %}
 
-<div class='progress-wrapper'>
+{% comment %} <div class='progress-wrapper'>
     <div class='loading-text'>Backtest Not Run</div>
     <div class='progress-container'>
         <div class='progress-bar'>0%</div>
     </div>
-</div>
+</div> {% endcomment %}
 {% comment %} --------------------------------------------- {% endcomment %}
+
+{% comment %} 
+This is the html for a datalist
+{% endcomment %}
+<span
+    class= "term-tip term-tip--left term-tip--above"
+    tabindex= "0"
+    data-tooltip= "Description">
+Title:
+</span>
+<input type="text" id="browser-choice" name="browser" list="browsers" placeholder="Type or select...">
+<datalist id="browsers">
+  <option value="Google Chrome"></option>
+  <option value="Mozilla Firefox"></option>
+  <option value="Microsoft Edge"></option>
+  <option value="Safari"></option>
+  <option value="Opera"></option>
+</datalist>
+
+
+
+
+
+
+
+
 
 </body>
 </html>

@@ -27,7 +27,7 @@
     {% comment %} At the top is a choose strategy row {% endcomment %}
     <div class='activity-value'>
         <label for="strategy">Choose a Strategy</label>
-        <select name="strategy" id="strategy_btn">
+        <select class="dropdown" name="strategy" id="strategy_btn">
             <option value="none">--Select--</option>
             <option value="Moving Average Crossover">Moving Average Crossover</option>
             <option value="Mean Reversion">Mean Reversion</option>
@@ -61,13 +61,19 @@
     style= "display:none;">
     {% comment %} Common input fields {% endcomment %}
         <div class='input-field activity-value' style="display:none;">
-                <span
-                        class= "term-tip term-tip--left term-tip--above"
-                        tabindex= "0"
-                        data-tooltip= "The type of the asset used for trading, common options include 
-                        stocks, currencies(forex), or futures and so on."
-                >Asset Type:</span>
-            <input type="text" placeholder="e.g. STOCK, FOREX" class="strategy_input" name="asset_type" id="asset_type">
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "Description">
+            Asset Tyoe:
+            </span>
+            <input type="text" id="asset_type" name="asset_type"
+            list="asset_types" placeholder="Type or select...">
+            <datalist id="asset_types">
+            <option value="STOCK"></option>
+            <option value="FUTURES"></option>
+            <option value="FOREX"></option>
+            </datalist>
         </div>
         <div class='input-field activity-value' style="display:none;">
                 <span
@@ -112,7 +118,7 @@
                         tabindex= "0"
                         data-tooltip= "Commission is an amount taken from each trade by the brokerage."
                 >Commission:</span>
-            <input type="number" placeholder="e.g. 0.01, a percentage of each trade" 
+            <input type="number" placeholder="e.g. 0.01" 
             class="strategy_input" name="commission" id="commission">
         </div>
         <div class='input-field activity-value' style="display:none;">
@@ -313,7 +319,12 @@
             <input type="number" placeholder="e.g. 21-30" class="strategy_input" 
             name="stoc_window" id="stoc_window">
         </div>
-
+        {% comment %} These are some parameters for futures
+        roll_days=ROLL_DAYS,
+        continuous_contract_index=CONTRACT_INDEX,
+        adjustment_method=ADJUSTMENT_METHOD,
+        {% endcomment %}
+    </div>
     {% comment %} flex-grid to store output fields {% endcomment %}
     <div class="container grid-container" id="output_container"
     style= "display:none;">

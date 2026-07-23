@@ -8,12 +8,12 @@
 
     <title>
         {% block title %}
-            Title
+            Penny Wise
         {% endblock %}
     </title>
 
     <nav class="navbar">
-        <a href="/" class="brand">
+        <a href="/dashboard" class="brand">
             <span class = "brand-icon">↗</span>
             PennyWise
         </a>
@@ -25,7 +25,14 @@
         </div>
 
     </nav>
-
+    <link
+        rel="stylesheet"
+        href="{% static 'base/css/component.css' %}"
+    >
+    <link
+        rel="stylesheet"
+        href="{% static 'base/css/variables.css' %}"
+    >
     <link
         rel="stylesheet"
         href="{% static 'base/css/navbar.css' %}"
@@ -34,6 +41,11 @@
     <link
         rel = "stylesheet"
         href = "{% static 'base/css/dashboard.css' %}"
+    >
+
+    <link
+    rel = "stylesheet"
+    href = "{% static 'base/css/stock.css' %}"
     >
 
     <script
@@ -45,8 +57,128 @@
         src = "{% static 'base/js/stock.js' %}"
         defer
     ></script>
-    <link rel = 'stylesheet' href = "{% static 'base/css/variables.css' %}">
-    <link rel = 'stylesheet' href = "{% static 'base/css/component.css' %}">
+
+    <script>
+        (() => {
+            const tooltip = document.createElement("div");
+            tooltip.className = "term-tip-floating";
+            tooltip.setAttribute("role", "tooltip");
+
+            document.body.appendChild(tooltip);
+            document.documentElement.classList.add("js-term-tooltips");
+
+            let activeTerm = null;
+            let hideTimeout = null;
+
+            function placeTooltip() {
+                if (!activeTerm) return;
+
+                const termRect = activeTerm.getBoundingClientRect();
+                const tipRect = tooltip.getBoundingClientRect();
+
+                const gap = 10;
+                const viewportPadding = 10;
+
+                let left = termRect.left + termRect.width / 2 - tipRect.width / 2;
+
+                left = Math.max(
+                    viewportPadding,
+                    Math.min(left, window.innerWidth - tipRect.width - viewportPadding)
+                );
+
+                let top = termRect.top - tipRect.height - gap;
+
+                // If there is no room above, show below the term
+                if (top < viewportPadding) {
+                    top = termRect.bottom + gap;
+                }
+
+                // Keep it inside the viewport vertically
+                top = Math.max(
+                    viewportPadding,
+                    Math.min(top, window.innerHeight - tipRect.height - viewportPadding)
+                );
+
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`;
+            }
+
+            function showTooltip(term) {
+                const text = term.getAttribute("data-tooltip");
+
+                if (!text) return;
+
+                clearTimeout(hideTimeout);
+
+                activeTerm = term;
+                tooltip.textContent = text;
+
+                placeTooltip();
+                tooltip.classList.add("is-visible");
+            }
+
+            function scheduleHideTooltip() {
+                clearTimeout(hideTimeout);
+
+                hideTimeout = setTimeout(() => {
+                    activeTerm = null;
+                    tooltip.classList.remove("is-visible");
+                }, 80);
+            }
+
+            document.addEventListener("mouseover", (event) => {
+                const term = event.target.closest(".term-tip");
+
+                if (term) {
+                    showTooltip(term);
+                }
+            });
+
+            document.addEventListener("mouseout", (event) => {
+                const term = event.target.closest(".term-tip");
+
+                if (!term) return;
+
+                const nextTarget = event.relatedTarget;
+
+                if (!nextTarget || !term.contains(nextTarget)) {
+                    scheduleHideTooltip();
+                }
+            });
+
+            document.addEventListener("focusin", (event) => {
+                const term = event.target.closest(".term-tip");
+
+                if (term) {
+                    showTooltip(term);
+                }
+            });
+
+            document.addEventListener("focusout", (event) => {
+                const term = event.target.closest(".term-tip");
+
+                if (term) {
+                    scheduleHideTooltip();
+                }
+            });
+
+            window.addEventListener(
+                "scroll",
+                () => {
+                    if (activeTerm) {
+                        placeTooltip();
+                    }
+                },
+                { capture: true, passive: true }
+            );
+
+            window.addEventListener("resize", () => {
+                if (activeTerm) {
+                    placeTooltip();
+                }
+            });
+        })();
+    </script>
 </head>
 
 <body>

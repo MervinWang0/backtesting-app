@@ -225,6 +225,8 @@ def run_futures_backtest():
         start_date=START_DATE,
         end_date=END_DATE,
         strategy_name="MACD",
+        macd_short_window=9,
+        macd_long_window=28,
         strength=1.0,
         slippage=0.0,
         initial_capital=100_000.0,

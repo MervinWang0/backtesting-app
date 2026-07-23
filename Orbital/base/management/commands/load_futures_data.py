@@ -15,10 +15,26 @@ class Command(BaseCommand):
     }
 
     DEFAULT_FUTURES = {
-        "ES=F": {"root_symbol": "ES"},
-        #"MES=F": {"root_symbol": "MES"},
-        # "CL=F" :{"root_symbol": "CL"},
-    }
+    "ES=F":  {"root_symbol": "ES"},
+    "MES=F": {"root_symbol": "MES"},
+    "NQ=F":  {"root_symbol": "NQ"},
+    "MNQ=F": {"root_symbol": "MNQ"},
+    "YM=F":  {"root_symbol": "YM"},
+    "MYM=F": {"root_symbol": "MYM"},
+    "RTY=F": {"root_symbol": "RTY"},
+    "M2K=F": {"root_symbol": "M2K"},
+    "CL=F":  {"root_symbol": "CL"},
+    "MCL=F": {"root_symbol": "MCL"},
+    "NG=F":  {"root_symbol": "NG"},
+    "GC=F":  {"root_symbol": "GC"},
+    "MGC=F": {"root_symbol": "MGC"},
+    "SI=F":  {"root_symbol": "SI"},
+    "SIL=F": {"root_symbol": "SIL"},
+    "ZB=F":  {"root_symbol": "ZB"},
+    "ZN=F":  {"root_symbol": "ZN"},
+    "ZF=F":  {"root_symbol": "ZF"},
+    "ZT=F":  {"root_symbol": "ZT"},
+}
 
     FUTURES_MULTIPLIERS = {
         "ES": 50.0, "MES": 5.0, "NQ": 20.0, "MNQ": 2.0,

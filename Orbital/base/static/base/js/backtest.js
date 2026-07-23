@@ -94,6 +94,9 @@ const rate_of_change = [...common_parameters, roc_window];
 const stoch_osc = [...common_parameters, stoc_window];
 // Get the element that serves as a container for inputs to hide/show
 const input_container = document.getElementById("input_container")
+
+// param list is a list of ids (not elements), each corresponding
+// to an input eleemnent
 function get_param_list(){
     let temp_param_list = [];
     // console.log(`This is the chosen strategy id ${chosen_strategy_id} `)
@@ -127,17 +130,28 @@ function get_param_list(){
     return temp_param_list
 }
 
+// Just a simple function that displays the output grid
+function show_output() {
+        // divs stores the output fields
+        const output_container_div = document.getElementById("output_container");
+        output_container_div.style.display = "";
+}
+
+// Sets output fields to 0
+function clear_output() {
+    // Gets the output div, selects their fields and turns in para's html to blank
+    const output_div = document.getElementById("output_container");
+    const output_field_divs = output_div.querySelectorAll(".output-field");
+    for(const output_field of output_field_divs) {
+        const para = output_field.querySelector("p");
+        para.innerHTML = "";
+    }
+}
 // Hides the outputs
 function hide_output() {
         // divs stores the output fields
         const output_container_div = document.getElementById("output_container");
         output_container_div.style.display = "none";
-        // const divs = output_container_div.querySelectorAll(".output-field");
-
-        // // Make each div invisible
-        // for(const div of divs) {
-        //     div.style.display = "none";
-        // }
 }
 
 function clear_input() {
@@ -207,8 +221,7 @@ function change_strategy(){
 
 // Runs backtest when run button is clicked and input passed
 function run_backtest(){
-    upgrade_progress(); // Sets initial state of progress bar
-    // Only show the bar after run backtest is clicked
+    clear_output();
     progress_bar_div.style.display = "";
     if (!validate()) {
         state = "Error"
@@ -216,6 +229,7 @@ function run_backtest(){
         progress_bar_div.style.display = "none";
         return;}
     else {
+    upgrade_progress(); // Sets initial state of progress bar
      // TODO create function for initializing clear state
     // state has to be reset in the case of multiple backtest runs occuring
     state = "Backtest Not Run";
@@ -256,17 +270,19 @@ const is_visible = (input) => input.closest("div").style.display == ""
 }
 
 // clean_params is used to pass data to fetch requests
-function clean_params(input_array) {
+function clean_params() {
     // console.log("Cleaning params")
     // CLean the params
     const cleaned_params = {};
 
     // Ticker list is to handle situation of multiple tickers
     const ticker_lst = [];
-    for(const input of strategy_params) {
-        // console.log(`This is input name ${input.name}`)
-        // console.log(`This is input value ${input.value}`)
-        // console.log(`This is input id ${input.id}`)
+    for(const input_id of param_list) {
+        const input = document.getElementById(input_id);
+        console.log(`This is input name ${input.name}`)
+        console.log(`This is input value ${input.value}`)
+        console.log(`This is input id ${input.id}`)
+        // For handling ticker1, ticker2...
         if (input.name.includes("ticker")){
             ticker_lst.push(input.value);
         }
@@ -282,6 +298,8 @@ function clean_params(input_array) {
     // Name is not taken as input so it has to be taken from button 
     cleaned_params['strategy_name'] = chosen_strategy_id;
     // console.log(`Cleaned params ${cleaned_params}`)
+    console.log(`This is the cleaned params to be passed to be 
+        used in fetch ${JSON.stringify(cleaned_params)}`)
     return cleaned_params
 }
 
@@ -293,7 +311,7 @@ function graph_backtest() {
     // Set state, rather unnecessary as it's so fast it's not visible TBD if remove
     state = "Cleaning Parameters";
 
-    cleaned_params = clean_params(strategy_params);
+    cleaned_params = clean_params();
     // Testing
     // alert(`These are the cleaned parameters to be passed ${cleaned_params}`)
     // console.log(cleaned_params)
@@ -414,10 +432,12 @@ function upgrade_progress() {
             progress_bar.style.animation = "none";
             break;
         case "Error":
+            hide_output();
             width = 0;
             progress_bar.style.background= "red"
             break;
         default:
+            hide_output();
             state = "Error"
             width = 0;
             progress_bar.style.background = "red"
@@ -434,11 +454,7 @@ function upgrade_progress() {
     setTimeout(upgrade_progress, 50);
 }
 
-// Just a simple function that displays the output grid
-function show_output() {
-    let output_container = document.getElementById("output_container");
-    output_container.style.display = "";
-}
+
 
 // Sets the various parameters with some random input
 function quicktest(param_list) {

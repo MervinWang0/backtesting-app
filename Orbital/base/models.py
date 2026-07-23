@@ -136,7 +136,8 @@ class ContinuousFuturesSeries(models.Model):
     rollover_rule = models.CharField(max_length=30, choices=RollOverRule.choices, default=RollOverRule.DAYS_BEFORE_EXPIRY)
     roll_days = models.PositiveSmallIntegerField(default=5)
 
-    adjustment_method = models.CharField(max_length=30, choices = AdjustmentMethod.choices, default=AdjustmentMethod.BACK_ADJUSTED)
+    adjustment_method = models.CharField(max_length=30, choices = AdjustmentMethod.choices, default=AdjustmentMethod.BACK_ADJUSTED,
+                                         null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now = True)

@@ -87,6 +87,8 @@ class BacktestResult:
     # @timed
     def __init__(self, equity_records: dict[datetime.date, dict[str, any]], fill_records: list[dict[str, any]],
                  risk_free_rate: float):
+        # if len(fill_records) == 0:
+        #     raise ValueError("fill records are empty. No trades executed and metrics not obtainable")
         data_frame = pd.DataFrame(equity_records.values())
         data_frame = data_frame.sort_values(by="date")
         self.equity_records = data_frame
@@ -129,17 +131,24 @@ class BacktestResult:
         Returns the closed trades
         '''
         df = pd.DataFrame(self.get_trade_log()[1])
+        if df.empty:
+            return df
         df["pnl"] = (df['sell_price'] - df['buy_price']) * df['quantity']
         return df
 
     @timed
     def get_metrics(self):
         '''
-        Returns various performance and portfolio metrics
+        Returns various performance and portfolio metrics.
+
+        Returns None if no trades were conducted
         '''
+        trade_log = self.get_closed_trades()
+        print("This is the trade log generated")
+        print(f"\n{trade_log}")
         return p.get_metrics(equity_record=self.equity_records,
                              risk_free_rate=self.risk_free_rate,
-                             trade_log=self.get_closed_trades())
+                             trade_log=trade_log)
 
 class Backtest:
     @timed
