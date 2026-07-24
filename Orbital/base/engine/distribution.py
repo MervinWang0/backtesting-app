@@ -47,7 +47,7 @@ class Distribution():
 
     '''
 
-    def __init__(self, data: list[float] | np.array):
+    def __init__(self, data):
         if isinstance(data, np.ndarray):
             self.data = data
         elif isinstance(data, list):
@@ -107,7 +107,7 @@ class Distribution():
         result.update({"90th Percentile" : self.ppf(90)})
         return result
 
-    def distribution_graph(self) -> px.Figure:
+    def distribution_graph(self):
         df = pd.DataFrame(self.data)
         return px.histogram(df)
 if __name__ == "__main__":

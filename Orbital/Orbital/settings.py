@@ -10,12 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
-import dj_database_url
-from dotenv import load_dotenv
 from pathlib import Path
 
 # Loads environemnt variables
-load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -89,21 +87,16 @@ def get_secret(secret_name, default="password"):
     return default
 
 DATABASES = {
-    # This is the setting for remote db
-    # 'default' : dj_database_url.config(
-    #     default=os.environ.get("DATABASE_URL"))
-    
-
-        # Old native way of setting database params
-        'default' : {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'Stock_price_db'),
-            'USER': os.environ.get('DB_USER', 'postgres'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'password'),
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
-        }
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "New_Stock_Price",
+        "USER": "postgres",
+        "PASSWORD": "1",
+        "HOST": "localhost",
+        "PORT": "5432",
+    }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

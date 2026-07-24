@@ -15,6 +15,7 @@ from base.models import (StockPriceHistory, FuturesPriceHistory,
                          ForexPriceHistory, ContinuousFuturesPriceHistory)
 from dataclasses import dataclass
 from datetime import datetime, timedelta, date
+import datetime
 from queue import Queue
 from abc import ABC, abstractmethod
 from typing import Optional
@@ -148,7 +149,7 @@ class DataLoader(ABC):
         '''
 
     @staticmethod
-    def date_to_datetime(date: datetime.date) -> datetime.datetime:
+    def date_to_datetime(date: datetime.date) -> datetime:
         return datetime.combine(date, datetime.min.time())
 
     def load_forex_data(self, forex_pair_code: str) -> list[Bar]:

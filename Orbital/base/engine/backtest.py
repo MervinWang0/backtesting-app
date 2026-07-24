@@ -102,7 +102,7 @@ class BacktestResult:
         '''
         return self.equity_records['equity'].iloc[-1]
 
-    def get_equity_graph(self) -> px.Figure:
+    def get_equity_graph(self):
         '''
         Returns the equity graph of a backtest run
         '''

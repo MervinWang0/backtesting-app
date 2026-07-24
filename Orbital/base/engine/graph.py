@@ -19,6 +19,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from functools import wraps
 from time import time
+from base.models import BacktestRun, BenchmarkRecord, StockPriceHistory
 
 def timed(f):
     '''
@@ -37,7 +38,7 @@ def timed(f):
         return result
     return wrapper
 
-def get_equity_graph(equity_record: pd.DataFrame) -> px.Figure:
+def get_equity_graph(equity_record: pd.DataFrame):
     '''
     This function takes in a DataFrame with the columns of
     "date"
@@ -48,7 +49,7 @@ def get_equity_graph(equity_record: pd.DataFrame) -> px.Figure:
     fig = px.line(data_frame=equity_record, x="date", y="equity")
     return fig
 
-def get_stock_graph(stock_data: list[Bar]) -> px.Figure:
+def get_stock_graph(stock_data: list[Bar]):
     '''
     Returns a figure that stores OHLC data.
     '''
@@ -71,7 +72,7 @@ def get_stock_graph(stock_data: list[Bar]) -> px.Figure:
     return fig
 
 @timed
-def get_monte_graph(btr_lst: list[BacktestResult]) -> px.Figure:
+def get_monte_graph(btr_lst):
     '''
     This function takes in a list of backtest results, basically the ouput of MCS simulate,
     and plots their equity graphs
@@ -86,7 +87,7 @@ def get_monte_graph(btr_lst: list[BacktestResult]) -> px.Figure:
     og_fig.data[0].line.color = "black"
     return og_fig
 
-def show_price_graphs(prices: list[list[float]]) -> px.Figure:
+def show_price_graphs(prices: list[list[float]]):
     df = pd.DataFrame(prices).T
     # print(df)
     df = df.rename(columns={i: 'OG' if i == 0 else f"Sim {i}" for i in range(len(df))})

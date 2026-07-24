@@ -84,7 +84,7 @@ PARAM_RANGES = {
     "stoc_window": lambda: random.randint(10, 21),
 }
 
-def get_rand(case: str) -> int | float | datetime.date | str:
+def get_rand(case: str):
     '''
     Matches each id and returns a random value suitable for that id
     '''
