@@ -20,7 +20,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--period',
             type=str,
-            default='1mo',
+            default='1d',
             help='Specify historical period(eg, 1y, 6mo)'
         )
         parser.add_argument(
