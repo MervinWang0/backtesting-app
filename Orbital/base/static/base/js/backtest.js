@@ -33,6 +33,16 @@ const donchian_window = "donchian_window";
 const roc_window = "roc_window";
 const stoc_window = "stoc_window";
 
+// Initialize the lists for tickers of various asset types
+let stock_tickers = get_SP_500_tickers();
+let futures_tickers = get_futures_tickers();
+let forex_tickers = get_forex_tickers();
+
+// These don't print correctly due to async functions
+// console.log(`This is the tickers of stocks ${stock_tickers}`)
+// console.log(`This is the tickers of futures ${futures_tickers}`)
+// console.log(`This is the tickers of forex ${forex_tickers}`)
+
 // This defines some buttons that call functions
 const strategy_btn = document.getElementById("strategy_btn")
 const run_backtest_btn = document.getElementById("run_backtest_btn")
@@ -130,6 +140,13 @@ function get_param_list(){
     return temp_param_list
 }
 
+// Different asset types have different tickers, This function should
+// run whenever the asset type is changed, 
+function update_ticker_list() {
+    const asset_type_input = document.getElementById("asset_type")
+
+    asset_type_input.setAttribute("list", new_list_id)
+}
 // Just a simple function that displays the output grid
 function show_output() {
         // divs stores the output fields
@@ -483,4 +500,65 @@ function quicktest(param_list) {
             }
 
         })
+}
+
+
+// Function to fetch stock ticker list
+function get_SP_500_tickers() {
+    let result = [];
+    fetch("/get_SP500/", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+    })
+    // Turns string into JS object
+    .then(response => response.json())
+
+    // Operate on the JS data, basically a dictonary
+    .then(data => {
+        result = data["tickers"];
+    })
+    return result;
+}
+// Function to fetch stock ticker list
+function get_futures_tickers() {
+    let result = [];
+    fetch("/get_futures_tickers/", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+    })
+    // Turns string into JS object
+    .then(response => response.json())
+
+    // Operate on the JS data, basically a dictonary
+    .then(data => {
+        result = data["tickers"];
+    })
+    return result
+}
+
+// Function to fetch stock ticker list
+function get_forex_tickers() {
+    let result = [];
+    fetch("/get_forex_tickers/", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+    })
+    // Turns string into JS object
+    .then(response => response.json())
+
+    // Operate on the JS data, basically a dictonary
+    .then(data => {
+        console.log(`This is the data of forex ${JSON.stringify(data)}`)
+        result = data['tickers'];
+    })
+    return result;
 }

@@ -25,6 +25,9 @@ urlpatterns = [
     # Urls for fetch calls
     path("backtest_graph/", views.backtest_graph, name="backtest_graph"),
     path("get_quicktest_input/", views.get_quicktest_input, name="get_quicktest_input"),
+    path("get_SP500/", views.get_SP500, name="get_SP500"),
+    path("get_futures_tickers/", views.get_futures_tickers, name="get_futures_tickers"),
+    path("get_forex_tickers/", views.get_forex_tickers, name="get_forex_tickers"),
     
     # #Market data
     # path("stock_list/", views.stock_list, name = "stock_list"),

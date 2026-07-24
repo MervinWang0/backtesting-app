@@ -9,7 +9,7 @@ from base.engine.data_loader import DatabaseDataLoader
 from base.engine.backtest import Backtest
 from base.engine.execution import ExecutionLoader
 from base.models import (StockPriceHistory, Stock,
-ContinuousFuturesSeries)
+ContinuousFuturesSeries, FuturesContract, ForexPair)
 from django.core.management import call_command
 import re 
 
@@ -21,7 +21,7 @@ def get_backtest(request) -> HttpResponse:
 
     return render(request, "backtest.html", backtest)
 
-def backtest_graph(request) -> HttpResponse:
+def backtest_graph(request) -> JsonResponse:
     '''
     This function takes in a list of inputs, runs a backtest and 
     plots the equity curve of the backtest
@@ -156,6 +156,37 @@ def get_yf_period(start_date, end_date):
     else:
         return "max"
 
+
+# Functions for obtaining S&P 500 ticker list
+def get_SP500(request) -> JsonResponse:
+    ''' 
+    This is used in backtest.js to get a list of SP500 tickers from the db
+    '''
+    tickers = list(Stock.objects.values_list('ticker', flat=True))
+    print("These are the SP 500 tickers to be passed to JS")
+    print(f"\n{tickers}")
+    print(f"\nThis is the length of the tickers {len(tickers)}")
+    return JsonResponse({"tickers" : tickers})
+
+def get_futures_tickers(request) -> JsonResponse:
+    ''' 
+    This is used in backtest.js to get a list of futures tickers from the db
+    '''
+    tickers = list(set(FuturesContract.objects.values_list('root_symbol', flat=True)))
+    print("These are the futures tickers to be passed to JS")
+    print(f"\n{tickers}")
+    print(f"\nThis is the length of the tickers {len(tickers)}")
+    return JsonResponse({"tickers" : tickers})
+
+def get_forex_tickers(request) -> JsonResponse:
+    ''' 
+    This is used in backtest.js to get a list of forex tickers from the db
+    '''
+    tickers = list(set(ForexPair.objects.values_list('ticker', flat=True)))
+    print("These are the forex tickers to be passed to JS")
+    print(f"\n{tickers}")
+    print(f"\nThis is the length of the tickers {len(tickers)}")
+    return JsonResponse({"tickers" : tickers})
 
 # Functions for handling Futures backtest
 def create_series_configuration(ticker: str,
