@@ -67,7 +67,7 @@ PARAM_RANGES = {
     "strength": lambda: random.uniform(0, 1),
     "slippage": lambda: random.uniform(0, 0.05),
     "initial_capital": lambda: random.uniform(50000, 250000),
-    "start_date": lambda: (datetime(2023, 1, 1) + timedelta(days=random.randint(1, 364))).date(),
+    "start_date": lambda: (datetime(2023, 1, 1) + timedelta(days=random.randint(1, 200))).date(),
     "end_date": lambda: (datetime(2024, 1, 1) + timedelta(days=random.randint(1, 365))).date(),
     "commission": lambda: random.uniform(0.001, 0.01),
 

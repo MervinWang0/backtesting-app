@@ -397,6 +397,7 @@ function clean_params() {
 // It then receives the data, and graphs it 
 // TBD split metric cleaning? It may be too long
 function graph_backtest() {
+    graph_clear();
     // Set state, rather unnecessary as it's so fast it's not visible TBD if remove
     state = "Cleaning Parameters";
 
