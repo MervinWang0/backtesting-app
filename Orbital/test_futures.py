@@ -32,9 +32,9 @@ from base.engine.data_loader import DatabaseDataLoader
 # Test configuration
 # ---------------------------------------------------------------------
 
-ROOT_SYMBOL = "ES"
+ROOT_SYMBOL = "M2K"
 
-START_DATE = date(2023, 1, 1)
+START_DATE = date(2020, 1, 1)
 END_DATE = date(2025, 12, 31)
 
 ROLL_DAYS = 5
@@ -131,7 +131,7 @@ def test_rollover_event_queue() -> None:
         SELL 5 old contracts
         BUY 5 new contracts
     """
-    print("\n--- ROLLOVER EVENT QUEUE TEST ---")
+    # print("\n--- ROLLOVER EVENT QUEUE TEST ---")
 
     events = Queue()
 
@@ -256,10 +256,10 @@ def run_futures_backtest():
         spread = to_price - from_price
         expected_adjustment = -spread * multiplier * quantity 
         
-        print("\n--- ROLLOVER DIAGNOSTICS ---")
-        print(f"Rolling {quantity} contracts: {kwargs.get('from_contract')} -> {kwargs.get('to_contract')}")
-        print(f"Prices: {from_price} -> {to_price} (Spread: {spread} points)")
-        print(f"Expected Cash Adjustment for this roll: ${expected_adjustment:,.2f}")
+        # print("\n--- ROLLOVER DIAGNOSTICS ---")
+        # print(f"Rolling {quantity} contracts: {kwargs.get('from_contract')} -> {kwargs.get('to_contract')}")
+        # print(f"Prices: {from_price} -> {to_price} (Spread: {spread} points)")
+        # print(f"Expected Cash Adjustment for this roll: ${expected_adjustment:,.2f}")
         
         # 2. Check your leverage
         # (You will need to pass current_equity into this function or calculate it here)
@@ -274,9 +274,9 @@ def run_futures_backtest():
     result = backtest.run()
     # result.get_equity_graph().show()
 
-    print("\n--- BACKTEST RESULT ---")
-    print("Backtest completed successfully.")
-    print(f"Rollover executions: {len(rollover_calls)}")
+    # print("\n--- BACKTEST RESULT ---")
+    # print("Backtest completed successfully.")
+    # print(f"Rollover executions: {len(rollover_calls)}")
 
     if not rollover_calls:
         print(

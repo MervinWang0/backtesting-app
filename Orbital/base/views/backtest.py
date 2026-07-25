@@ -75,23 +75,24 @@ def backtest_graph(request) -> JsonResponse:
         # For Futures, there is a step of stiching the contracts before the
         # This can be done in backtest itself not here
         # backtest can be run.
-        # elif data["asset_type"] == "FUTURES":
-        #     data["roll_days"] = 5
-        #     data["continuous_contract_index"] = 1
-        #     data["adjustment_method"] = "NONE"
-        #     for i, ticker in enumerate(data['tickers']):
-        #         create_series_configuration(ticker=data['tickers'][i],
-        #                                     start_date=data['start_date'],
-        #                                     end_date=data['end_date'])
-        #         build_continuous_futures_series(ticker=data['tickers'][i],
-        #                                         start_date=data['start_date'],
-        #                                         end_date=data['end_date'])
-        #         check_continuous_series(ticker=data['tickers'][i],
-        #                                         start_date=data['start_date'],
-        #                                         end_date=data['end_date'])
-        #         test_rollover_event_queue(ticker=data['tickers'][i],
-        #                                         start_date=data['start_date'],
-        #                                         end_date=data['end_date'])
+        # TODO Move this to backtest
+        if data["asset_type"] == "FUTURES":
+            data["roll_days"] = 5
+            data["continuous_contract_index"] = 1
+            data["adjustment_method"] = "NONE"
+            for i, ticker in enumerate(data['tickers']):
+                create_series_configuration(ticker=data['tickers'][i],
+                                            start_date=data['start_date'],
+                                            end_date=data['end_date'])
+                build_continuous_futures_series(ticker=data['tickers'][i],
+                                                start_date=data['start_date'],
+                                                end_date=data['end_date'])
+                check_continuous_series(ticker=data['tickers'][i],
+                                                start_date=data['start_date'],
+                                                end_date=data['end_date'])
+                test_rollover_event_queue(ticker=data['tickers'][i],
+                                                start_date=data['start_date'],
+                                                end_date=data['end_date'])
 
         # elif data["asset_type"] == "FOREX": TODO
         
@@ -112,7 +113,8 @@ def backtest_graph(request) -> JsonResponse:
                             )
         print("These are the attributes of the backtest obj"
               "In the original backtest webpage")
-        print(backtest.__dict__)
+        # print(backtest.__dict__)
+        print(f"This is the number of days of data needed")
         print("Backtest created")
         btr = backtest.run()
         print("Backtest executed")
@@ -174,9 +176,9 @@ def get_SP500(request) -> JsonResponse:
     This is used in backtest.js to get a list of SP500 tickers from the db
     '''
     tickers = list(Stock.objects.values_list('ticker', flat=True))
-    print("These are the SP 500 tickers to be passed to JS")
-    print(f"\n{tickers}")
-    print(f"\nThis is the length of the tickers {len(tickers)}")
+    # print("These are the SP 500 tickers to be passed to JS")
+    # print(f"\n{tickers}")
+    # print(f"\nThis is the length of the tickers {len(tickers)}")
     return JsonResponse({"tickers" : tickers})
 
 def get_futures_tickers(request) -> JsonResponse:
@@ -184,9 +186,9 @@ def get_futures_tickers(request) -> JsonResponse:
     This is used in backtest.js to get a list of futures tickers from the db
     '''
     tickers = list(set(FuturesContract.objects.values_list('root_symbol', flat=True)))
-    print("These are the futures tickers to be passed to JS")
-    print(f"\n{tickers}")
-    print(f"\nThis is the length of the tickers {len(tickers)}")
+    # print("These are the futures tickers to be passed to JS")
+    # print(f"\n{tickers}")
+    # print(f"\nThis is the length of the tickers {len(tickers)}")
     return JsonResponse({"tickers" : tickers})
 
 def get_forex_tickers(request) -> JsonResponse:
@@ -194,9 +196,9 @@ def get_forex_tickers(request) -> JsonResponse:
     This is used in backtest.js to get a list of forex tickers from the db
     '''
     tickers = list(set(ForexPair.objects.values_list('ticker', flat=True)))
-    print("These are the forex tickers to be passed to JS")
-    print(f"\n{tickers}")
-    print(f"\nThis is the length of the tickers {len(tickers)}")
+    # print("These are the forex tickers to be passed to JS")
+    # print(f"\n{tickers}")
+    # print(f"\nThis is the length of the tickers {len(tickers)}")
     return JsonResponse({"tickers" : tickers})
 
 # Functions for handling Futures backtest

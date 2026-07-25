@@ -139,6 +139,14 @@ class DataLoader(ABC):
         #Tracks if end_date is reached
         self.continue_bt = True
 
+        # Creates currency conversion data, for any FOREX data, 
+        # TODO make it work for only necessary tickers, that need the converters
+        if self.asset_type == "FOREX":
+            # There are three tickers that do not use USD and need converters to USD
+            # GBPJPY=X, EURGBP=X, EURJPY=X. The converters are GBPUSD=X, USDJPY=X
+            self.currency_conversion_tickers: dict[str: list[Bar]] = {}
+            self.currency_conversion_tickers["GBPUSD=X"] = self.load_forex_data("GBPUSD=X")
+            self.currency_conversion_tickers["USDJPY=X"] = self.load_forex_data("USDJPY=X")
         self.load_data()
 
     @abstractmethod
@@ -157,7 +165,8 @@ class DataLoader(ABC):
                 .select_related("pair")
                 .order_by("timestamp")
                 .values("pair__ticker", "pair__base_currency","pair__quote_currency", "timestamp", "open_price", "high_price", "low_price", "close_price", "volume"))
-        
+        # print(f"These are the rows of forex data loaded {rows}")
+        # print(f"This is the length of forex data loaded {len(rows)}")
         for record in rows:
             bars_date = self.date_to_datetime(record["timestamp"])
             bars.append(Bar(
@@ -264,11 +273,38 @@ class DataLoader(ABC):
         if market_event_needed:      
             self.events.put(MarketEvent(datetime=self.curr_datetime))
 
+    def get_current_conversion_value(self, ticker: str, value_type: str) -> float:
+        '''
+        This function is created to be used in porfolio's convert_currency.
+
+        In the case of the ticker containing USD, it behaves the same as
+        self.get_current_bar_value
+
+        But in the case of the forex ticker not containing USD, it provides the
+        close price to convert to USD.
+        '''
+        # Tries to get the value of the ticker but if it is not present search conversion 
+        try:
+            return self.get_current_bar_value(ticker=ticker,
+                                       value_type=value_type)
+        except ValueError:
+            latest_bar = self.currency_conversion_tickers[ticker][self.curr_index]
+            if latest_bar.date != self.get_current_datetime():
+                raise ValueError("--------------------------------------------\n"
+                "Error in get current conversion value of data_loader\n"
+                f"date of bar for currency conversion = {latest_bar.date}\n"
+                f"date of dataloader currently = {self.get_current_datetime()}\n"
+                                "--------------------------------------------\n")
+            if not hasattr(latest_bar, value_type):
+                raise ValueError(f"Invalid value type: {value_type}."
+                                f" Must be one of 'open', 'high', 'low', 'close', 'volume'.")
+            return getattr(latest_bar, value_type)
 
     def get_current_bar(self, ticker: str) -> Bar:
         '''
         Returns the current bar
         '''
+        # print(f"This is the latest stock data {self.latest_stock_data}")
         if ticker not in self.latest_stock_data or not self.latest_stock_data[ticker]:
             raise ValueError(f"No data available for ticker: {ticker} at the current time index.")
         return self.latest_stock_data[ticker][-1]
@@ -395,12 +431,21 @@ class MCSDataLoader(DataLoader):
         '''
         #track which date has already been visited
         date_times_visited = set()
-
+        
+        # Additional tickers need to be loaded for forex for conversion to USD
+        # Since USD is used to represent the equity of the account
+        # necessary_tickers = ["EURUSD=X", "USDJPY=X"]
+        # for ticker in necessary_tickers:
+        #     if ticker not in self.tickers:
+        #         self.tickers.append(ticker)
+        
         for ticker in self.tickers:
             if self.asset_type == "STOCK":
                 main_bar = self.load_stock_data(ticker)
             elif self.asset_type == "FUTURES":
                 main_bar = self.load_futures_data(ticker)
+            elif self.asset_type == "FOREX":
+                main_bar = self.load_forex_data(ticker)
             else:
                 raise ValueError(f"Unsupported asset type: {self.asset_type}")
             

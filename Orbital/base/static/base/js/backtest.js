@@ -57,6 +57,8 @@ const view_mcs_btn = document.getElementById("view_mcs_btn")
 const quicktest_btn = document.getElementById("quicktest_btn")
 const asset_type_input = document.getElementById("asset_type")
 
+const dev_btn = document.getElementById("dev_btn");
+
 // divs serving as containers
 const progress_bar_div = document.getElementById("progress_bar_container")
 
@@ -70,7 +72,7 @@ run_backtest_btn.addEventListener("click", run_backtest);
 run_backtest_btn.addEventListener("click", show_output);
 view_mcs_btn.addEventListener("click", view_mcs);
 quicktest_btn.addEventListener("click", () => quicktest(param_list));
-
+dev_btn.addEventListener("click", () => quicktest_repeated_number(5))
 // Add event for asset type input
 asset_type_input.addEventListener('input', update_ticker_list);
 
@@ -116,6 +118,21 @@ const stoch_osc = [...common_parameters, stoc_window];
 // Get the element that serves as a container for inputs to hide/show
 const input_container = document.getElementById("input_container");
 
+
+// Generates and runs the backtest number times
+async function quicktest_repeated_number(number) {
+    for(let i = 0; i < number; i ++) {
+        try {
+            await quicktest(get_param_list());
+            await run_backtest();
+            console.log(`${i}th backtest ran without problems`)
+        }
+        catch {
+            console.log(`${i} randomized backtests ran before encountering an error`)
+            return;
+        }
+    }
+}
 // param list is a list of ids (not elements), each corresponding
 // to an input eleemnent
 function get_param_list(){
@@ -549,10 +566,10 @@ function upgrade_progress() {
 
 
 // Sets the various parameters with some random input
-function quicktest(param_list) {
+async function quicktest(param_list) {
     reset();
     // Pass param list to a view function and expect a list of values to update input with
-    fetch("/get_quicktest_input/", {
+    const response = await fetch("/get_quicktest_input/", {
         method: "POST",
         headers: {
             'Content-Type': 'application/json',
@@ -560,21 +577,12 @@ function quicktest(param_list) {
         },
         body: JSON.stringify(param_list)
     })
-
- 
-    // Parse data
-   .then(response => response.json())
-
-    // Operate on the JS data, basically a dictonary
-    .then(data => 
-        {
-        for(const input_id of param_list)
+    const data = await response.json();
+    for(const input_id of param_list)
             {
             html_input = document.getElementById(input_id);
             html_input.value = data[input_id]
             }
-
-        })
 }
 
 

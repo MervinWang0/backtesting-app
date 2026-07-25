@@ -51,6 +51,7 @@ class Portfolio(ABC):
         self.data_loader = data_loader
         self.events = events
         self.initial_capital = initial_capital
+        
         self.account_currency = "USD"
         self.cash_reserves: dict[str, float] = {
             self.account_currency: initial_capital
@@ -127,21 +128,59 @@ class Portfolio(ABC):
         direct_conversion = f"{from_currency}{to_currency}=X"
         inverse_conversion = f"{to_currency}{from_currency}=X"
 
-        try: 
-            direct_price = self.data_loader.get_current_bar_value(direct_conversion, "close")
-            return amount * direct_price
-        except KeyError:
+
+        # The bug was that the except was excepting a Lookup Error instead of ValueError
+        # print(f"---------------------------")
+        # print(f"convert_currency Called in portfolio")
+        # print(f"\nThis is the data loader's bars loaded {self.data_loader.latest_stock_data}")
+        # print(f"\nThis is the data loader tickers loaded {self.data_loader.tickers}")
+        # print(f"\nThis is inverse conversion {inverse_conversion}")
+        # print(f"\nThis is direct conversion {direct_conversion}")
+        # print(f"---------------------------")
+
+        try:
+            direct_price = float(
+                self.data_loader.get_current_conversion_value(
+                    direct_conversion,
+                    "close",
+                )
+            )
+            return float(amount) * direct_price
+
+        except ValueError, KeyError:
             pass
 
         try:
-            inverse_price = self.data_loader.get_current_bar_value(inverse_conversion, "close")
-            return amount / inverse_price
-        except KeyError:
-            pass
+            # The data loader requires the USD to JPY/.../ ticker which is not lot loaded
+            # for EUR/JPY
+            inverse_price = float(
+                self.data_loader.get_current_conversion_value(
+                    inverse_conversion,
+                    "close",
+                )
+            )
 
-        raise ValueError(f"No exchange rate data available for {from_currency} to {to_currency} conversion.")
+            if inverse_price == 0:
+                raise ZeroDivisionError(
+                    f"Exchange rate for {inverse_conversion} is zero."
+                )
+
+            return float(amount) / inverse_price
+
+        except (ValueError, KeyError) as e:
+            raise ValueError(
+                f"No exchange-rate data available for "
+                f"{from_currency} to {to_currency}. "
+                f"Tried {direct_conversion} and {inverse_conversion}."
+            ) from e
+ 
 
     def convert_to_account_currency(self, amount: float, currency: str) -> float:
+        # print("--------------------")
+        # print("Calling convert to account currency in Portfolio")
+        # print(f"currency = {currency}, self.account currency = {self.account_currency}")
+        # print("--------------------")
+
         if currency == self.account_currency:
             return amount
         return self.convert_currency(amount, from_currency=currency, to_currency=self.account_currency)   
@@ -311,20 +350,45 @@ class Portfolio(ABC):
         the parts that update the db records are removed.
         '''
 
-    def update_cash(self, fill: FillEvent, realised_pnl_day: float) -> None:
-        fill_cost = fill.quantity * fill.fill_cost
+    def update_cash(self, fill: FillEvent, realised_pnl_day: float):
+        quantity = float(fill.quantity)
+        price = float(fill.fill_cost)
+        commission = float(fill.commission)
+
+        fill_value = quantity * price
+
         if fill.asset_type == AssetType.FUTURES:
-            cash_chng = realised_pnl_day
+            cash_change = float(realised_pnl_day)
+
         else:
             if fill.direction == "BUY":
-                cash_chng = -(fill_cost + fill.commission)
+                cash_change = -fill_value
             elif fill.direction == "SELL":
-                cash_chng = (fill_cost - fill.commission)
+                cash_change = fill_value
             else:
-                raise ValueError(f"Invalid fill direction {fill.direction} in cash update. Expected 'BUY' or 'SELL'.")
-        self.cash_reserves[self.account_currency] += cash_chng
+                raise ValueError(
+                    f"Invalid fill direction {fill.direction}. "
+                    "Expected 'BUY' or 'SELL'."
+                )
+
+            if fill.asset_type == AssetType.FOREX:
+                bar = self.data_loader.get_current_bar(fill.ticker)
+
+                if bar is None:
+                    raise LookupError(
+                        f"No current forex bar for {fill.ticker}"
+                    )
+                cash_change = self.convert_to_account_currency(
+                    amount=cash_change,
+                    currency=bar.quote_currency,
+                )
+
+            cash_change -= commission
+
+        self.cash_reserves[self.account_currency] += cash_change
         self.current_capital = self.cash_reserves[self.account_currency]
-        self.total_commission += fill.commission
+        self.total_commission += commission
+
 
     #Updates average price and realized PnL for the ticker based on the new fill
     #Note: Returns -commission as a negative cost to the trade

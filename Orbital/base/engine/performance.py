@@ -77,6 +77,8 @@ def get_win_rate(trade_log: pd.DataFrame) -> float:
     Returns the win rate of the backtest 0.50 corresponding to 50%
     win rate is considered trades with pnl > 0 over total trades
     '''
+    if len(trade_log) == 0:
+        return 0
     win_count = (trade_log['pnl'] > 0).sum()
     return win_count / trade_log['pnl'].count()
 
@@ -86,19 +88,8 @@ def get_metrics(equity_record: pd.DataFrame, risk_free_rate: float,
     ''' 
     Based on some parameters, calculate the metrics of the backtest run.
     
-    In the case of 0 trades, return metrics with values of 0
+    In the case of 0 trades, return win rate with values of 0
     '''
-    if trade_log.empty:
-            metrics = {
-            "Total Return" : 0,
-            "Mean Daily Return" : 0,
-            "CAGR" : 0,
-            "Volatility" : 0,
-            "Sharpe Ratio" : 0,
-            "Max Drawdown" : 0,
-            "Win Rate" : 0,
-            }
-            return metrics
     total_return = get_total_return(equity_record)
     mean_daily_return = get_mean_daily_returns(equity_record)
     cagr = get_cagr(equity_record)
