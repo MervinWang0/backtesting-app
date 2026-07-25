@@ -53,17 +53,24 @@ def backtest_graph(request) -> JsonResponse:
             
         print("This is the data to be used in backtest"
               f" = {data}")
-        # Checks if stock data exists for ticker in period otherwise download
+        # Checks if data exists, and if it does not, download it.
         period = get_yf_period(data["start_date"], data["end_date"])
         if data["asset_type"] == "STOCK":
-            for ticker in data["tickers"]:
-                if not data_exists(ticker, data["start_date"], data["end_date"]):
-                    call_command(
-                        "load_stock_data",
-                        symbol = ticker,
-                        period = period,
-                        interval = "1d",
-                    )
+            command = "load_stock_data"
+        elif data["asset_type"] == "FUTURES":
+            command = "load_futures_data"
+        elif data["asset_type"] == "FOREX":
+            command = "load_forex_data"
+        else:
+            raise ValueError(f"Asset type is of unexpected type = {data["asset_type"]}")
+        for ticker in data["tickers"]:
+            if not data_exists(ticker, data["start_date"], data["end_date"]):
+                call_command(
+                    command,
+                    symbol = ticker,
+                    period = period,
+                    interval = "1d",
+                )
         # For Futures, there is a step of stiching the contracts before the
         # This can be done in backtest itself not here
         # backtest can be run.
