@@ -366,7 +366,7 @@ function clean_params() {
 
     // Ticker list is to handle situation of multiple tickers
     const ticker_lst = [];
-    for(const input_id of param_list) {
+    for(const input_id of get_param_list()) {
         const input = document.getElementById(input_id);
         // console.log(`This is input name ${input.name}`)
         // console.log(`This is input value ${input.value}`)

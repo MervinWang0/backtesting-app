@@ -93,7 +93,6 @@ DATABASES = {
     # This is the setting for remote db
     'default' : dj_database_url.config(
         default=os.environ.get("DATABASE_URL"))
-    
 
         # Old native way of setting database params
         # 'default' : {
