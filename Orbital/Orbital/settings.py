@@ -76,7 +76,7 @@ WSGI_APPLICATION = 'Orbital.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "Stock_price_db",
+        "NAME": "version2",
         "USER": "postgres",
         "PASSWORD": "1",
         "HOST": "localhost",
