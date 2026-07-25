@@ -8,14 +8,14 @@
 <link rel = 'stylesheet' href = "{% static 'base/css/variables.css' %}">
 <link rel = 'stylesheet' href = "{% static 'base/css/backtest.css' %}">
 <link rel = 'stylesheet' href = "{% static 'base/css/component.css' %}">
-<script src = "{% static 'base/css/monte_carlo_simulation.js' %}"  defer></script>
+<script src = "{% static 'base/js/monte_carlo_simulation.js' %}"  defer></script>
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 
 {% comment %} Creating a header for the page {% endcomment %}
 <section class = "market-hero">
     <div class =  "page-container market-hero__inner">
         <div>
-            <p class = "eyebrow"> Behind The Door?</p>
+            <p class = "eyebrow"> My model has high variance, but my laptop fan has high velocity.</p>
 
             <h1>Pennywise Monte Carlo Simulator!</h1>
         </div>
@@ -23,83 +23,105 @@
 </section>
 {% comment %} Store the buttons, input, and output grids in a flex column {% endcomment %}
 <div class="flex-column-container" id="input_wrapper" name="input_wrapper">
-    {% comment %} Button to run mcs simulations
-    <div class=window1 id="run_mcs_btn_container" name="run_mcs_btn_container">
-        <button class=button id="run_mcs_btn" name="run_mcs_btn">Run MCS</button>
-    </div> {% endcomment %}
-    {% comment %} Store in a div the buttons to press {% endcomment %}
+
+    {% comment %} Div to store buttons {% endcomment %}
     <div class="flex-row-container">
         {% comment %} Button to quicktest with random parameters {% endcomment %}
         <div>
-        <button class="flex_item button"  type="button" id="quicktest_btn">Quicktest</button>
+        <button class="flex_item button"  type="button" id="quicktest_all_btn">Quicktest All</button>
         </div>
-
+        {% comment %} Button to quicktest with random parameters {% endcomment %}
+        <div>
+        <button class="flex_item button"  type="button" id="quicktest_input_btn">Quicktest Input</button>
+        </div>
         {% comment %} Button to run mcs simulations {% endcomment %}
         <div class=window1 id="run_mcs_btn_container" name="run_mcs_btn_container">
             <button class=button id="run_mcs_btn" name="run_mcs_btn">Run MCS</button>
         </div>
 
     </div>
-    {% comment %} Input grid {% endcomment %}
-    <p class="header1">Choose parameters for simulation</p>
-    <div class="grid-container" id="input_container">
-        <div class="param_element activity-value input-field checkbox_container" id="jump_diffusion_div">
-            <label for="is_jump_diffusion">Jump Diffusion:
-                <input type="checkbox" id="is_jump_diffusion" name="Jump Diffusion">
-                {% comment %} <span class="checkmark"></span> {% endcomment %}
-            </label>
+    {% comment %} Container for inputs {% endcomment %}
+    <div class='container grid-container' name="input_container" id="input_container">
+        <div class='input-field activity-value' >
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "Jump Diffusion">
+            Jump Diffusion:
+            </span>
+            <input type="checkbox" id="is_jump_diffusion" name="Jump Diffusion">
         </div>
-
-        <div class="param_element activity-value input-field checkbox_container" id="regime_switching_div">
-            <label for="is_regime_switching">Regime Switching:
-                <input type="checkbox" id="is_regime_switching" name="Regime Switching">
-                {% comment %} <span class="checkmark"></span> {% endcomment %}
-            </label>
+        <div class='input-field activity-value' >
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "Jump Diffusion">
+            Regime Switching:
+            </span>
+            <input type="checkbox" id="is_regime_switching" name="Regime Switching">
         </div>
-
-        <div class="param_element activity-value input-field checkbox_container" id="is_t_div">
-            <label for="is_t">T Distribution:</label>
-                <input type="checkbox" id="is_t" name="T Distribution">
-                {% comment %} <span class="checkmark"></span> {% endcomment %}
-            </label>
+        <div class='input-field activity-value' >
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "T">
+            T Distribution:
+            </span>
+            <input type="checkbox" id="is_t" name="is_t">
         </div>
-
-        <div class="param_element activity-value input-field" id="num_sims_div">
-            <label for="num_sims" placeholder="E.g. 5, 10">Number of Simulations:
-                <input type="number" id="num_sims" name="Number of Simulations"><br>
-            </label>
+        <div class='input-field activity-value' >
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "">
+            Number Of Simulation:
+            </span>
+            <input type="number" placeholder="E.g. 50-200" id="num_sims" name="Number Of Simulations">
         </div>
-
-        <div class="param_element activity-value input-field" id="df_div" style="display:none;">
-            <label for="df" placeholder="5">Degree of Freedom:
-                <input type="number" id="df" name="Degree of Freedom">
-            </label>
+        <div class='input-field activity-value' style="display:none;">
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "">
+            Degree Of Freedom:
+            </span>
+            <input type="number" placeholder="E.g. integer > 2"id="df" name="Degree Of Freedom">
         </div>
-
-        <div class="param_element activity-value input-field" id="exp_jumps_div" style="display:none;">
-            <label for="exp_jumps" placeholder="E.g. 1, 2">Yearly Expected Number of Jumps:
-                <input type="number" id="exp_jumps" name="Yearly Expected Number of Jumps">
-            </label>
+        <div class='input-field activity-value' style="display:none;" >
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "">
+            Yearly Expected Number Of Jumps:
+            </span>
+            <input type="number" id="exp_jumps" name="Expected Number Of Jumps">
         </div>
-
-        <div class="param_element activity-value input-field" id="mean_log_jump_size_div" style="display:none;">
-            <label for="mean_log_jump_size" placeholder="E.g. 0.05">Average Log Jump Size:
-                <input type="number" id="mean_log_jump_size" name="Average Log Jump Size">
-            </label>
+        <div class='input-field activity-value' style="display:none;" >
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "">
+            Average Jump Size:
+            </span>
+            <input type="number" id="mean_log_jump_size" name="Average Jump Size">
         </div>
-
-        <div class="param_element activity-value input-field" id="std_log_jump_size_div" style="display:none;">
-            <label for="std_log_jump_size" placeholder="E.g. 0.15">Average Log Jump Volatility:
-                <input type="number" id="std_log_jump_size" name="Average Log Jump Volatility">
-            </label>
+        <div class='input-field activity-value' style="display:none;" >
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "">
+            Standard Deviation Of Jumps:
+            </span>
+            <input type="number" id="std_log_jump_size" name="Standard Deviation Of Jumps">
         </div>
     </div>
-
     {% comment %} Output table Invisible in base state{% endcomment %}
-    <table class="output-container" style="display:none;" id="output_container">
+    <table class="output-container activity-table" style="display:none;" id="output_container">
+        <caption>Probability Distribution Of Simulation!</caption>
         <thead>
             <tr>
                 <th>Metric</th>
+                <th>Original</th>
                 <th>Mean</th>
                 <th>Median</th>
                 <th>Variance</th>
@@ -115,10 +137,19 @@
         <tbody>
         </tbody>
     </table>
-</div>
+    {% comment %} Stores the mcs graph {% endcomment %}
+    <div class=graph id="mcs_graph_container" name="mcs_graph_container">
+    </div>
 
+    {% comment %} Div for progress bar {% endcomment %}
+    <div class='progress-wrapper' style="display:none;" id="progress-wrapper">
+        <div class='loading-text'>Backtest Not Run</div>
+        <div class='progress-container'>
+            <div class='progress-bar'>0%
+            </div>
+        </div>
 
-{% comment %} Stores the mcs graph {% endcomment %}
-<div class=graph id="mcs_graph_container" name="mcs_graph_container">
+</div> 
+
 </div>
 {% endblock%}

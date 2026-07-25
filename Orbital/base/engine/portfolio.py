@@ -621,7 +621,16 @@ class Portfolio(ABC):
             )
 
         return stop_distance
-    
+    def end_equity(self):
+        cash_value = self.calculate_cash_value()
+        current_holdings = self.calculate_holdings_value()
+        futures_unrealised_pnl = self.calculate_total_futures_unrealised_pnl()
+        #end_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+        self.current_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+        return self.current_equity
+
+        #backtest_run.end_equity = end_equity
+
     def calculate_target_quantity(self, signal: SignalEvent):
         ticker = signal.ticker
         current_price = float(self.get_latest_price(ticker))
@@ -810,15 +819,16 @@ class DatabasePortfolio(Portfolio):
 
         print("Database save completed")
 
-    def end_equity(self):
-        cash_value = self.calculate_cash_value()
-        current_holdings = self.calculate_holdings_value()
-        futures_unrealised_pnl = self.calculate_total_futures_unrealised_pnl()
-        #end_equity = current_holdings + self.current_capital + futures_unrealised_pnl
-        self.current_equity = current_holdings + self.current_capital + futures_unrealised_pnl
-        return self.current_equity
+# This has been monved
+    # def end_equity(self):
+    #     cash_value = self.calculate_cash_value()
+    #     current_holdings = self.calculate_holdings_value()
+    #     futures_unrealised_pnl = self.calculate_total_futures_unrealised_pnl()
+    #     #end_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+    #     self.current_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+    #     return self.current_equity
 
-        #backtest_run.end_equity = end_equity
+    #     #backtest_run.end_equity = end_equity
     
     def _load_caches(self) -> None:
         for ticker in self.data_loader.tickers:
@@ -843,7 +853,7 @@ class DatabasePortfolio(Portfolio):
         and some attributes, it is abstract because it in MCSPortfolio, 
         the parts that update the db records are removed.
         '''
-        print("Updating fill")
+        print("Updating fill from portfolio")
         if event.type != "FILL":
             raise ValueError(f"Invalid event type {event.type} in fill update. Expected 'FILL'.")
         
@@ -891,7 +901,7 @@ class MCSPortfolio(Portfolio):
         This version of update fill lacks the self.end_equity because the db records
         are not saved
         '''
-        print("Updating fields MCS")
+        print("Update fill for MCS from portfolio")
         if event.type != "FILL":
             raise ValueError(f"Invalid event type {event.type} in fill update. Expected 'FILL'.")
         

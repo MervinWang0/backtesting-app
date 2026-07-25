@@ -124,7 +124,7 @@ class Strategy(ABC):
         df['close'] = close
         df['k'] = (df['close'] - df['lower']) / (df['upper'] - df['lower']) * 100
         df['d'] = df['k'].rolling(window=3).mean()
-        print(f'These are the k d lines \n{df.to_string()}')
+        # print(f'These are the k d lines \n{df.to_string()}')
         return df
 
     def get_roc(self, window: int, ticker: str) -> float:
@@ -161,7 +161,7 @@ class Strategy(ABC):
         df['upper'] = high.rolling(window=window).max().shift(1)
         df['lower'] = low.rolling(window=window).min().shift(1)
         df['middle'] = (df['upper'] + df['lower']) / 2
-        print(f'These are the donchian channels {df.to_string()}')
+        # print(f'These are the donchian channels {df.to_string()}')
         return df
 
     def get_ema_list(self, window: int, ticker: str) -> pd.Series:
@@ -237,7 +237,7 @@ class Strategy(ABC):
 
         # Consider the case when window + 1 first matches days loaded,
         # first AG AL calculated
-        print(f"Days loaded = {self.data_loader.get_days_loaded()}")
+        # print(f"Days loaded = {self.data_loader.get_days_loaded()}")
         if window + 1 == self.data_loader.get_days_loaded():
             # Testing
             # print("This is the original prices \n")
@@ -256,14 +256,14 @@ class Strategy(ABC):
             
             rs = new_ag / new_al
             rsi = int(100 - (100/ (1 + rs)))
-            print(f"This is rsi, it should be an int :{rsi}")
+            # print(f"This is rsi, it should be an int :{rsi}")
             self.prev_AG[ticker] = new_ag
             self.prev_AL[ticker] = new_al
             return rsi
 
         # Updating old ag and al to new ag al
         current_change = self.data_loader.get_current_change(ticker)
-        print(f"This is the current change {current_change}")
+        # print(f"This is the current change {current_change}")
         current_gain = max(current_change, 0)
         current_loss = max(-current_change, 0)
         new_ag = abs((self.prev_AG[ticker] * (window - 1)) + current_gain) / window
@@ -271,7 +271,7 @@ class Strategy(ABC):
 
         rs = new_ag / new_al
         rsi = int(100 - (100/ (1 + rs)))
-        print(f"This is rsi, it should be an int :{rsi}")
+        # print(f"This is rsi, it should be an int :{rsi}")
         self.prev_AG[ticker] = new_ag
         self.prev_AL[ticker] = new_al
         return rsi
@@ -436,8 +436,8 @@ class Strategy(ABC):
         else:
             decision = None
             
-        print(f"This is the market condition = {market_conditions}\n"
-              f"This is the decision from the market = {decision}")
+        # print(f"This is the market condition = {market_conditions}\n"
+        #       f"This is the decision from the market = {decision}")
         return decision
 
     def get_k_signal(self, k: float):
@@ -521,8 +521,8 @@ class MeanReversion(Strategy):
                                 signal_type=decision,
                                 strength=self.strength
                                 )
-            print("This is the signal generated for the mean "
-                    f"reversion strategy {signal}")
+            # print("This is the signal generated for the mean "
+            #         f"reversion strategy {signal}")
             return signal
         else: 
             return None
@@ -552,8 +552,8 @@ class MACDStrategy(Strategy):
             self.long_ema[ticker] = self.get_ema_list(window=macd_long, ticker=ticker)
             self.MACD[ticker] = self.medium_ema[ticker] - self.long_ema[ticker]
             self.signal[ticker] = self.MACD[ticker].ewm(span=macd_short, adjust=False).mean()
-            print(f"This is the MACD line {self.MACD[ticker]}")
-            print(f"This is the Signal line {self.signal[ticker]}")
+            # print(f"This is the MACD line {self.MACD[ticker]}")
+            # print(f"This is the Signal line {self.signal[ticker]}")
 
 
     def generate_signal(self, ticker: str):
@@ -578,9 +578,9 @@ class MACDStrategy(Strategy):
         # Obtain new state to determine if crossover happened
         new_state = curr_MACD > curr_signal
         # Change in state means crossover
-        print(f"This is the previous state"
-              f"{self.prev_state[ticker]}")
-        print(f"This is the new state {new_state}")
+        # print(f"This is the previous state"
+            #   f"{self.prev_state[ticker]}")
+        # print(f"This is the new state {new_state}")
         if self.prev_state[ticker] != new_state:
             if new_state:
                 decision = "LONG"
@@ -590,7 +590,7 @@ class MACDStrategy(Strategy):
             decision = None
         # Update the previous state to new state
         self.prev_state[ticker] = new_state
-        print(f"This is the decision: {decision}")
+        # print(f"This is the decision: {decision}")
 
         if decision is not None:
             signal = SignalEvent(ticker=ticker,
@@ -598,7 +598,7 @@ class MACDStrategy(Strategy):
                                 datetime=self.data_loader.get_current_datetime(),
                                 signal_type=decision,
                                 strength=self.strength)
-            print(f"This is the signalEvent: {signal}")
+            # print(f"This is the signalEvent: {signal}")
             return signal
         return None
 
@@ -637,13 +637,13 @@ class BreakoutStrategy(Strategy):
             decision = "SHORT"
         else:
             return None
-        print(f"This is the decision: {decision}")
+        # print(f"This is the decision: {decision}")
         signal = SignalEvent(ticker=ticker,
                             asset_type=self.data_loader.asset_type,
                             datetime=self.data_loader.get_current_datetime(),
                             signal_type=decision,
                             strength=self.strength)
-        print(f"This is the signalEvent: {signal}")
+        # print(f"This is the signalEvent: {signal}")
         return signal
 
 class MomentumStrategy(MACDStrategy):
@@ -689,9 +689,9 @@ class MomentumStrategy(MACDStrategy):
         # Obtain new state to determine if crossover happened
         new_state = curr_macd > curr_signal
         # Change in state means crossover
-        print(f"This is the previous state"
-              f"{self.prev_state[ticker]}")
-        print(f"This is the new state {new_state}")
+        # print(f"This is the previous state"
+            #   f"{self.prev_state[ticker]}")
+        # print(f"This is the new state {new_state}")
         if self.prev_state[ticker] != new_state:
             if new_state:
                 macd_decision = "LONG"
@@ -726,7 +726,7 @@ class MomentumStrategy(MACDStrategy):
                             datetime=self.data_loader.get_current_datetime(),
                             signal_type=decision,
                             strength=self.strength)
-        print(f"This is the signalEvent: {signal}")
+        # print(f"This is the signalEvent: {signal}")
         return signal
         
 class RateOfChangeStrategy(Strategy):
@@ -748,7 +748,7 @@ class RateOfChangeStrategy(Strategy):
         Exits when ROC crosses back below 0
         '''
 
-        print(self.data_loader.get_days_loaded())
+        # print(self.data_loader.get_days_loaded())
         # roc window requires window + 1 days to be laoded to calculate
         if self.data_loader.get_days_loaded() < self.roc_window + 1:
             return None
@@ -792,7 +792,7 @@ class RateOfChangeStrategy(Strategy):
                             datetime=self.data_loader.get_current_datetime(),
                             signal_type=decision,
                             strength=self.strength)
-        print(f"This is the signalEvent: {signal}")
+        # print(f"This is the signalEvent: {signal}")
         return signal
 
 class StochasticOscillatorStrategy(Strategy):
@@ -825,7 +825,7 @@ class StochasticOscillatorStrategy(Strategy):
         '''
         index = self.data_loader.curr_index
         k_indicator = self.k_d_list[ticker]['k'][index]
-        print(f"This is the k_indicator {k_indicator}")
+        # print(f"This is the k_indicator {k_indicator}")
 
         # If the data has not been calculated yet return none
         if k_indicator is None or math.isnan(k_indicator):
@@ -858,8 +858,8 @@ class StochasticOscillatorStrategy(Strategy):
                             signal_type=decision,
                             strength=self.strength
                             )
-        print("This is the signal generated for the Stochastic "
-                f"Oscillator strategy {signal}")
+        # print("This is the signal generated for the Stochastic "
+        #         f"Oscillator strategy {signal}")
         return signal
     
 class MovingAverageCross:

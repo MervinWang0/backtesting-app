@@ -34,9 +34,16 @@ const roc_window = "roc_window";
 const stoc_window = "stoc_window";
 
 // Initialize the lists for tickers of various asset types
-let stock_tickers = get_SP_500_tickers();
-let futures_tickers = get_futures_tickers();
-let forex_tickers = get_forex_tickers();
+let stock_tickers = []
+let futures_tickers = []
+let forex_tickers = []
+
+async function create_tickers() {
+    stock_tickers = await get_SP_500_tickers();
+    futures_tickers = await get_futures_tickers();
+    forex_tickers = await get_forex_tickers();
+}
+create_tickers()
 
 // These don't print correctly due to async functions
 // console.log(`This is the tickers of stocks ${stock_tickers}`)
@@ -48,6 +55,7 @@ const strategy_btn = document.getElementById("strategy_btn")
 const run_backtest_btn = document.getElementById("run_backtest_btn")
 const view_mcs_btn = document.getElementById("view_mcs_btn")
 const quicktest_btn = document.getElementById("quicktest_btn")
+const asset_type_input = document.getElementById("asset_type")
 
 // divs serving as containers
 const progress_bar_div = document.getElementById("progress_bar_container")
@@ -57,11 +65,14 @@ let chosen_strategy_id = strategy_btn.value;
 let param_list = get_param_list();
 
 // The trigger of the buttons calling the function
-strategy_btn.addEventListener("change", change_strategy)
-run_backtest_btn.addEventListener("click", run_backtest)
-run_backtest_btn.addEventListener("click", show_output)
-view_mcs_btn.addEventListener("click", view_mcs)
-quicktest_btn.addEventListener("click", () => quicktest(param_list))
+strategy_btn.addEventListener("change", change_strategy);
+run_backtest_btn.addEventListener("click", run_backtest);
+run_backtest_btn.addEventListener("click", show_output);
+view_mcs_btn.addEventListener("click", view_mcs);
+quicktest_btn.addEventListener("click", () => quicktest(param_list));
+
+// Add event for asset type input
+asset_type_input.addEventListener('input', update_ticker_list);
 
 // Array of input elements, used to obtain their values from webpage
 const strategy_params = [];
@@ -70,20 +81,20 @@ let output_params = [];
 // These lists are for error checking the value of input
 const cannot_negative_id_list = ["mac_short_window", "mac_long_window", 
     "strength", "commission", "slippage", "initial_capital", short_window_id,
-long_window_id, rsi_window]
-const must_int_id_list = ["mac_short_window", "mac_long_window"]
+long_window_id, rsi_window];
+const must_int_id_list = ["mac_short_window", "mac_long_window"];
 
 // run_id is used to pass the entry of the backtest to MCS webpage
 let run_id = {}
 
 // Used to convert metrics to more readable form
 const percentage_outputs = ["Total Return", "Mean Daily Return", "CAGR",
-    "Max Drawdown",
-]
+    "Max Drawdown", "Win Rate", "Volatility"
+];
 
 const common_parameters = [asset_type_id, ticker_id, strength_id, slippage_id,
     initial_capital_id, commission_id, start_date_id, end_date_id
-]
+];
 const moving_avg_cross = [...common_parameters, short_window_id, long_window_id
 ];
 
@@ -103,7 +114,7 @@ const rate_of_change = [...common_parameters, roc_window];
 
 const stoch_osc = [...common_parameters, stoc_window];
 // Get the element that serves as a container for inputs to hide/show
-const input_container = document.getElementById("input_container")
+const input_container = document.getElementById("input_container");
 
 // param list is a list of ids (not elements), each corresponding
 // to an input eleemnent
@@ -140,12 +151,49 @@ function get_param_list(){
     return temp_param_list
 }
 
+// Takes in a datalist and an arr, updates the datalist to contain the arr
+function array_to_datalist(datalist_element, arr) {
+    const fragment = document.createDocumentFragment();
+    datalist_element.innerHTML = "";
+    for(const element of arr) {
+        const option = document.createElement('option');
+        option.value = element;
+        fragment.appendChild(option);
+    };
+    datalist_element.appendChild(fragment);
+}
+
 // Different asset types have different tickers, This function should
 // run whenever the asset type is changed, 
 function update_ticker_list() {
-    const asset_type_input = document.getElementById("asset_type")
 
-    asset_type_input.setAttribute("list", new_list_id)
+    const asset_type_input = document.getElementById("asset_type");
+    const ticker_datalist = document.getElementById("ticker_list");
+    // console.log(`Updating ticker list, current asset type value is
+    //     ${asset_type_input.value}`)
+    // // console.log(`Updating ticker list, previous ticker list is
+    //     ${ticker_input.list}`)
+    // console.log(`Changing ticker list`)
+    // console.log(`Previous ticker list ${JSON.stringify(ticker_datalist)}`)
+    switch(asset_type_input.value) {
+        case "STOCK":
+            // console.log(`Attempts to change tickers to match stock list`);
+            // console.log(stock_tickers);
+            array_to_datalist(ticker_datalist, stock_tickers)
+            break;
+        case "FUTURES":
+            array_to_datalist(ticker_datalist, futures_tickers)
+            break;
+        case "FOREX":
+            array_to_datalist(ticker_datalist, forex_tickers)
+            break;
+        // If the asset type does not match accepted asset types
+        default:
+            // Return empty arr
+            array_to_datalist(ticker_datalist, [])
+    }
+    console.log(`Current ticker list ${JSON.stringify(ticker_datalist)}`)
+
 }
 // Just a simple function that displays the output grid
 function show_output() {
@@ -180,24 +228,48 @@ function clear_input() {
             div.querySelector("input").value = "";
         }
 }
+
+function bar_show() {
+    progress_bar_div.style.display = "";
+}
+
+function bar_hide() {
+    progress_bar_div.style.display = "none";
+}
+
+function bar_set_start() {
+    progress_bar.style.animation = "width 0.3s ease;";
+    // Turns the progress bar to a blue background, in case of error.
+    progress_bar.style.background = "linear-gradient(90deg, var(--color-white), var(--color-blue))";
+    // Make the progress bar start from initial state
+    state = "Backtest Not Run";
+}
+
+function bar_set_error() {
+    state = "Error"
+}
+function graph_show() {
+    equity_graph_container.style.display = "";
+}
+
+function graph_hide() {
+    equity_graph_container.style.display = "none";
+}
+
+function graph_clear() {
+    equity_graph_container.innerHTML = "";
+}
+
 // Used when switching strategy, should hide, output, graph, progress bar,
 // and set input params to empty
 function reset() {
-    // Turn the progress bar and graph invisible
-    progress_bar_div.style.display = "none";
-    equity_graph_container.style.display = "none";
-
-    // Turns the progress bar to a blue background, in case of error.
-    progress_bar.style.background = "linear-gradient(90deg, var(--color-white), var(--color-blue))";
-
-    // Make the progress bar start from initial state
-    state = "Backtest Not Run";
-
-    // Turn output params invisible
-    hide_output()
-
-    // Turn each input field blank
     clear_input()
+    clear_output()
+    hide_output()
+    bar_hide()
+    bar_set_start()
+    graph_hide()
+    graph_clear()
 }
 
 
@@ -239,21 +311,21 @@ function change_strategy(){
 // Runs backtest when run button is clicked and input passed
 function run_backtest(){
     clear_output();
-    progress_bar_div.style.display = "";
+    hide_output();
+    bar_show();
+    bar_set_start();
+    graph_clear();
+    graph_hide();
     if (!validate()) {
-        state = "Error"
-        output_container.style.display = "none";
-        progress_bar_div.style.display = "none";
+        bar_set_error();
+        clear_output();
+        hide_output();
         return;}
     else {
-    upgrade_progress(); // Sets initial state of progress bar
-     // TODO create function for initializing clear state
-    // state has to be reset in the case of multiple backtest runs occuring
-    state = "Backtest Not Run";
+    upgrade_progress(); // Start recording state of progress bar
     progress_bar.style.animation = "pulse 1.5s infinite";
 
     // When run_backtest occurs, the old graph should disappear, TODO create initial_state function
-    equity_graph_container.innerHTML = '';
     graph_backtest();
     view_mcs_btn.disabled = false;
     }
@@ -268,18 +340,18 @@ const is_visible = (input) => input.closest("div").style.display == ""
     for(const input of strategy_params) 
         {
             if(param_list.includes(input.id) && input.value == "" && is_visible(input)){
-                alert(`Please enter the require fields ${input.name}`)
+                alert(`Please enter the require fields ${input.name}.`)
                 return false;
             }
             // Negative number error handling
             if(cannot_negative_id_list.includes(input.id) && input.value < 0 && is_visible(input)){
-                alert(`${input.name} cannot be negative`);
+                alert(`${input.name} cannot be negative.`);
                 return false;
             }
             // Integer number handling
             // console.log(!Number.isInteger(input.value))
             if(must_int_id_list.includes(input.id) && !isIntegerString(input.value) && is_visible(input)){
-                alert(`${input.name} must be an integer`);
+                alert(`${input.name} must be an integer.`);
                 return false;
             }
         }
@@ -296,9 +368,9 @@ function clean_params() {
     const ticker_lst = [];
     for(const input_id of param_list) {
         const input = document.getElementById(input_id);
-        console.log(`This is input name ${input.name}`)
-        console.log(`This is input value ${input.value}`)
-        console.log(`This is input id ${input.id}`)
+        // console.log(`This is input name ${input.name}`)
+        // console.log(`This is input value ${input.value}`)
+        // console.log(`This is input id ${input.id}`)
         // For handling ticker1, ticker2...
         if (input.name.includes("ticker")){
             ticker_lst.push(input.value);
@@ -315,8 +387,8 @@ function clean_params() {
     // Name is not taken as input so it has to be taken from button 
     cleaned_params['strategy_name'] = chosen_strategy_id;
     // console.log(`Cleaned params ${cleaned_params}`)
-    console.log(`This is the cleaned params to be passed to be 
-        used in fetch ${JSON.stringify(cleaned_params)}`)
+    // console.log(`This is the cleaned params to be passed to be 
+    //     used in fetch ${JSON.stringify(cleaned_params)}`)
     return cleaned_params
 }
 
@@ -399,7 +471,7 @@ function graph_backtest() {
     // Handles the case when the backtest fails
     .catch(error => {
         console.error("Backtest calculation failed", error);
-        state = "Error";
+        bar_set_error();
     });
 }
 
@@ -426,8 +498,10 @@ let state = "Backtest Not Run"
 
 // state is updated at various points of other functions which in turn updates bar
 function upgrade_progress() {
-    console.log(`This is the state = ${state}`)
-    console.log(`This is the width = ${width}`)
+    // progress_bar.style.background = "linear-gradient(90deg, #3b82f6, #8b5cf6);";
+    // progress_bar.stylee.animation = "width 0.3s ease;";
+    // console.log(`This is the state = ${state}`)
+    // console.log(`This is the width = ${width}`)
     // Other functions will update state, and this function is called once per second.
     switch(state) {
         case "Backtest Not Run":
@@ -504,9 +578,8 @@ function quicktest(param_list) {
 
 
 // Function to fetch stock ticker list
-function get_SP_500_tickers() {
-    let result = [];
-    fetch("/get_SP500/", {
+async function get_SP_500_tickers() {
+    const response = await fetch("/get_SP500/", {
         method: "POST",
         headers: {
             'Content-Type': 'application/json',
@@ -514,18 +587,12 @@ function get_SP_500_tickers() {
         },
     })
     // Turns string into JS object
-    .then(response => response.json())
-
-    // Operate on the JS data, basically a dictonary
-    .then(data => {
-        result = data["tickers"];
-    })
-    return result;
+    const data = await response.json();
+    return data['tickers']
 }
 // Function to fetch stock ticker list
-function get_futures_tickers() {
-    let result = [];
-    fetch("/get_futures_tickers/", {
+async function get_futures_tickers() {
+    const response = await fetch("/get_futures_tickers/", {
         method: "POST",
         headers: {
             'Content-Type': 'application/json',
@@ -533,19 +600,13 @@ function get_futures_tickers() {
         },
     })
     // Turns string into JS object
-    .then(response => response.json())
-
-    // Operate on the JS data, basically a dictonary
-    .then(data => {
-        result = data["tickers"];
-    })
-    return result
+    const data = await response.json();
+    return data['tickers']
 }
 
 // Function to fetch stock ticker list
-function get_forex_tickers() {
-    let result = [];
-    fetch("/get_forex_tickers/", {
+async function get_forex_tickers() {
+    const response = await fetch("/get_forex_tickers/", {
         method: "POST",
         headers: {
             'Content-Type': 'application/json',
@@ -553,12 +614,6 @@ function get_forex_tickers() {
         },
     })
     // Turns string into JS object
-    .then(response => response.json())
-
-    // Operate on the JS data, basically a dictonary
-    .then(data => {
-        console.log(`This is the data of forex ${JSON.stringify(data)}`)
-        result = data['tickers'];
-    })
-    return result;
+    const data = await response.json();
+    return data['tickers']
 }

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from django.http import JsonResponse
 from base.engine.data_loader import DatabaseDataLoader
 from base.engine.backtest import Backtest
-from base.models import StockPriceHistory, Stock
+from base.models import StockPriceHistory, Stock, ForexPair, FuturesContract
 from django.core.management import call_command
 
 # Take in a list of ids and return a JsonResponse which has a dict of data
@@ -23,7 +23,15 @@ def get_quicktest_input(request) -> JsonResponse:
         param_ids: dict[str: any] = json.loads(request.body)
         # print(f"This is the type of params_ids {type(param_ids)}")
         # print(f"This is the type of params_id {type(param_ids[0])}")
-        random_parameters = {id_string : get_rand(id_string) for id_string in param_ids}
+        random_parameters = {}
+        for id_string in param_ids:
+            # Asset type should be initialized before ticker is randomized
+            if "ticker" in id_string:
+                random_parameters[id_string] = get_random_ticker(
+                    random_parameters['asset_type'])
+            else:
+                # print(f"This id_string should not contain ticker = {id_string}")
+                random_parameters[id_string] = get_rand(id_string)
         # print(f"This is the randomized input {random_parameters}")
         return JsonResponse(data=random_parameters)
     else:
@@ -32,28 +40,37 @@ def get_quicktest_input(request) -> JsonResponse:
             status=405  # Method Not Allowed
         )
 
-def get_random_ticker():
+def get_random_ticker(asset_type: str) -> str:
     ''' 
     Makes a db call and gets a random ticker from S&P500
     '''
-    rand_int = random.randint(1, 500)
-    ticker = Stock.objects.values('ticker').get(id=rand_int)['ticker']
-    print(f"This is the randomized ticker = {ticker}")
-    return ticker
+    if asset_type == "STOCK":
+        rand_int = random.randint(1, 500)
+        ticker = Stock.objects.values('ticker').get(id=rand_int)['ticker']
+        # print(f"This is the randomized ticker = {ticker}")
+        return ticker
+    elif asset_type == "FUTURES":
+        tickers = list(set(FuturesContract.objects.values_list('root_symbol', flat=True)))
+        ticker = random.choice(tickers)
+        # print(f"This is the randomized ticker = {ticker}")
+        return ticker
+    elif asset_type == "FOREX":
+        rand_int = random.randint(1, 10)
+        ticker = ForexPair.objects.values('ticker').get(id=rand_int)['ticker']
+        # print(f"This is the randomized ticker = {ticker}")
+        return ticker
+    else:
+        raise ValueError(f"Unknown asset type to quicktest ticker for {asset_type}")
 
 PARAM_RANGES = {
-    "asset_type": lambda: "STOCK",
+    "asset_type": lambda: random.choice(["STOCK", "FUTURES", "FOREX"]),
     "strength": lambda: random.uniform(0, 1),
     "slippage": lambda: random.uniform(0, 0.05),
     "initial_capital": lambda: random.uniform(50000, 250000),
     "start_date": lambda: (datetime(2023, 1, 1) + timedelta(days=random.randint(1, 364))).date(),
     "end_date": lambda: (datetime(2024, 1, 1) + timedelta(days=random.randint(1, 365))).date(),
     "commission": lambda: random.uniform(0.001, 0.01),
-    "num_sims": lambda: random.randint(50, 500),
-    "df": lambda: random.randint(3, 8),
-    "exp_jumps": lambda: random.randint(1, 3),
-    "mean_log_jump_size": lambda: random.uniform(0.03, 0.06),
-    "std_log_jump_size": lambda: random.uniform(0.08, 0.12),
+
 
     # Moving average crossover
     "mac_short_window": lambda: random.randint(5, 10),
@@ -82,16 +99,28 @@ PARAM_RANGES = {
     
     # Stochastic
     "stoc_window": lambda: random.randint(10, 21),
+
+    # Monte Carlo Inputs
+    "is_jump_diffusion": lambda: random.choice([True, False]),
+    "is_regime_switching": lambda: random.choice([True, False]),
+    "is_t": lambda: random.choice([True, False]),
+
+    "num_sims": lambda: random.randint(50, 200),
+    "df": lambda: random.randint(3, 8),
+    
+    # Jump Diffusion params
+    "exp_jumps": lambda: random.randint(1, 3),
+    "mean_log_jump_size": lambda: random.uniform(0.03, 0.06),
+    "std_log_jump_size": lambda: random.uniform(0.08, 0.12),
+    
 }
 
 def get_rand(case: str) -> int | float | datetime.date | str:
     '''
     Matches each id and returns a random value suitable for that id
+    
+    Note that tickers are handled seperately.
     '''
-    # For multiple tickers if ticker in ticker1, ticker2...
-    if "ticker" in case:
-        return get_random_ticker()
-
     # Check if case is in the randomizable params
     print(f"This is the case to be randomized = {case}")
     if case not in PARAM_RANGES:

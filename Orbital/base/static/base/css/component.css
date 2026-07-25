@@ -229,6 +229,10 @@
     min-width: 160px;
 }
 
+/* Styling for the table in MCS */
+.table {
+
+}
 .button:hover:not(:disabled) {
     background-color: var(--color-black);
     color: var(--color-white);

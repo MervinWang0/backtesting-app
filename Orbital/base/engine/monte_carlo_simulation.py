@@ -84,7 +84,7 @@ class MonteCarloSimulator():
         btr = self.backtest.run()
         graph_result = [btr]
         fields = btr.get_metrics().keys()
-        print(f"These are the metric fields of a backtest result {fields}")
+        # print(f"These are the metric fields of a backtest result {fields}")
         metric_result = {name : np.empty(num_sims) for name in fields}
 
         
@@ -126,7 +126,7 @@ class MonteCarloSimulator():
                 timeline = self.backtest.data_loader.get_timeline()
                 random_stock_data[ticker] = self.price_to_bar(stock_data[ticker],
                                                               random_close_prices=random_close,
-                                                              timeline=timeline)
+                                                              )
 
             # Once the random historical stock data is obtained, backtest using it
             # Stores first 100 BackTestResult for graphing, and the stores metrics for rest
@@ -138,23 +138,31 @@ class MonteCarloSimulator():
             simulated_metrics = simulated_backtest.get_metrics()
             # Iterate through fields and update metric result with simulated result
             for name in fields:
+                # print(f"This is name = {name} in fields \n")
+                # print(f"This is field = {field} \n")
                 metric_result[name][sim_count] = simulated_metrics[name]
-        print("These are the metrics of the backtest")
-        print(pd.DataFrame(metric_result))
+        # print("These are the metrics of the backtest")
+        # print(pd.DataFrame(metric_result))
         
         # Convert Obtain distribution results of simulation
         metric_lst: list[dict[str, float]] = []
+        og_metrics = btr.get_metrics()
         for name in fields:
             dist = Distribution(metric_result[name])
+            # Initialize dist_metrics as {"Field" : "Win Rate"}
             dist_metrics = {"Field" : name}
+            # Add the original metric too
+            dist_metrics.update(Original=og_metrics[name])
+            # Add to dist_metrics key value pairs E.g. {"Mean" : 1%}
             dist_metrics.update(dist.get_imp_metrics())
+
             metric_lst.append(dist_metrics)
         # print("These are the computed distributions")
         # print(pd.DataFrame(metric_lst))
         return (graph_result, metric_lst)
 
     def price_to_bar(self, og_data: list[Bar], random_close_prices: list[float],
-                     timeline: list[datetime.date]) -> list[Bar]:
+                     ) -> list[Bar]:
         ''' 
         Takes in the original stock data, and the randomized price. Returns 
         a list of new bars. 
@@ -162,6 +170,22 @@ class MonteCarloSimulator():
         This function works by computing the relative difference between open-close,
         high-close, and so on. Then re-applying this difference to the randomize close prices.
         '''
+        # Changed the timeline to be obtained from og_data instead of passed in, as timeline,
+        # May differ E.g. case of Futures
+        timeline = [bar.date for bar in og_data]
+        # Testing
+        print("-----------------------------------------")
+        print(f"This is the timeline in price_to_bar MCS.engine \n{timeline}")
+        print("-----------------------------------------")
+        print(f"This is the og close prices in price_to_bar MCS.engine \n"
+            f"{[bar.close for bar in og_data]}")
+        print("-----------------------------------------")
+        print(f"This is the randomized close prices{random_close_prices}")
+        print("-----------------------------------------")
+        print(f"This is the length of og_data and timeline"
+              f"in MCS \n{len(og_data), len(timeline)}")
+        print("-----------------------------------------")
+
 
         # Obtain relative difference between the various OHLC data
         close_price = np.array([bar.close for bar in og_data])

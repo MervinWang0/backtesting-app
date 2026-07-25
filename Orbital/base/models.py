@@ -281,10 +281,10 @@ class BacktestRun(TimeStampedModel):
     tickers = models.JSONField(default=list, blank=True)
 
     # Additional parameters necessary
-    strength = models.IntegerField(default=1)
-    commission = models.DecimalField(max_digits=10, decimal_places=2,default=0)
-    slippage = models.IntegerField(default=0)
-    risk_free_rate = models.DecimalField(max_digits=10, decimal_places=4,default=0)
+    strength = models.DecimalField(max_digits=32, decimal_places=16)
+    commission = models.DecimalField(max_digits=32, decimal_places=16)
+    slippage = models.DecimalField(max_digits=32, decimal_places=16)
+    risk_free_rate = models.DecimalField(max_digits=32, decimal_places=16)
     # Encodes strategy params in a dict
     strategy_params = models.JSONField(_("Strategy specific parameters"),
                                        encoder=DjangoJSONEncoder,

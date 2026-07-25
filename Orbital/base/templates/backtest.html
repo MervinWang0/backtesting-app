@@ -64,7 +64,9 @@
             <span
             class= "term-tip term-tip--left term-tip--above"
             tabindex= "0"
-            data-tooltip= "Description">
+            data-tooltip= "An asset type refers to a class of assets used for trading, 
+            common options include Forex, Futures, Stocks, which we have implemented.
+            There are also other options like Bonds, Crypto and even physical assets.">
             Asset Type:
             </span>
             <input type="text" id="asset_type" name="asset_type"
@@ -79,9 +81,15 @@
                 <span
                         class= "term-tip term-tip--left term-tip--above"
                         tabindex= "0"
-                        data-tooltip= "A unique abbreviation used to identify a company"
+                        data-tooltip= "A unique abbreviation used to identify a specific
+                         asset. E.g. AAPL for Stocks, money pairs for Forex, or codes for 
+                         Futures."
                 >Ticker:</span>
-            <input type="text" placeholder="e.g. AAPL, MSFT" class="strategy_input" name="ticker" id="ticker">
+            {% comment %} <input type="text" placeholder="e.g. AAPL, MSFT" class="strategy_input" name="ticker" id="ticker"> {% endcomment %}
+            <input type="text" id="ticker" name="ticker"
+            list="ticker_list" placeholder="Type or select...">
+            <datalist id="ticker_list">
+            </datalist>
         </div>
         <div class='input-field activity-value' style="display:none;">
                 <span
@@ -329,28 +337,80 @@
     <div class="container grid-container" id="output_container"
     style= "display:none;">
         <div class="output-field activity-value" style="display:none;">
-            <h3>Total Return:</h3>
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "Total return refers to the change in equity from when the trading
+             first starts to the end of the trading period. Where equity refers to the combination
+              of cash currently held plus the assets evaluated at current market prices of the day.">
+            Total Return:
+            </span>
             <p id="Total Return"></p>
         </div>
         <div class="output-field activity-value" style="display:none;">
-            <h3>Mean Daily Return:</h3>
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "Mean daily return is the average change in equity per day during 
+            the backtesting period.">
+            Mean Daily Return:
+            </span>
             <p id="Mean Daily Return"></p>
         </div>
         <div class="output-field activity-value" style="display:none;">
-            <h3>CAGR:</h3>
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "CAGR stands for Compound Annual Growth Rate, It computes the
+            annualized rate of return of the strategy. It is often used to compare different 
+            strategies.">
+            CAGR:
+            </span>
             <p id="CAGR"></p>
         </div>
         <div class="output-field activity-value" style="display:none;">
-            <h3>Volatility:</h3>
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "Volatility represents how much the change in equity each day 
+            fluctuates around the mean.">
+            Volatility:
+            </span>
             <p id="Volatility"></p>
         </div>
         <div class="output-field activity-value" style="display:none;">
-            <h3>Sharpe Ratio:</h3>
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "A Sharpe ratio is a risk-adjusted metric, representing 
+            the amount of return obtained per unit of risk. Generally a Sharpe Ratio 
+            above 1 is considered decent, above 2 is very good, and above 3 as excellent.">
+            Sharpe Ratio:
+            </span>
             <p id="Sharpe Ratio"></p>
         </div>
         <div class="output-field activity-value" style="display:none;">
-            <h3>Max Drawdown:</h3>
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "Max drawdown(MDD) is a percentage representing the difference from
+            highest peak so far to the lowest peak. In simple terms, it represents the drop 
+            a user can expect to see. a MDD of -40% indicates that at one point, the strategy 
+            lost 40% of its equity from it's highest point.">
+            Max Drawdown:
+            </span>
             <p id="Max Drawdown"></p>
+        </div>
+        <div class="output-field activity-value" style="display:none;">
+            <span
+            class= "term-tip term-tip--left term-tip--above"
+            tabindex= "0"
+            data-tooltip= "Win Rate is an indicators of the number of trades that 
+            make a profit. Where a trade is considered the process of buying and selling
+            and asset (It is possible to sell and asset and then buy it too).">
+            Win Rate:
+            </span>
+            <p id="Win Rate"></p>
         </div>
     </div>
 

@@ -151,6 +151,21 @@ def fill_to_trade_log(arg_fill_records: list[dict[str, any]]) -> tuple[list[dict
     2. Scale in, Long to long, short to short
     3. Short/Long to flat, or reversal
     '''
+    # Testing
+    # print(f"These are the fill records to convert \n{pd.DataFrame(arg_fill_records)}")
+
+    # Bug Fix for FOREX, having fill records where 0 quantities are traded.
+    # Which causes a division by 0 error here
+    # Basically remove the records with 0 quantity
+    index_remove = []
+    for i, record in enumerate(arg_fill_records):
+        if record['quantity'] == 0:
+            index_remove.append(i)
+    index_remove.reverse()
+    for i in index_remove:
+        arg_fill_records.pop(i)
+    # print(f"These are the cleaned records\n{pd.DataFrame(arg_fill_records)}")
+    
     fill_records = deque(arg_fill_records)
     count = 0
     def is_scale_in(prev_quantity, direction):
@@ -323,9 +338,9 @@ def handle_partial_close(open_trades: dict[str, list[dict[str, any]]],
 
     # This refers to the trade that is partially closed
     open_trade = open_trades[record['ticker']].pop(0)
-    print(f"This is the trade that is partially closed {open_trade}"
-          f"The amount to close is {quantity_close}, and the record has"
-          f" quantity {open_trade["quantity"]}")
+    # print(f"This is the trade that is partially closed {open_trade}"
+    #       f"The amount to close is {quantity_close}, and the record has"
+    #       f" quantity {open_trade["quantity"]}")
 
     # Based on previous quantity, the buy/sell prices are determined
     # Additionally determines the new previous quantity of the open trade
@@ -375,7 +390,7 @@ def handle_partial_close(open_trades: dict[str, list[dict[str, any]]],
             }
 
     quantity_close -= open_trade["quantity"]
-    print(f"The quantity to close should be 0, quantity close = {quantity_close}")
+    # print(f"The quantity to close should be 0, quantity close = {quantity_close}")
     open_trades[record['ticker']].insert(0, new_record)
     return closed_trades
 
