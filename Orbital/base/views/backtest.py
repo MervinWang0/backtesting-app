@@ -71,6 +71,7 @@ def backtest_graph(request) -> JsonResponse:
                     period = period,
                     interval = "1d",
                 )
+                print(f"Downloaded data for {ticker}")
         # For Futures, there is a step of stiching the contracts before the
         # This can be done in backtest itself not here
         # backtest can be run.

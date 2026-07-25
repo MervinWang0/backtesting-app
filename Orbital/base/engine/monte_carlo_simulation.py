@@ -174,17 +174,17 @@ class MonteCarloSimulator():
         # May differ E.g. case of Futures
         timeline = [bar.date for bar in og_data]
         # Testing
-        print("-----------------------------------------")
-        print(f"This is the timeline in price_to_bar MCS.engine \n{timeline}")
-        print("-----------------------------------------")
-        print(f"This is the og close prices in price_to_bar MCS.engine \n"
-            f"{[bar.close for bar in og_data]}")
-        print("-----------------------------------------")
-        print(f"This is the randomized close prices{random_close_prices}")
-        print("-----------------------------------------")
-        print(f"This is the length of og_data and timeline"
-              f"in MCS \n{len(og_data), len(timeline)}")
-        print("-----------------------------------------")
+        # print("-----------------------------------------")
+        # print(f"This is the timeline in price_to_bar MCS.engine \n{timeline}")
+        # print("-----------------------------------------")
+        # print(f"This is the og close prices in price_to_bar MCS.engine \n"
+        #     f"{[bar.close for bar in og_data]}")
+        # print("-----------------------------------------")
+        # print(f"This is the randomized close prices{random_close_prices}")
+        # print("-----------------------------------------")
+        # print(f"This is the length of og_data and timeline"
+        #       f"in MCS \n{len(og_data), len(timeline)}")
+        # print("-----------------------------------------")
 
 
         # Obtain relative difference between the various OHLC data
