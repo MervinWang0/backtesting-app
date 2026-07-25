@@ -14,6 +14,7 @@ import dj_database_url
 from dotenv import load_dotenv
 from pathlib import Path
 
+
 # Loads environemnt variables
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -152,3 +153,5 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "login"
+
+

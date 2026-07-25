@@ -59,7 +59,7 @@ class Command(BaseCommand):
         
         parser.add_argument("--period",
                             type=str,
-                            default="1mo",
+                            default="1d",
                             help="Enter desired period, e.g., 1yr, 6mo")
         
         parser.add_argument("--interval", type=str, default="1d", help="Enter desired interval, e.g., 1d, 1h")
