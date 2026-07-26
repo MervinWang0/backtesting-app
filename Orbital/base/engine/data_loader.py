@@ -1,7 +1,10 @@
+from __future__ import annotations
 import os
 import sys
 import django
 from pathlib import Path
+
+
 
 
 BASE_DIR = Path(__file__).resolve().parent
