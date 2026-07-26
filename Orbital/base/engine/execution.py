@@ -1,3 +1,4 @@
+from __future__ import annotations
 from queue import Queue
 from base.engine.events import OrderEvent, FillEvent
 from base.engine.data_loader import DataLoader

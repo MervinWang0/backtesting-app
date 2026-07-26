@@ -1,3 +1,4 @@
+from __future__ import annotations
 from queue import Queue
 from datetime import datetime
 from decimal import Decimal
@@ -147,7 +148,7 @@ class Portfolio(ABC):
             )
             return float(amount) * direct_price
 
-        except ValueError, KeyError:
+        except (ValueError, KeyError):
             pass
 
         try:
