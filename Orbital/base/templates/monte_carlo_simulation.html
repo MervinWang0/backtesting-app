@@ -73,7 +73,9 @@
             <span
             class= "term-tip term-tip--left term-tip--above"
             tabindex= "0"
-            data-tooltip= "Jump Diffusion">
+            data-tooltip= "The addition of a jump diffusion model is used to mimic 
+            the spikes in prices that occur in real market conditions by adding price 
+            jumps to the simualted data.">
             Jump Diffusion:
             </span>
             <input type="checkbox" id="is_jump_diffusion" name="Jump Diffusion">
@@ -82,7 +84,9 @@
             <span
             class= "term-tip term-tip--left term-tip--above"
             tabindex= "0"
-            data-tooltip= "Jump Diffusion">
+            data-tooltip= "The addition of a regime switching model is used to calculate regimes, 
+            periods of sustained behaviour in a market. This is done in hopes of mimicing real 
+            market conditions, in which prices have different behaviour based on a regime."
             Regime Switching:
             </span>
             <input type="checkbox" id="is_regime_switching" name="Regime Switching">
@@ -91,7 +95,8 @@
             <span
             class= "term-tip term-tip--left term-tip--above"
             tabindex= "0"
-            data-tooltip= "T">
+            data-tooltip= "A T distribution is an attempt to make the price randomization more realistic, 
+            by modelling fatter tails, which are a phenomenon in real markets.">
             T Distribution:
             </span>
             <input type="checkbox" id="is_t" name="is_t">
@@ -100,7 +105,8 @@
             <span
             class= "term-tip term-tip--left term-tip--above"
             tabindex= "0"
-            data-tooltip= "">
+            data-tooltip= "The number of simulations to run, on the remote server ~200 simulations 
+            take about 15s.">
             Number Of Simulation:
             </span>
             <input type="number" placeholder="E.g. 50-200" id="num_sims" name="Number Of Simulations">
@@ -109,7 +115,9 @@
             <span
             class= "term-tip term-tip--left term-tip--above"
             tabindex= "0"
-            data-tooltip= "">
+            data-tooltip= "The Degree Of Freedom is a modifier for the t distribution, it has to be 
+            greater than 2, and is typically set between 5-8. As it increases, the distribution becomes 
+            more similar to a normal distribution.">
             Degree Of Freedom:
             </span>
             <input type="number" placeholder="E.g. integer > 2"id="df" name="Degree Of Freedom">
@@ -118,7 +126,7 @@
             <span
             class= "term-tip term-tip--left term-tip--above"
             tabindex= "0"
-            data-tooltip= "">
+            data-tooltip= "The number of jumps to simulate per trading year. Typically 1-2.">
             Yearly Expected Number Of Jumps:
             </span>
             <input type="number" id="exp_jumps" name="Expected Number Of Jumps">
@@ -127,7 +135,8 @@
             <span
             class= "term-tip term-tip--left term-tip--above"
             tabindex= "0"
-            data-tooltip= "">
+            data-tooltip= "The typically size of a price jump, a jump of 0.1, means the price of the 
+            asset may increase by 10% in a day. Typically around 0.03-0.06">
             Average Jump Size:
             </span>
             <input type="number" id="mean_log_jump_size" name="Average Jump Size">
@@ -136,7 +145,7 @@
             <span
             class= "term-tip term-tip--left term-tip--above"
             tabindex= "0"
-            data-tooltip= "">
+            data-tooltip= "The standard deviation of a price jump typically around, 0.05-0.08">
             Standard Deviation Of Jumps:
             </span>
             <input type="number" id="std_log_jump_size" name="Standard Deviation Of Jumps">

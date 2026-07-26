@@ -614,20 +614,20 @@ class Portfolio(ABC):
         }
 
         self.benchmark_records[date] = record
-        # BenchmarkRecord.objects.update_or_create(
-        #     backtest_run = self.backtest_run,
-        #     date = date,
-        #     defaults = {
-        #         "ticker": self.benchmark_ticker,
-        #         "close_price": to_decimal(benchmark_price),
-        #         "quantity": to_decimal(self.benchmark_quantity),
-        #         "market_value": to_decimal(market_value),
-        #         "unrealised_pnl": to_decimal(benchmark_unrealised_pnl),
-        #     }
-        # )
-        #print(f"Updated benchmark record for {self.benchmark_ticker} on 
-        # {date}: price {benchmark_price}, quantity {self.benchmark_quantity},
-        # market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")
+        BenchmarkRecord.objects.update_or_create(
+            backtest_run = self.backtest_run,
+            date = date,
+            defaults = {
+                "ticker": self.benchmark_ticker,
+                "close_price": to_decimal(benchmark_price),
+                "quantity": to_decimal(self.benchmark_quantity),
+                "market_value": to_decimal(market_value),
+                "unrealised_pnl": to_decimal(benchmark_unrealised_pnl),
+            }
+        )
+        print(f"Updated benchmark record for {self.benchmark_ticker} on 
+        {date}: price {benchmark_price}, quantity {self.benchmark_quantity},
+        market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")
 
     # Position sizing methods
     def get_unit_exposure(self, ticker:str, price:float):

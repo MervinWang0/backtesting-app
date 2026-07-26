@@ -194,9 +194,9 @@ class Backtest:
         self.build_continuous_series = build_continuous_series
         self.continuous_series: dict[str, ContinuousFuturesSeries] = {}
         if (self.is_futures() and self.build_continuous_series):
-            print("-----------------------------------------")
-            print("This is from backtest init in engine.backtest.py")
-            print("This backtest uses a futures and builds a series")
+            # print("-----------------------------------------")
+            # print("This is from backtest init in engine.backtest.py")
+            # print("This backtest uses a futures and builds a series")
             self.prepare_continuous_series()
         self.rollover_count = 0
         self.processed_rollovers = set()
@@ -284,6 +284,7 @@ class Backtest:
                               fill_records=self.portfolio.get_fill_records(),
                               risk_free_rate=self.risk_free_rate)
         if not self.is_mcs:
+            self.portfolio.update_benchmark_record()
             self.portfolio.complete_bt()
             self.run_model.end_equity = result.get_end_equity()
             self.run_model.is_completed = True

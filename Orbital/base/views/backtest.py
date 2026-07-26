@@ -9,7 +9,8 @@ from base.engine.data_loader import DatabaseDataLoader
 from base.engine.backtest import Backtest
 from base.engine.execution import ExecutionLoader
 from base.models import (StockPriceHistory, Stock,
-ContinuousFuturesSeries, FuturesContract, ForexPair)
+ContinuousFuturesSeries, FuturesContract, ForexPair,
+BenchmarkRecord, PortfolioEquityRecord)
 from django.core.management import call_command
 import re 
 
@@ -78,8 +79,8 @@ def backtest_graph(request) -> JsonResponse:
         # backtest can be run.
         # TODO Move this to backtest
         if data["asset_type"] == "FUTURES":
-            print("backtest_graph of backtest.py")
-            print("Building futures series")
+            # print("backtest_graph of backtest.py")
+            # print("Building futures series")
             data["roll_days"] = 5
             data["continuous_contract_index"] = 1
             data["adjustment_method"] = "NONE"
@@ -108,29 +109,42 @@ def backtest_graph(request) -> JsonResponse:
                                          start_date=data["start_date"],
                                          end_date=data["end_date"],
                                          asset_type=data["asset_type"])
-        print("Backtest not executed but params created")
+        # print("Backtest not executed but params created")
         backtest = Backtest(
                             events=data_loader.events,
                             data_loader=data_loader,
                             **data
                             )
-        print("These are the attributes of the backtest obj"
-              "In the original backtest webpage")
+        # print("These are the attributes of the backtest obj"
+        #       "In the original backtest webpage")
         # print(backtest.__dict__)
-        print(f"This is the number of days of data needed")
-        print("Backtest created")
+        # print(f"This is the number of days of data needed")
+        # print("Backtest created")
         btr = backtest.run()
-        print("Backtest executed")
+        # print("Backtest executed")
         fig = btr.get_equity_graph()
         # fig.show()
-        print("equity graph obtained")
+        # print("equity graph obtained")
         equity_graph_html = fig.to_html(full_html=False)
-        print("equity graph converted to html")
+        # print("equity graph converted to html")
 
         # Also pass in the performance metrics.
+        run_model = backtest.run_model
+        run_id = backtest.get_backtest_run_id()
         metrics = btr.get_metrics()
+        benchmark_record = BenchmarkRecord.objects.filter(backtest_run=run_model)
+        market_value = benchmark_record.market_value
+        print(f"This is the market value retrieved from the model {market_value}")
+        portfolio_metrics = PortfolioEquityRecord.objects.filter(backtest_run_id=run_id).values(
+    'total_commission', 'gross_exposure', 'net_exposure', 'gross_exposure_leverage'
+)
+        
         return JsonResponse({"equity_graph_html" : equity_graph_html,
-                             "metrics" : metrics, "run_id" : backtest.get_backtest_run_id()})
+                             "metrics" : metrics,
+                             "run_id" : backtest.get_backtest_run_id(),
+                             "portfolio_metrics" : portfolio_metrics,
+                             "market_value" : market_value,
+                             })
     else:
         return JsonResponse(
             {"error": "This endpoint only supports POST requests."},

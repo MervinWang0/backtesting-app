@@ -371,7 +371,7 @@ class GBMPriceSimulator(PriceSimulator):
  
         return (mu, sigma)
 
-class JumpComponent():
+class JumpComponent(Component):
     ''' 
     This class stores the jump params, and contains a method to apply the jump
     factors to the randomize prices params
@@ -419,7 +419,7 @@ class JumpComponent():
         param[:, 3] = np.array(jump_contribution_lst)
         return param
 
-class RegimeComponent():
+class RegimeComponent(Component):
     '''
     This class contains the params for regime switching and a method that
     applies the regime switching to the gbm params.
@@ -497,7 +497,7 @@ class RegimeComponent():
         model.transmat_ = model.transmat_[np.ix_(order, order)]
         return model
 
-class TComponent():
+class TComponent(Component):
     ''' 
     This class takes in one param, df, and changes epsilon in params
     '''
