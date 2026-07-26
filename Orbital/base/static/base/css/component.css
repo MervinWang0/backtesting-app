@@ -466,6 +466,49 @@
     min-height: 400px;
 } */ 
 
+/* Checkbox Styling */
+.activity-value input[type="checkbox"] {
+    /* Remove default browser styling */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    
+    /* Custom dimensions and look */
+    width: 22px;
+    height: 22px;
+    border: 2px solid #b0b0b0;
+    border-radius: 5px;
+    background-color: #ffffff;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease-in-out;
+    flex-shrink: 0; /* Prevents the checkbox from shrinking */
+}
+
+/* 3. Hover State */
+.activity-value input[type="checkbox"]:hover {
+    border-color: #0056b3;
+    box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
+}
+
+/* 4. Checked State (Background & Border) */
+.activity-value input[type="checkbox"]:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+/* 5. The Checkmark Icon (Appears when checked) */
+.activity-value input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 2px;
+    width: 6px;
+    height: 12px;
+    border: solid #ffffff;
+    border-width: 0 2.5px 2.5px 0;
+    transform: rotate(45deg);
+}
 /* Progress bar css */
 
 /* The style of the graph needs to be configured, 
