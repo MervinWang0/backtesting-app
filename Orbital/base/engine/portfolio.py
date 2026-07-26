@@ -614,17 +614,6 @@ class Portfolio(ABC):
         }
 
         self.benchmark_records[date] = record
-        BenchmarkRecord.objects.update_or_create(
-            backtest_run = self.backtest_run,
-            date = date,
-            defaults = {
-                "ticker": self.benchmark_ticker,
-                "close_price": to_decimal(benchmark_price),
-                "quantity": to_decimal(self.benchmark_quantity),
-                "market_value": to_decimal(market_value),
-                "unrealised_pnl": to_decimal(benchmark_unrealised_pnl),
-            }
-        )
         # print(f"Updated benchmark record for {self.benchmark_ticker} on 
         # {date}: price {benchmark_price}, quantity {self.benchmark_quantity},
         # market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")
@@ -797,7 +786,7 @@ class DatabasePortfolio(Portfolio):
     '''
 
     def __init__(self, data_loader, events, run_name, strategy_name, start_date,
-                 end_date, run_model, initial_capital = 100000, quantity=5):
+                 end_date, run_model, initial_capital = 100000, quantity=5,):
         super().__init__(data_loader, events, run_name, strategy_name, start_date, end_date, initial_capital, quantity)
         self.backtest_run = run_model
         self._load_caches()

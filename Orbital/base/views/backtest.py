@@ -133,20 +133,23 @@ def backtest_graph(request) -> JsonResponse:
         run_model = backtest.run_model
         run_id = backtest.get_backtest_run_id()
         metrics = btr.get_metrics()
-        benchmark_record = BenchmarkRecord.objects.get(backtest_run=run_model)
-        market_value = benchmark_record.market_value
+        benchmark_record = BenchmarkRecord.objects.filter(backtest_run=run_model).values('market_value')
+        market_value = list(benchmark_record)[-1]['market_value']
         print(f"This is the market value retrieved from the model {market_value}")
         portfolio_metrics = PortfolioEquityRecord.objects.filter(backtest_run_id=run_id).values(
     'total_commission', 'gross_exposure', 'net_exposure', 'gross_exposure_leverage')
-        portfolio_metrics = list(portfolio_metrics)
+        # print(pd.DataFrame(list(portfolio_metrics)).to_string())
+        portfolio_metrics = list(portfolio_metrics)[-1]
+        portfolio_metrics.pop("net_exposure")
+
         # portfolio_metrics = pd.DataFrame(list(portfolio_metrics))
         # print(f"This is the portfolio metrics retrieved from the model {portfolio_metrics}")
-        print(f"This should be the latest row of portfolio metrics {portfolio_metrics[-1]}")
+        # print(f"This should be the latest row of portfolio metrics {portfolio_metrics[-1]}")
 
         return JsonResponse({"equity_graph_html" : equity_graph_html,
                              "metrics" : metrics,
                              "run_id" : backtest.get_backtest_run_id(),
-                             "portfolio_metrics" : portfolio_metrics[-1],
+                             "portfolio_metrics" : portfolio_metrics,
                              "market_value" : market_value,
                              })
     else:

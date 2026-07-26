@@ -280,6 +280,8 @@ class Backtest:
                 self.futures_rollover()
             self.execute_events()
             self.portfolio.update_equity_record()
+            if not self.is_mcs:
+                self.portfolio.update_benchmark_record()
         result = BacktestResult(equity_records=self.portfolio.get_equity_records(),
                               fill_records=self.portfolio.get_fill_records(),
                               risk_free_rate=self.risk_free_rate)
