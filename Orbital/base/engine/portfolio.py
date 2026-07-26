@@ -625,9 +625,9 @@ class Portfolio(ABC):
                 "unrealised_pnl": to_decimal(benchmark_unrealised_pnl),
             }
         )
-        print(f"Updated benchmark record for {self.benchmark_ticker} on 
-        {date}: price {benchmark_price}, quantity {self.benchmark_quantity},
-        market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")
+        # print(f"Updated benchmark record for {self.benchmark_ticker} on 
+        # {date}: price {benchmark_price}, quantity {self.benchmark_quantity},
+        # market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")
 
     # Position sizing methods
     def get_unit_exposure(self, ticker:str, price:float):
