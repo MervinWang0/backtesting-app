@@ -1,160 +1,234 @@
 {% extends "base/base.html" %}
+{% load static %}
+
+<link rel = 'stylesheet' href = "{% static 'base/portfolio.css' %}">
 
 {% block content %}
-<div class="paper-dashboard">
-    <h1>Paper trading account</h1>
+<div class="page-container paper-dashboard">
+    <div class="dashboard-section">
+        <div class="section-heading">
+            <span class="eyebrow">Simulation</span>
+            <h1>Paper Trading Account</h1>
+        </div>
 
-    {% if accounts %}
-        <form method="get" id="account-selector">
-            <label for="account">Paper Account</label>
-
-            <select
-                name="account"
-                id="account"
-                onchange="this.form.submit()"
-            >
-                {% for account in accounts %}
-                    <option
-                        value="{{ account.id }}"
-                        {% if selected_account and account.id == selected_account.id %}
-                            selected
-                        {% endif %}
+        {% if accounts %}
+            <form method="get" id="account-selector" class="account-selector-form">
+                <div class="form-field">
+                    <label for="account">Paper Account</label>
+                    <select
+                        name="account"
+                        id="account"
+                        onchange="this.form.submit()"
                     >
-                        {{ account }}
-                    </option>
-                {% endfor %}
-            </select>
+                        {% for account in accounts %}
+                            <option
+                                value="{{ account.id }}"
+                                {% if selected_account and account.id == selected_account.id %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ account.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <noscript>
+                    <button type="submit" class="primary-button">Display account details</button>
+                </noscript>
+            </form>
 
-            <noscript>
-                <button type="submit">Display account details</button>
-            </noscript>
-        </form>
+            {% if selected_account %}
+                <section class="account-summary-card">
+                    <div class="summary-header">
+                        <h2>Account Summary</h2>
+                    </div>
+                    
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <span class="summary-label">Initial Balance</span>
+                            <span class="summary-value">{{ selected_account.base_currency }}${{ selected_account.initial_capital }}</span>
+                        </div>
+                        
+                        
+                        {% if selected_account.cash_balance is not None %}
+                            <div class="summary-item highlight">
+                                <span class="summary-label">Cash Balance</span>
+                                <span class="summary-value balance-amount">{{ selected_account.base_currency }}${{ selected_account.cash_balance|floatformat:2 }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+                <section class="delete-account-card">
+                    <div class="delete-account-header">
+                        <div>
+                            <span class="summary-label">Danger Zone</span>
+                            <h2>Delete Paper Account</h2>
+                        </div>
+                    </div>
 
-        {% if selected_account %}
-            <section class="account-summary">
-                <h2>Account summary</h2>
+                    <p>
+                        Deleting
+                        <strong>{{ selected_account.name }}</strong>
+                        will permanently remove its positions, orders and trades.
+                    </p>
 
-                <dl>
-                    <dt>Account</dt>
-                    <dd>{{ selected_account }}</dd>
+                    <form
+                        method="post"
+                        action="{% url 'delete_paper_account' %}"
+                        class="delete-account-form"
+                        id="delete-account-form"
+                    >
+                        {% csrf_token %}
 
-                    <dt>Account ID</dt>
-                    <dd>{{ selected_account.name }}</dd>
+                        <input
+                            type="hidden"
+                            name="account_id"
+                            value="{{ selected_account.id }}"
+                        >
 
-                    {% if selected_account.balance is not None %}
-                        <dt>Cash balance</dt>
-                        <dd>{{ selected_account.balance|floatformat:2 }}</dd>
+                        <label class="delete-confirmation">
+                            <input
+                                type="checkbox"
+                                name="confirm_delete"
+                                id="confirm-delete"
+                                required
+                            >
+
+                            <span>
+                                I understand that this action cannot be undone.
+                            </span>
+                        </label>
+
+                        <button
+                            type="submit"
+                            class="danger-button"
+                            id="delete-account-button"
+                            disabled
+                        >
+                            Delete {{ selected_account.name }}
+                        </button>
+                    </form>
+                </section>
+                <section class="dashboard-section">
+                    <div class="section-heading">
+                        <h2>Open Positions</h2>
+                    </div>
+
+                    {% if positions %}
+                        <div class="stock-table-wrapper">
+                            <table class="stock-table">
+                                <thead>
+                                    <tr>
+                                        <th>Stock</th>
+                                        <th class="quantity-column">Quantity</th>
+                                        <th class="price-column">Average Cost</th>
+                                        <th class="change-column">Realised P&L</th>
+                                        <th>Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for position in positions %}
+                                        <tr>
+                                            <td class="stock-symbol">{{ position.stock.ticker }}</td>
+                                            <td class="quantity-column">{{ position.stock_quantity|floatformat:4 }}</td>
+                                            <td class="price-column">${{ position.avg_cost|floatformat:4 }}</td>
+                                            <td class="change-column">{{ position.realised_pnl|floatformat:4 }}</td>
+                                            <td>{{ position.updated_at|date:"d M Y, H:i" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty">
+                            <p>This account does not have any open positions.</p>
+                        </div>
                     {% endif %}
-                </dl>
-            </section>
+                </section>
 
-            <section>
-                <h2>Open positions</h2>
-
-                {% if positions %}
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Stock</th>
-                                    <th>Quantity</th>
-                                    <th>Average cost</th>
-                                    <th>Realised PnL</th>
-                                    <th>Updated</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                {% for position in positions %}
-                                    <tr>
-                                        <td>{{ position.stock.ticker }}</td>
-                                        <td>
-                                            {{ position.stock_quantity|floatformat:4 }}
-                                        </td>
-                                        <td>
-                                            {{ position.avg_cost|floatformat:4 }}
-                                        </td>
-                                        <td>
-                                            {{ position.realised_pnl|floatformat:4 }}
-                                        </td>
-                                        <td>
-                                            {{ position.updated_at|date:"d M Y, H:i" }}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                <section class="dashboard-section">
+                    <div class="section-heading">
+                        <h2>Trade History</h2>
                     </div>
-                {% else %}
-                    <p>This account does not have any open positions.</p>
-                {% endif %}
-            </section>
-
-            <section>
-                <h2>Trade history</h2>
-                {% if trades %}
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Stock</th>
-                                    <th>Price</th>
-                                    <th>Quantity</th>
-                                    <th>Opened</th>
-                                    <th>Closed</th>
-                                    <th>Gross amount</th>
-                                    <th>Comission</th>
-                                    <th>Realised P&L</th>
-                                    <th>Cash Change</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                {% for trade in trades %}
+                    {% if trades %}
+                        <div class="stock-table-wrapper">
+                            <table class="stock-table">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            {{ trade.date|date:"d M Y" }}
-                                        </td>
-                                        <td>
-                                            {{ trade.stock.ticker }}
-                                        </td>
-                                        <td>
-                                            {{ trade.fulfilled_price|floatformat:4 }}
-                                        </td>
-                                        <td>
-                                            {{ trade.quantity|floatformat:4 }}
-                                        </td>
-                                        <td>
-                                            {{ trade.opened_quantity|floatformat:4 }}
-                                        </td>
-                                        <td>
-                                            {{ trade.closed_quantity|floatformat:4 }}
-                                        </td>
-                                        <td>
-                                            {{ trade.gross_amount|floatformat:4 }}
-                                        </td>
-                                        <td>
-                                            {{ trade.commission|floatformat:4 }}
-                                        </td>
-                                        <td>
-                                            {{ trade.realised_pnl|floatformat:4 }}
-                                        </td>
-                                        <td>
-                                            {{ trade.cash_change|floatformat:4 }}
-                                        </td>
+                                        <th>Date</th>
+                                        <th>Stock</th>
+                                        <th class="price-column">Price</th>
+                                        <th class="quantity-column">Quantity</th>
+                                        <th class="quantity-column">Opened</th>
+                                        <th class="quantity-column">Closed</th>
+                                        <th class="price-column">Gross Amount</th>
+                                        <th class="price-column">Commission</th>
+                                        <th class="change-column">Realised P&L</th>
+                                        <th class="change-column">Cash Change</th>
                                     </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <p>This account does not have any trades.</p>
-                {% endif %}
-            </section>
+                                </thead>
+                                <tbody>
+                                    {% for trade in trades %}
+                                        <tr>
+                                            <td>{{ trade.date|date:"d M Y" }}</td>
+                                            <td class="stock-symbol">{{ trade.stock.ticker }}</td>
+                                            <td class="price-column">${{ trade.fulfilled_price|floatformat:4 }}</td>
+                                            <td class="quantity-column">{{ trade.quantity|floatformat:4 }}</td>
+                                            <td class="quantity-column">{{ trade.opened_quantity|floatformat:4 }}</td>
+                                            <td class="quantity-column">{{ trade.closed_quantity|floatformat:4 }}</td>
+                                            <td class="price-column">${{ trade.gross_amount|floatformat:4 }}</td>
+                                            <td class="price-column">${{ trade.commission|floatformat:4 }}</td>
+                                            <td class="change-column">{{ trade.realised_pnl|floatformat:4 }}</td>
+                                            <td class="change-column">{{ trade.cash_change|floatformat:4 }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty">
+                            <p>This account does not have any trades.</p>
+                        </div>
+                    {% endif %}
+                </section>
+            {% endif %}
+        {% else %}
+            <div class="empty">
+                <p>You do not have any paper trading accounts.</p>
+            </div>
         {% endif %}
-    {% else %}
-        <p>You do not have any paper trading accounts.</p>
-    {% endif %}
+    </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const checkbox = document.getElementById("confirm-delete");
+        const deleteButton = document.getElementById(
+            "delete-account-button"
+        );
+        const deleteForm = document.getElementById(
+            "delete-account-form"
+        );
+
+        if (!checkbox || !deleteButton || !deleteForm) {
+            return;
+        }
+
+        checkbox.addEventListener("change", function () {
+            deleteButton.disabled = !checkbox.checked;
+        });
+
+        deleteForm.addEventListener("submit", function (event) {
+            const accountName = "{{ selected_account.name|escapejs }}";
+
+            const confirmed = window.confirm(
+                `Permanently delete "${accountName}"?`
+            );
+
+            if (!confirmed) {
+                event.preventDefault();
+            }
+        });
+    });
+</script>
 {% endblock %}
