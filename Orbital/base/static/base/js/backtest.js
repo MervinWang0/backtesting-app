@@ -464,6 +464,17 @@ function graph_backtest() {
             para = div.querySelector("p");
             para.innerHTML = "";
         }
+        console.log(`This is the market value for VOO = ${data['market_value']}`);
+        console.log(`This is the porfolio metrics = ${data['portfolio_metrics']}`);
+        const voo_benchmark_p = document.getElementById("VOO Benchmark");
+        voo_benchmark_p.innerHTML = data['market_value'];
+        voo_benchmark_p.parentElement.style.display = '';
+        for(const [key, value] of Object.entries(data["portfolio_metrics"])) {
+            // console.log(`This is the key of the data['portfolio_metrics'] = ${key}`)
+            let para = document.getElementById(key);
+            para.innerHTML = value;
+            para.parentElement.style.display = '';
+        }
 
         // For each metric calculated turn it visible and place the value in it
         // console.log(data["metrics"])
