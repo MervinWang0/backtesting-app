@@ -105,6 +105,7 @@ class Distribution():
         result.update({"50th Percentile" : self.ppf(50)})
         result.update({"75th Percentile" : self.ppf(75)})
         result.update({"90th Percentile" : self.ppf(90)})
+        print(f"This is the {result}\n")
         return result
 
     def distribution_graph(self) -> px.Figure:

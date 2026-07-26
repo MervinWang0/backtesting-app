@@ -283,6 +283,9 @@ class Portfolio(ABC):
         return total_value
 
     def generate_order(self, signal: SignalEvent):
+        print("-------From generate_order in portfolio.py---------\n")
+        print(f"This is the signal = \n{signal}")
+        print(f"This is the target quantity = {self.calculate_target_quantity(signal)}\n")
         ticker = signal.ticker
         signal_type = signal.signal_type
         current_quantity = self.holdings[ticker]
@@ -299,6 +302,8 @@ class Portfolio(ABC):
         target_qty = self.calculate_target_quantity(signal)
 
         if target_qty <= 0:
+            # Even if there is no equity left, the backtest should still be able to run.
+            return None
             raise ValueError(f"Invalid quantity {target_qty}")
         
         if signal_type == "LONG":
@@ -940,10 +945,11 @@ class DatabasePortfolio(Portfolio):
         self.update_cash(event, net_realised_pnl)
 
         self.holdings[ticker] = new_quantity
-        print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
-        print(f"Current capital after fill: {self.current_capital}")
+        # print("-----From update_fill in portfolio.py--------------")
+        # print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
+        # print(f"Current capital after fill: {self.current_capital}")
         self.realised_pnl += net_realised_pnl
-        print(f"Realized PnL after fill: {self.realised_pnl}")
+        # print(f"Realized PnL after fill: {self.realised_pnl}")
 
         self.update_fill_records(event,
                             curr_quantity,
@@ -965,7 +971,7 @@ class MCSPortfolio(Portfolio):
         This version of update fill lacks the self.end_equity because the db records
         are not saved
         '''
-        print("Update fill for MCS from portfolio")
+        # print("Update fill for MCS from portfolio")
         if event.type != "FILL":
             raise ValueError(f"Invalid event type {event.type} in fill update. Expected 'FILL'.")
         

@@ -88,7 +88,7 @@ if __name__ == "__main__":
                         tickers=["AAPL"],
                         start_date=start_date,
                         end_date=end_date,
-                        strategy_name="MovingAverageCross",
+                        strategy_name="Mean Reversion",
                         asset_type="STOCK",
                         short_window=5,
                         long_window=10,
@@ -277,17 +277,17 @@ if __name__ == "__main__":
     # Testing if randomize prices works when integrated with jump, t and reg
     #  Graphs the prices
 # ----------------------------------------------------------------------------------------------- # 
-    prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
-    jump_component = JumpComponent(2, 0.05, 0.10)
-    regime_component = RegimeComponent(prices)
-    t_component = TComponent(df=5)
-    price_simulator = GBMPriceSimulator(prices, JumpComponent=jump_component,
-                                        RegimeComponent=regime_component, TComponent=t_component)
-    result = []
-    num_sims = 30
-    for _ in range(num_sims):
-        result.append(price_simulator.randomize_price())
-    graph.show_price_graphs(result).show()
+    # prices = list(map(lambda bar: bar.close, stock_data["AAPL"]))
+    # jump_component = JumpComponent(2, 0.05, 0.10)
+    # regime_component = RegimeComponent(prices)
+    # t_component = TComponent(df=5)
+    # price_simulator = GBMPriceSimulator(prices, JumpComponent=jump_component,
+    #                                     RegimeComponent=regime_component, TComponent=t_component)
+    # result = []
+    # num_sims = 30
+    # for _ in range(num_sims):
+    #     result.append(price_simulator.randomize_price())
+    # graph.show_price_graphs(result).show()
     
 # ----------------------------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------------------------- #

@@ -53,16 +53,21 @@ quicktest_input_btn.addEventListener("click", () => {
 
 function run_graph(){
     if(!validate()){return;}
-    update_progress()
+    bar_set_run();
+    update_progress();
+    // graph_hide();
+    hide_output();
     graph_mcs();
 }
 
-function hide_output() {
-    output_container.style.display = "none";
+function graph_hide() {
+    const graph_container = document.getElementById("mcs_graph_container");
+    graph_container.style.display = "none"
 }
 
-function show_output() {
-    output_container.style.display = "";
+function graph_show() {
+    const graph_container = document.getElementById("mcs_graph_container");
+    graph_container.style.display = ""
 }
 // Takes in an array of ids and removes the checkbox ids
 function remove_checkbox_ids(array) {
@@ -119,6 +124,7 @@ function graph_mcs() {
     })
     .then(response => response.json())
     .then(data => {
+        // graph_show();
         bar_set_data_calculated();
         //  For graph
         const mcs_graph_container = document.getElementById('mcs_graph_container');
@@ -128,7 +134,6 @@ function graph_mcs() {
         let fragment = range.createContextualFragment(data["mcs_graph_html"]);
         console.log(`This is what html of graph looks like ${fragment}`);
         mcs_graph_container.append(fragment);
-
         // Make visible output
         console.log(data);
         console.log(data["mcs_metrics"]);
@@ -288,8 +293,12 @@ function get_cleaned_params() {
 // Fill in visible parameters,
 // Hide non visible parametrs
 function quicktest(param_list) {
-    console.log(`This is the param_list used for quicktest
-        ${param_list}`);
+    // console.log(`This is the param_list used for quicktest
+    //     ${param_list}`);
+    bar_set_reset();
+    hide_output();
+    // graph_hide();
+
     // Pass param list to a view function and expect a list of values to update input with
     fetch("/get_quicktest_input/", {
         method: "POST",
@@ -370,13 +379,13 @@ function get_all_parameters() {
 // A Function to hide the output table
 function hide_output() {
     const output_table = document.getElementById("output_container");
-    output_container.style.display = "none";
+    output_table.style.display = "none";
 }
 
 // A Function to show the output table
 function show_output() {
     const output_table = document.getElementById("output_container");
-    output_container.style.display = "";
+    output_table.style.display = "";
 }
 
 function show_bar() {
@@ -388,7 +397,10 @@ function hide_bar() {
     const progress_wrapper = document.getElementById("progress-wrapper");
     progress_wrapper.style.display = "none";
 }
-
+function bar_set_reset() {
+    progress_bar.style.background = "linear-gradient(90deg, #3b82f6, #8b5cf6);";
+    bar_state = "Monte Carlo Simulation Not Started"
+}
 function bar_set_run() {
     progress_bar.style.background = "linear-gradient(90deg, #3b82f6, #8b5cf6);";
     progress_bar.style.animation = "width 0.3s ease;";
@@ -422,15 +434,19 @@ function update_progress() {
     switch(bar_state) {
         case "Monte Carlo Simulation Not Started":
             bar_width = 0;
+            progress_bar.style.background = "linear-gradient(90deg, #3b82f6, #8b5cf6);";
             break;
         case "Running Monte Carlo Simulation":
             bar_width = 30;
+            progress_bar.style.background = "linear-gradient(90deg, #3b82f6, #8b5cf6);";
             break;
         case "Data Calculated, Displaying Data":
             bar_width = 80;
+            progress_bar.style.background = "linear-gradient(90deg, #3b82f6, #8b5cf6);";
             break;
         case "Monte Carlo Simulation Finished":
             bar_width = 100;
+            progress_bar.style.background = "linear-gradient(90deg, #3b82f6, #8b5cf6);";
             progress_bar.style.animation = "none";
             break;
         case "Error":
@@ -453,5 +469,5 @@ function update_progress() {
     loading_text.textContent = bar_state;
     if(bar_state === "Monte Carlo Simulation Finished") {return;}
     if(bar_state === "Error") {return;}
-    setTimeout(update_progress, 50);
+    setTimeout(update_progress, 200);
 }

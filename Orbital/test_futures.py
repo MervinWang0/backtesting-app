@@ -32,7 +32,7 @@ from base.engine.data_loader import DatabaseDataLoader
 # Test configuration
 # ---------------------------------------------------------------------
 
-ROOT_SYMBOL = "M2K"
+ROOT_SYMBOL = "NG"
 
 START_DATE = date(2020, 1, 1)
 END_DATE = date(2025, 12, 31)
@@ -225,13 +225,11 @@ def run_futures_backtest():
         start_date=START_DATE,
         end_date=END_DATE,
         strategy_name="MACD",
-        macd_short_window=9,
-        macd_long_window=28,
+        macd_short_window=20,
+        macd_long_window=50,
         strength=1.0,
         slippage=0.0,
         initial_capital=100_000.0,
-        short_window=20,
-        long_window=100,
         comission=0.0,
         roll_days=ROLL_DAYS,
         continuous_contract_index=CONTRACT_INDEX,

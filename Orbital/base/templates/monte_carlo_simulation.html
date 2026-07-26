@@ -40,6 +40,30 @@
         </div>
 
     </div>
+    {% comment %} Description container {% endcomment %}
+    <div id="description_container" >
+        <div class="flex-row-description" id="breakout_description">
+            <div class="activity-value flex-item-text">
+                <p>
+                    A Monte Carlo Simulation is a way of testing the robustness of a trading strategy.
+                     Basically, it asks the question, "This strategy trades well for this situation, 
+                     but would it trade well in an alternate situation?"    
+                </p>
+                <p>
+                    First it generates plausible random versions of the original price history of the asset. 
+                    Then it performs the backtesting strategy on the randomized data.
+                </p>
+                <p>
+                    Afterwards the results are represented as a distribution. Representing the likelihood of 
+                    the strategy performing well in different situations.
+                </p>
+            </div>
+            {% comment %} <div class="activity-value flex-item-img">
+                <img src= "{% static 'base/img/breakout.jpg' %}"
+                alt="Oops! Failed to load image.">
+            </div> {% endcomment %}
+        </div>
+    </div>
     {% comment %} Container for inputs {% endcomment %}
     <div class='container grid-container' name="input_container" id="input_container">
         <div class='input-field activity-value' >
@@ -122,8 +146,8 @@
             <tr>
                 <th>Metric</th>
                 <th>Original</th>
-                <th>Mean</th>
                 <th>Median</th>
+                <th>Mean</th>
                 <th>Variance</th>
                 <th>Minimum</th>
                 <th>Maximum</th>

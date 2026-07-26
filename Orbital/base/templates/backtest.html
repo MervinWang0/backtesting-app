@@ -60,6 +60,141 @@
 
     </div>
 
+    {% comment %} Tutorial div {% endcomment %}
+    <div id="description_container" >
+        {% comment %} Strategy specific tutorial div {% endcomment %}
+        <div class="flex-row-description" id="breakout_description" style="display:none;">
+            <div class="activity-value flex-item-text">
+                <p>
+                    A Breakout Strategy buys/sells when a stock price moves beyond a defined
+                     support/resistance level. We use the donchian channels method of
+                      determining support and resistance levels.    
+                </p>
+                <p>
+                    The upper band is considered the resistance line and the lower band
+                     the support line. A breakout occurs when the price for a particular
+                      day is outside of the support or resistance lines.
+                </p>
+                <p>
+                    A trading signal is generated in the case of a breakout.
+                </p>
+            </div>
+            <div class="activity-value flex-item-img">
+                <img src= "{% static 'base/img/breakout.jpg' %}"
+                alt="Oops! Failed to load image.">
+            </div>
+        </div>
+        <div class="flex-row-description" id="macd_description" style="display:none;">
+            <div class="activity-value flex-item-text">
+                <p>
+                    This strategy is relatively similar to Moving Average Crossover,
+                     except that it takes in a short, medium, and long window,
+                      and uses an exponential moving average to calculate lines
+                       instead of a simple moving average. Which gives greater
+                        weight to recent prices.
+                </p>
+                <p>
+                    The MACD Line and Signal Line are computed from
+                     the input parameters and used to determine the orders.
+                </p>
+            </div>
+            <div class="activity-value flex-item-img">
+                <img src= "{% static 'base/img/macd.webp' %}"
+                alt="Oops! Failed to load image.">
+            </div>
+        </div>
+        <div class=" flex-row-description" id="mean_reversion_description" style="display:none;">
+            <div class="activity-value flex-item-text">
+                <p>
+                    A Mean Reversion Strategy seeks to identify when an asset is
+                     overbought/oversold and generate sell/buy signals respectively.
+                     This implementation of a Mean Reversion Strategy makes use of there
+                      indicators, Z-Score, Bollinger Bands, and RSI
+                </p>
+                <p>
+                    A MAJORITY logic makes more trades than a AND logic, but is comparatively 
+                    riskier
+                </p>
+            </div>
+            <div class="activity-value flex-item-img">
+                <img src= "{% static 'base/img/mean_reversion.jpeg' %}"
+                alt="Oops! Failed to load image.">
+            </div>
+        </div>
+        <div class=" flex-row-description" id="momentum_description" style="display:none;">
+            <div class="activity-value flex-item-text">
+                <p>
+                    There are multiple different Momentum trading strategies,
+                     but this specific one uses three indicators and is thus
+                      called Triple indicator Momentum Trading. The three indicators
+                       are MACD lines, rising strength index(RSI) and
+                        an exponential moving average.   
+                </p>
+                <p>
+                    A Momentum trading strategy seeks to identify the trend and ride 
+                    the trend. It encapsulates the phrase "Buy High, Sell Higher".
+                </p>
+            </div>
+            <div class="activity-value flex-item-img">
+                <img src= "{% static 'base/img/momentum.webp' %}"
+                alt="Oops! Failed to load image.">
+            </div>
+        </div>
+        <div class=" flex-row-description" id="moving_average_crossover_description" style="display:none;">
+            <div class="activity-value flex-item-text">
+                <p>
+                    A Moving Average Crossover is one of the simplest algorithmic trading strategies. 
+                    It calculates two simple moving averages for any given day. Using a short and a long window. 
+                    When these lines cross each other, it signifies that a trade should be executed.
+                </p>
+                <p>
+                    In fact, this it is widely considered to be the most famous trading strategy, 
+                    basically the equivalent of "Hello World" for algorithmic trading.
+                </p>
+            </div>
+            <div class="activity-value flex-item-img">
+                <img src= "{% static 'base/img/moving_average_crossover.webp' %}"
+                alt="Oops! Failed to load image.">
+            </div>
+        </div>
+        <div class=" flex-row-description" id="roc_description" style="display:none;">
+            <div class="activity-value flex-item-text">
+                <p>
+                The Rate of Change indicator uses a rate of change(ROC) value.
+                 Of which positive ROC indicates upwards price 
+                 acceleration and negative ROC means downwards price acceleration.   
+                </p>
+                <p>
+                There are multiple ways of generating a signal based on the ROC value, 
+                in some cases, the ROC value is used as a predictor as to the market condition, 
+                but in this case, we are using it as it crosses the zero line to generate signals
+                </p>
+            </div>
+            <div class="activity-value flex-item-img">
+                <img src= "{% static 'base/img/roc.png' %}"
+                alt="Oops! Failed to load image.">
+            </div>
+        </div>
+        <div class=" flex-row-description" id="stoc_osc_description" style="display:none;">
+            <div class="activity-value flex-item-text">
+                <p>
+                    The Stochastic oscillator is used here as a mean reversion strategy, 
+                    based on a window, it calculates two lines, a k line and d line.
+                     Which is then used to determine the market condition.   
+                </p>
+                <p>
+                   Fun Fact: It was created in 1950s by Dr George C. Lane. 
+                   Who described it with the quote "Before a rocket can turn down,
+                    it must slow down. Momentum always changes direction before price."
+                </p>
+            </div>
+            <div class="activity-value flex-item-img">
+                <img src= "{% static 'base/img/stoc_osc.jpeg' %}"
+                alt="Oops! Failed to load image.">
+            </div>
+        </div>
+    </div>
+
     {% comment %} Strategy params input{% endcomment %}
     <div class='container grid-container' name="input_container" id="input_container"
     style= "display:none;">

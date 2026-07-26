@@ -54,29 +54,32 @@ def backtest_graph(request) -> JsonResponse:
         print("This is the data to be used in backtest"
               f" = {data}")
         # Checks if data exists, and if it does not, download it.
-        period = get_yf_period(data["start_date"], data["end_date"])
-        if data["asset_type"] == "STOCK":
-            command = "load_stock_data"
-        elif data["asset_type"] == "FUTURES":
-            command = "load_futures_data"
-        elif data["asset_type"] == "FOREX":
-            command = "load_forex_data"
-        else:
-            raise ValueError(f"Asset type is of unexpected type = {data["asset_type"]}")
-        for ticker in data["tickers"]:
-            if not data_exists(ticker, data["start_date"], data["end_date"]):
-                call_command(
-                    command,
-                    symbol = ticker,
-                    period = period,
-                    interval = "1d",
-                )
-                print(f"Downloaded data for {ticker}")
+        # period = get_yf_period(data["start_date"], data["end_date"])
+        # if data["asset_type"] == "STOCK":
+        #     command = "load_stock_data"
+        # elif data["asset_type"] == "FUTURES":
+        #     command = "load_futures_data"
+        # elif data["asset_type"] == "FOREX":
+        #     command = "load_forex_data"
+        # else:
+        #     raise ValueError(f"Asset type is of unexpected type = {data["asset_type"]}")
+        # for ticker in data["tickers"]:
+        #     # data_exists does not work for all assets only stock currently
+        #     if not data_exists(ticker, data["start_date"], data["end_date"]):
+        #         call_command(
+        #             command,
+        #             symbol = ticker,
+        #             period = period,
+        #             interval = "1d",
+        #         )
+        #         print(f"Downloaded data for {ticker}")
         # For Futures, there is a step of stiching the contracts before the
         # This can be done in backtest itself not here
         # backtest can be run.
         # TODO Move this to backtest
         if data["asset_type"] == "FUTURES":
+            print("backtest_graph of backtest.py")
+            print("Building futures series")
             data["roll_days"] = 5
             data["continuous_contract_index"] = 1
             data["adjustment_method"] = "NONE"

@@ -68,11 +68,12 @@ let param_list = get_param_list();
 
 // The trigger of the buttons calling the function
 strategy_btn.addEventListener("change", change_strategy);
+strategy_btn.addEventListener("change", display_only_selected_description)
 run_backtest_btn.addEventListener("click", run_backtest);
 run_backtest_btn.addEventListener("click", show_output);
 view_mcs_btn.addEventListener("click", view_mcs);
 quicktest_btn.addEventListener("click", () => quicktest(param_list));
-dev_btn.addEventListener("click", () => quicktest_repeated_number(5))
+dev_btn.addEventListener("click", () => quicktest_repeated_number(1000))
 // Add event for asset type input
 asset_type_input.addEventListener('input', update_ticker_list);
 
@@ -125,7 +126,7 @@ async function quicktest_repeated_number(number) {
         try {
             await quicktest(get_param_list());
             await run_backtest();
-            console.log(`${i}th backtest ran without problems`)
+            console.log(`${i + 1}th backtest ran without problems`)
         }
         catch {
             console.log(`${i} randomized backtests ran before encountering an error`)
@@ -625,4 +626,58 @@ async function get_forex_tickers() {
     // Turns string into JS object
     const data = await response.json();
     return data['tickers']
+}
+
+function display_only_selected_description() {
+    console.log()
+    const strategy_btn = document.getElementById("strategy_btn");
+    const strategy_selected_id = strategy_btn.value;
+    // First hide all strategies then display the selected one
+    const description_container = document.getElementById("description_container");
+    const description_divs = description_container.children;
+    for (const description_div of description_divs) {
+        description_div.style.display = "none";
+    }
+    description_container.style.display = "";
+    let element = "";
+    console.log(`This is the description box id to make visible 
+        ${strategy_selected_id}`)
+    switch(strategy_selected_id) {
+        case "none":
+        description_container.style.display = "none";
+            break;
+        case "Moving Average Crossover":
+            element = document.getElementById("moving_average_crossover_description")
+            element.style.display = "";
+            break;
+        case "Mean Reversion":
+            element = document.getElementById("mean_reversion_description")
+            element.style.display = "";
+            break;
+        case "MACD":
+            element = document.getElementById("macd_description")
+            element.style.display = "";
+            break;
+        case "Breakout":
+            element = document.getElementById("breakout_description")
+            element.style.display = "";
+            break;
+        case "Momentum":
+            element = document.getElementById("momentum_description")
+            element.style.display = "";
+            break;
+        case "Rate Of Change":
+            element = document.getElementById("roc_description")
+            element.style.display = "";
+            break;
+        case "Stochastic Oscillator":
+            element = document.getElementById("stoc_osc_description")
+            element.style.display = "";
+            break;
+        default:
+            console.log(`display_only_selected_description of 
+                backtest.js was unable to match the value of the 
+                strategy to a corresponding description.
+                This was the value = ${strategy_selected_id}`);
+    }
 }

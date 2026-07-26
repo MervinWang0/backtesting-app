@@ -193,6 +193,9 @@ class Backtest:
         self.build_continuous_series = build_continuous_series
         self.continuous_series: dict[str, ContinuousFuturesSeries] = {}
         if (self.is_futures() and self.build_continuous_series):
+            print("-----------------------------------------")
+            print("This is from backtest init in engine.backtest.py")
+            print("This backtest uses a futures and builds a series")
             self.prepare_continuous_series()
         self.rollover_count = 0
         self.processed_rollovers = set()

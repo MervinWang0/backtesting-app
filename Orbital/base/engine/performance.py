@@ -53,6 +53,8 @@ def get_mean_daily_returns(equity_record: pd.DataFrame) -> float:
 def get_cagr(equity_record: pd.DataFrame) -> float:
     num_days = equity_record['date'].iloc[-1] - equity_record['date'].iloc[0]
     years = num_days.days / 365.25
+    if equity_record['equity'].iloc[-1] <= 0:
+        return -1
     return (equity_record['equity'].iloc[-1] / equity_record['equity'].iloc[0]) ** (1 / years) - 1
 
 def get_volatility(equity_record: pd.DataFrame) -> float:
@@ -63,6 +65,8 @@ def get_volatility(equity_record: pd.DataFrame) -> float:
 def get_sharpe_ratio(equity_record: pd.DataFrame, risk_free_rate: float) -> float:
     excess_daily_return = get_mean_daily_returns(equity_record) - (risk_free_rate / 252)
     sharpe_ratio = (excess_daily_return / get_daily_returns(equity_record).std()) * np.sqrt(252)
+    if get_daily_returns(equity_record).std() == 0:
+        return 0
     return sharpe_ratio
 
 def get_max_drawdown(equity_record: pd.DataFrame) -> float:

@@ -185,7 +185,6 @@ class DataLoader(ABC):
 
     def load_futures_data(self, contract_code: str) -> list[Bar]:
         futures_history = (ContinuousFuturesPriceHistory.objects.filter(series__contract_symbol=contract_code,
-                                                                        series__contract_index = 1,
                                                                         date__range=(self.start_date, self.end_date),)
                                                             .select_related("series", "source_contract",
                                                                             "roll_from_contract", "roll_to_contract")
