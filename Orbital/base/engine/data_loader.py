@@ -158,7 +158,7 @@ class DataLoader:
     
     
     def load_futures_data(self, contract_code: str) -> list[Bar]:
-        futures_history = (ContinuousFuturesPriceHistory.objects.filter(series__contract_symbol=contract_code, series__contract_index = 1, date__range=(self.start_date, self.end_date),)
+        futures_history = (ContinuousFuturesPriceHistory.objects.filter(series__contract_symbol=contract_code, date__range=(self.start_date, self.end_date),)
                                                             .select_related("series", "source_contract", "roll_from_contract", "roll_to_contract")
                                                             .order_by("date"))
         bars = []
@@ -280,7 +280,7 @@ class DataLoader:
         Returns the current bar
         '''
         if ticker not in self.latest_stock_data or not self.latest_stock_data[ticker]:
-            raise None
+            raise LookupError(f"No current bar found for ticker {ticker!r}")
         return self.latest_stock_data[ticker][-1]
 
 

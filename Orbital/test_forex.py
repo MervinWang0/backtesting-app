@@ -16,7 +16,7 @@ from base.models import ForexPair, ForexPriceHistory, BacktestRun, StockPriceHis
 from base.engine.backtest import Backtest
 from django.utils import timezone
 
-pair_symbol = "EURUSD=X"
+pair_symbol = "AUDUSD=X"
 DOWNLOAD_DATA = False
 
 
@@ -28,8 +28,8 @@ def get_existing_date_range(pair_symbol):
             f"No saved data found for {pair_symbol}. Set DOWNLOAD_DATA = True once to download it."
         )
 
-    start_date = rows.first().timestamp
-    end_date = rows.last().timestamp
+    start_date = datetime(2023, 1, 1)
+    end_date = datetime(2024,1,2)
 
     print(f"Using saved {pair_symbol} data from DB.")
     print(f"Date range: {start_date} to {end_date}")

@@ -10,6 +10,7 @@ from base.engine.portfolio import Portfolio
 from base.engine.data_loader import DataLoader, Bar
 from base.engine.strategy import MovingAverageCross
 from base.engine.graph import get_equity_graph
+from django.core.management import call_command
 
 @dataclass
 class BacktestResult:
@@ -17,6 +18,9 @@ class BacktestResult:
     final_capital: float
     metric: dict[str, any]
     trade_log: list[dict]
+
+
+
 
 class Backtest:
     def __init__(self,

@@ -91,6 +91,7 @@ class ContinuousFuturesSeriesBuilder:
 
             current_trading_dates = sorted(price_date for price_date in current_prices if price_date <= curr_contract.expiry_date)
             
+            print(f"Current_trading_dates: {len(current_trading_dates)}")
             if len(current_trading_dates) <= roll_days:
                 raise RuntimeError(f"Not enough price history for {roll_days}")
             

@@ -31,10 +31,10 @@ from base.engine.execution import executionLoader
 # Test configuration
 # ---------------------------------------------------------------------
 
-ROOT_SYMBOL = "CL"
+ROOT_SYMBOL = "YM"
 
 START_DATE = date(2023, 1, 1)
-END_DATE = date(2025, 12, 31)
+END_DATE = date(2024, 12, 31)
 
 ROLL_DAYS = 5
 CONTRACT_INDEX = 1
