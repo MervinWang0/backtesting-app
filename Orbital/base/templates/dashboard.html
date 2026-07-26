@@ -66,9 +66,7 @@
                 </select>
             </div>
 
-            <button type="submit" class="secondary-button">
-                View account
-            </button>
+
         </form>
         <a
             href="{% url 'create_paper_account' %}"
@@ -307,7 +305,7 @@
                                 {% if stock.price_change > 0 %}
                                     +
                                 {% else %}
-                                    -
+                                    
                                 {% endif %}
                                 {{ stock.price_change }}
                             {% endif %}
@@ -318,7 +316,7 @@
                                 {% if stock.percentage_change > 0 %}
                                     +
                                 {% else %}
-                                    -
+                                    
                                 {% endif %}
                                 {{ stock.percentage_change }}
                             {% endif %}
