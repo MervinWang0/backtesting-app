@@ -76,7 +76,10 @@ quicktest_btn.addEventListener("click", () => quicktest(param_list));
 dev_btn.addEventListener("click", () => quicktest_repeated_number(1000))
 // Add event for asset type input
 asset_type_input.addEventListener('input', update_ticker_list);
+asset_type_input.addEventListener('click', update_ticker_list);
 
+const ticker_input = document.getElementById("ticker");
+ticker_input.addEventListener("click", update_ticker_list);
 // Array of input elements, used to obtain their values from webpage
 const strategy_params = [];
 let output_params = [];
