@@ -387,11 +387,22 @@ a {
 .primary-button,
 .secondary-button,
 .pagination__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
     min-height: 46px;
     padding: 0 20px;
+    box-sizing: border-box;
+
     font-weight: 650;
+    line-height: 1;
+    text-align: center;
+    text-decoration: none;
+
     border-radius: var(--radius-md);
     cursor: pointer;
+
     transition:
         background-color 160ms ease,
         border-color 160ms ease,
