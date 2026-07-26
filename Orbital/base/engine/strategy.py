@@ -581,12 +581,12 @@ class MACDStrategy(Strategy):
         # Obtain new state to determine if crossover happened
         new_state = curr_MACD > curr_signal
         # Change in state means crossover
-        print("------MACD Strategy Generating Signal-----\n")
-        print(f"This is the previous state "
-              f"{self.prev_state[ticker]}"
-              " MACD line is above Signal line\n")
-        print(f"This is the new state {new_state} "
-              "MACD line is above Signal line\n")
+        # print("------MACD Strategy Generating Signal-----\n")
+        # print(f"This is the previous state "
+        #       f"{self.prev_state[ticker]}"
+        #       " MACD line is above Signal line\n")
+        # print(f"This is the new state {new_state} "
+        #       "MACD line is above Signal line\n")
         if self.prev_state[ticker] != new_state:
             if new_state:
                 decision = "LONG"
@@ -596,7 +596,7 @@ class MACDStrategy(Strategy):
             decision = None
         # Update the previous state to new state
         self.prev_state[ticker] = new_state
-        print(f"This is the decision: {decision}\n")
+        # print(f"This is the decision: {decision}\n")
 
         if decision is not None:
             signal = SignalEvent(ticker=ticker,
@@ -632,7 +632,7 @@ class BreakoutStrategy(Strategy):
         LONG when price breaks above resistance
 	    SHORT when preice breaks below support
         '''
-        print("-----Generating Signal for Breakout Strategy----------")
+        # print("-----Generating Signal for Breakout Strategy----------")
         index = self.data_loader.curr_index
         resistance = self.donchian_channels[ticker]['upper'][index]
         support = self.donchian_channels[ticker]['lower'][index]
@@ -640,19 +640,19 @@ class BreakoutStrategy(Strategy):
                                                   value_type='close')
         if curr_close >= resistance:
             decision = "LONG"
-            print(f"This is the close price = {curr_close}\n")
-            print(f"This is the resistance price = {resistance}\n")
-            print(f"This is the decision = {decision}\n")
+            # print(f"This is the close price = {curr_close}\n")
+            # print(f"This is the resistance price = {resistance}\n")
+            # print(f"This is the decision = {decision}\n")
         elif curr_close <= support:
             decision = "SHORT"
-            print(f"This is the close price = {curr_close}\n")
-            print(f"This is the support price = {support}\n")
-            print(f"This is the decision = {decision}\n")
+            # print(f"This is the close price = {curr_close}\n")
+            # print(f"This is the support price = {support}\n")
+            # print(f"This is the decision = {decision}\n")
         else:
-            print(f"This is the close price = {curr_close}\n")
-            print(f"This is the support price = {support}\n")
-            print(f"This is the resistance price = {resistance}\n")
-            print(f"This is the decision = None\n")
+            # print(f"This is the close price = {curr_close}\n")
+            # print(f"This is the support price = {support}\n")
+            # print(f"This is the resistance price = {resistance}\n")
+            # print(f"This is the decision = None\n")
             return None
         # print(f"This is the decision: {decision}")
         signal = SignalEvent(ticker=ticker,
@@ -799,18 +799,18 @@ class RateOfChangeStrategy(Strategy):
         curr_close = self.data_loader.get_current_bar_value(ticker=ticker,
                                                             value_type='close')
         filtered = curr_close > ma_20
-        print("----Generating Rate of Change signal----\n")
-        print(f"This is the prev roc = {self.prev_roc[ticker]}\n")
-        print(f"This is the new roc = {new_roc}\n")
+        # print("----Generating Rate of Change signal----\n")
+        # print(f"This is the prev roc = {self.prev_roc[ticker]}\n")
+        # print(f"This is the new roc = {new_roc}\n")
         if self.prev_roc[ticker] < 0 and new_roc > 0 and filtered:
             decision = "LONG"
         elif self.prev_roc[ticker] > 0 and new_roc < 0:
             decision = "EXIT"
         else:
-            print("None decision generated\n")
+            # print("None decision generated\n")
             return None
 
-        print(f"This is the decision generated {decision}\n")
+        # print(f"This is the decision generated {decision}\n")
         # Update prev roc
         self.prev_roc[ticker] = new_roc
 
@@ -851,7 +851,7 @@ class StochasticOscillatorStrategy(Strategy):
         Then previous state was in overbought/oversold market and 
         current price crosses the threshold, long/short
         '''
-        print("-------Generating Signal for Stochastic Oscillator--------\n")
+        # print("-------Generating Signal for Stochastic Oscillator--------\n")
         index = self.data_loader.curr_index
         k_indicator = self.k_d_list[ticker]['k'][index]
         # print(f"This is the k_indicator {k_indicator}")
@@ -914,7 +914,7 @@ class MovingAverageCross:
 
     # @timed
     def generate_signal(self, ticker: str) -> SignalEvent:
-        print("----Moving Average Cross Generates Signal----", ticker)
+        # print("----Moving Average Cross Generates Signal----", ticker)
         try:
             long_window_bars = self.data_loader.get_past_bars(ticker, self.long_window)
         except ValueError:
@@ -933,15 +933,15 @@ class MovingAverageCross:
             current_signal = None
         
         prev_signal = self.previous_signal.get(ticker)
-        print(f"This is the previous signal, {prev_signal}\n")
-        print(f"This is the new signal, {current_signal}\n")
+        # print(f"This is the previous signal, {prev_signal}\n")
+        # print(f"This is the new signal, {current_signal}\n")
         if current_signal == prev_signal:
-            print("No Buy/Sell order generated\n")
+            # print("No Buy/Sell order generated\n")
             return None
         self.previous_signal[ticker] = current_signal
         if current_signal is None:
             return None
-        print(f"A {current_signal} order generated")
+        # print(f"A {current_signal} order generated")
         return SignalEvent(
             ticker = ticker,
             datetime= current_datetime,

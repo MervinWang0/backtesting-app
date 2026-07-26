@@ -147,7 +147,7 @@ class MonteCarloSimulator():
         # Convert Obtain distribution results of simulation
         metric_lst: list[dict[str, float]] = []
         og_metrics = btr.get_metrics()
-        print(f"This is the metric result {metric_result}\n")
+        # print(f"This is the metric result {metric_result}\n")
         for name in fields:
             dist = Distribution(metric_result[name])
             # Initialize dist_metrics as {"Field" : "Win Rate"}
@@ -158,8 +158,8 @@ class MonteCarloSimulator():
             dist_metrics.update(dist.get_imp_metrics())
 
             metric_lst.append(dist_metrics)
-        print("These are the computed distributions")
-        print(pd.DataFrame(metric_lst))
+        # print("These are the computed distributions")
+        # print(pd.DataFrame(metric_lst))
         return (graph_result, metric_lst)
 
     def price_to_bar(self, og_data: list[Bar], random_close_prices: list[float],

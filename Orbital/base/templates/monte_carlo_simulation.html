@@ -57,6 +57,9 @@
                     Afterwards the results are represented as a distribution. Representing the likelihood of 
                     the strategy performing well in different situations.
                 </p>
+                <p>
+                    The rate of simulation is roughly 50 simulations/second
+                </p>
             </div>
             {% comment %} <div class="activity-value flex-item-img">
                 <img src= "{% static 'base/img/breakout.jpg' %}"
@@ -162,7 +165,7 @@
         </tbody>
     </table>
     {% comment %} Stores the mcs graph {% endcomment %}
-    <div class=graph id="mcs_graph_container" name="mcs_graph_container">
+    <div class="graph" id="mcs_graph_container" name="mcs_graph_container">
     </div>
 
     {% comment %} Div for progress bar {% endcomment %}

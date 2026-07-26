@@ -485,6 +485,7 @@ function graph_backtest() {
         // Makes run_id a dict as needed by URLSearchParams
         run_id = {"run_id" : data["run_id"]};
         state = "Backtest Run Complete";
+        window.dispatchEvent(new Event('resize'));
         }
     })
     // Handles the case when the backtest fails

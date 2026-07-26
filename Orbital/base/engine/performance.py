@@ -138,6 +138,9 @@ def get_metrics(equity_record: pd.DataFrame, risk_free_rate: float,
 # @timed
 def fill_to_trade_log(arg_fill_records: list[dict[str, any]]) -> tuple[list[dict[str, any]],
                                                                     dict[str, list[any]]]:
+    # print("----------This is the fill records--------------\n")
+    # print("From fill_to_trade_log of performance.py\n")
+    # print(f"{pd.DataFrame(arg_fill_records)}")
     '''
     Converts a list of records into a list of trades.
     There are three possible cases
@@ -235,8 +238,9 @@ def handle_reversal_close(open_trades: dict[str, list[dict[str, any]]],
 
     Splits records into two, uses one for a full close and places other in open orders
     '''
-    # print("Handling a reversal," \
-    # f"Open Trades = {open_trades}"
+    # print("Handling a reversal,"   
+    # f"Open Trades = {open_trades}" 
+
     # f"record = {record}")
     # print(f"This is the open trades = {open_trades}")
     # print(f"This is the open trades for the stock = {open_trades[record['ticker']]}")
@@ -398,8 +402,17 @@ def handle_full_close(open_trades: dict[str, list[dict[str, any]]],
     # print(f"These are the open trades {open_trades[record['ticker']]}")
     # print(f"Fully closing a record. record is {record}")
     closed_trades = []
-    quantity_close = record['quantity']
+    # Rounding to handle some floating point error
+    quantity_close = np.round(record['quantity'], 6)
+    if quantity_close < 0.00001:
+        # print("Try and end early ")
+        return closed_trades
     while quantity_close > 0:
+        # print(f"This is the quantity to close {quantity_close}\n")
+        # print(f"These are the open trades {open_trades[record['ticker']]}")
+        # Try and fix the bug?
+        if len(open_trades[record['ticker']]) == 0:
+            return closed_trades
         open_trade = open_trades[record['ticker']].pop(0)
 
         # Commission Calculation

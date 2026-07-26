@@ -284,9 +284,9 @@ class Portfolio(ABC):
         return total_value
 
     def generate_order(self, signal: SignalEvent):
-        print("-------From generate_order in portfolio.py---------\n")
-        print(f"This is the signal = \n{signal}")
-        print(f"This is the target quantity = {self.calculate_target_quantity(signal)}\n")
+        # print("-------From generate_order in portfolio.py---------\n")
+        # print(f"This is the signal = \n{signal}")
+        # print(f"This is the target quantity = {self.calculate_target_quantity(signal)}\n")
         ticker = signal.ticker
         signal_type = signal.signal_type
         current_quantity = self.holdings[ticker]
@@ -923,7 +923,7 @@ class DatabasePortfolio(Portfolio):
         and some attributes, it is abstract because it in MCSPortfolio, 
         the parts that update the db records are removed.
         '''
-        print("Updating fill from portfolio")
+        # print("Updating fill from portfolio")
         if event.type != "FILL":
             raise ValueError(f"Invalid event type {event.type} in fill update. Expected 'FILL'.")
         

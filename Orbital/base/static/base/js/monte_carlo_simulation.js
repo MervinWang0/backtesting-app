@@ -53,16 +53,24 @@ quicktest_input_btn.addEventListener("click", () => {
 
 function run_graph(){
     if(!validate()){return;}
+    graph_clear();
     bar_set_run();
     update_progress();
-    // graph_hide();
+    graph_hide();
     hide_output();
     graph_mcs();
+    graph_show()
+    window.dispatchEvent(new Event('resize'));
 }
 
 function graph_hide() {
     const graph_container = document.getElementById("mcs_graph_container");
     graph_container.style.display = "none"
+}
+
+function graph_clear() {
+    const graph_container = document.getElementById("mcs_graph_container");
+    graph_container.innerHTML = "";
 }
 
 function graph_show() {
@@ -295,9 +303,10 @@ function get_cleaned_params() {
 function quicktest(param_list) {
     // console.log(`This is the param_list used for quicktest
     //     ${param_list}`);
+    graph_clear();
     bar_set_reset();
     hide_output();
-    // graph_hide();
+    graph_hide();
 
     // Pass param list to a view function and expect a list of values to update input with
     fetch("/get_quicktest_input/", {
@@ -400,6 +409,7 @@ function hide_bar() {
 function bar_set_reset() {
     progress_bar.style.background = "linear-gradient(90deg, #3b82f6, #8b5cf6);";
     bar_state = "Monte Carlo Simulation Not Started"
+    update_progress()
 }
 function bar_set_run() {
     progress_bar.style.background = "linear-gradient(90deg, #3b82f6, #8b5cf6);";
