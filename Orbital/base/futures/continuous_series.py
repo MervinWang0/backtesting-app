@@ -90,7 +90,10 @@ class ContinuousFuturesSeriesBuilder:
             next_prices = price_map.get(next_contract.id, {})
 
             current_trading_dates = sorted(price_date for price_date in current_prices if price_date <= curr_contract.expiry_date)
-            
+            # print("-----------------------------------------------------------------------\n")
+            # print("Executing calculate_roll_dates from continuous_series.py\n")
+            # print(f"This is the len of current trading dates {len(current_trading_dates)}\n")
+            # print("-----------------------------------------------------------------------\n")
             if len(current_trading_dates) <= roll_days:
                 raise RuntimeError(f"Not enough price history for {roll_days}")
             
@@ -128,8 +131,8 @@ class ContinuousFuturesSeriesBuilder:
                 
                 if future_next_dates:
                     actual_roll_date = min(future_next_dates)
-                    print(f"WARNING: No overlapping data found for {curr_contract.contract_code} -> {next_contract.contract_code}. "
-                        f"Falling back to first available date of next contract: {actual_roll_date}")
+                    # print(f"WARNING: No overlapping data found for {curr_contract.contract_code} -> {next_contract.contract_code}. "
+                        # f"Falling back to first available date of next contract: {actual_roll_date}")
                 else:
                     raise RuntimeError(
                         f"Absolutely no data available for {next_contract.contract_code} "

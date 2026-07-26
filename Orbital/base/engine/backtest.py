@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from queue import Queue
@@ -137,15 +138,15 @@ class BacktestResult:
         return df
 
     @timed
-    def get_metrics(self):
+    def get_metrics(self) -> dict[str: float]:
         '''
         Returns various performance and portfolio metrics.
 
-        Returns None if no trades were conducted
+        Returns a dict or metric : 0 if no trades were conducted
         '''
         trade_log = self.get_closed_trades()
-        print("This is the trade log generated")
-        print(f"\n{trade_log}")
+        # print("This is the trade log generated")
+        # print(f"\n{trade_log}")
         return p.get_metrics(equity_record=self.equity_records,
                              risk_free_rate=self.risk_free_rate,
                              trade_log=trade_log)
@@ -163,11 +164,11 @@ class Backtest:
                  slippage: float = 0.0,
                  initial_capital: float = 100000.0,
                  commission: float = 0.0,
-                 risk_free_rate: float = 2,
+                 risk_free_rate: float = 0.02,
                  is_mcs = False,
                  roll_days: int = 5,
-                 continuous_contract_index: int = -1,
-                 adjustment_method: str = None,
+                 continuous_contract_index: int = 1,
+                 adjustment_method: str = "NONE",
                  build_continuous_series: bool = True,
                  **strategy_params: dict[str, object]):
         self.data_loader = data_loader
@@ -184,7 +185,7 @@ class Backtest:
         self.strategy_params = strategy_params
         self.commission = commission
         self.slippage = slippage
-        self.risk_free_rate = risk_free_rate / 100
+        self.risk_free_rate = risk_free_rate
 
         # Parameters for futures
         self.roll_days = roll_days
@@ -193,6 +194,9 @@ class Backtest:
         self.build_continuous_series = build_continuous_series
         self.continuous_series: dict[str, ContinuousFuturesSeries] = {}
         if (self.is_futures() and self.build_continuous_series):
+            # print("-----------------------------------------")
+            # print("This is from backtest init in engine.backtest.py")
+            # print("This backtest uses a futures and builds a series")
             self.prepare_continuous_series()
         self.rollover_count = 0
         self.processed_rollovers = set()
@@ -280,6 +284,7 @@ class Backtest:
                               fill_records=self.portfolio.get_fill_records(),
                               risk_free_rate=self.risk_free_rate)
         if not self.is_mcs:
+            self.portfolio.update_benchmark_record()
             self.portfolio.complete_bt()
             self.run_model.end_equity = result.get_end_equity()
             self.run_model.is_completed = True

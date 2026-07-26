@@ -14,8 +14,9 @@ from django.db.models.functions import Cast, NullIf
 from django.core.paginator import Paginator
 from base.services.paperTrading import execute_order
 from base.engine.graph import get_ohlv_graph2
-from base.forms import PaperAccountCreation, RegisterForm
+from base.forms import PaperAccountCreation
 from django.urls import reverse
+from base.forms import RegisterForm
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 
@@ -31,7 +32,12 @@ PRICE_OUTPUT_FIELD = DecimalField(
 )
 
 def home(request):
+    # If user is already logged in, send them to the dashboard instead
+    # if request.user.is_authenticated:
+    #     from django.shortcuts import redirect
+    #     return redirect('dashboard')   # change to your dashboard URL name
     return render(request, 'home.html')
+
 
 #register related
 def register_view(request):
@@ -130,8 +136,6 @@ def dashboard(request):
             Q(ticker__icontains = search_query) | Q(name__icontains = search_query)
         )
     
-    portfolio_summary = get_porfolio_summary(request)
-
     paginator = Paginator(stocks, 30)
     page = paginator.get_page(request.GET.get("page"))
 
@@ -162,8 +166,8 @@ def dashboard(request):
             "page" : page,
             "most_active_traded": most_active_traded,
             "most_active_dollar" : most_active_dollar,
-            "US_Assets" : portfolio_summary["US_Assets"],
-            "today_pnl" : portfolio_summary["Today_pnl"],
+            "US_Assets" : Decimal("0.00"),
+            "today_pnl" : Decimal("0.00"),
             "filters" : {
                 "q" : search_query,
             },
@@ -175,6 +179,8 @@ def dashboard(request):
         .select_related("stock")
         .order_by("stock__ticker")
     )
+
+    portfolio_summary = get_portfolio_summary(selected_account)
 
     trades = (
         PaperTrade.objects
@@ -204,10 +210,56 @@ def dashboard(request):
 
     return render(request, "dashboard.html", context)
 
-def get_porfolio_summary(user):
+def get_portfolio_summary(account):
+    positions = (
+        PaperPositions.objects
+        .filter(account=account)
+        .select_related("stock")
+    )
+
+    us_assets = Decimal("0.00")
+    today_pnl = Decimal("0.00")
+
+    for position in positions:
+        latest_row = (
+            StockPriceHistory.objects
+            .filter(stock_id=position.stock_id)
+            .order_by("-date", "-pk")
+            .values("date", "close_price")
+            .first()
+        )
+
+        if latest_row is None:
+            continue
+
+        latest_price = Decimal(str(latest_row["close_price"]))
+        latest_date = latest_row["date"]
+        quantity = Decimal(str(position.stock_quantity))
+
+        previous_close = (
+            StockPriceHistory.objects
+            .filter(
+                stock_id=position.stock_id,
+                date__lt=latest_date,
+            )
+            .order_by("-date", "-pk")
+            .values_list("close_price", flat=True)
+            .first()
+        )
+
+        position_value = quantity * latest_price
+        us_assets += position_value
+
+        if previous_close is not None:
+            previous_close = Decimal(str(previous_close))
+
+            position_daily_pnl = quantity * (latest_price - previous_close)
+
+            today_pnl += position_daily_pnl
+
     return {
-        "US_Assets" : Decimal("9999.99"),
-        "Today_pnl" : Decimal("999.99"),
+        "US_Assets": us_assets.quantize(Decimal("0.01")),
+        "Today_pnl": today_pnl.quantize(Decimal("0.01")),
     }
 
 def get_total_assets(positions, cash):
@@ -262,6 +314,35 @@ def stock(request):
     }
     
     return render(request, "stock.html", context)
+
+@login_required
+@require_POST
+def delete_paper_account(request):
+    account_id = request.POST.get("account_id")
+    confirmed = request.POST.get("confirm_delete") == "on"
+
+    account = get_object_or_404(
+        PaperAccount,
+        pk=account_id,
+        user=request.user,
+    )
+
+    if not confirmed:
+        messages.error(
+            request,
+            "Please confirm that you want to delete this account.",
+        )
+        return redirect(f"{reverse('portfolio')}?account={account.id}")
+
+    account_name = account.name
+    account.delete()
+
+    messages.success(
+        request,
+        f'Paper account "{account_name}" was deleted.',
+    )
+
+    return redirect("portfolio")
 
 @require_POST
 def submit_paper_order(request, symbol):
@@ -428,44 +509,91 @@ def backtest_run_records(request):
         "fill_record": fill_record,
     })
 
+from decimal import Decimal
+
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
+from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
+
+from base.models import PaperAccount, PaperPositions, PaperTrade
+
+
 @login_required
 def portfolio(request):
     accounts = (
-        PaperAccount.objects.filter(user=request.user).order_by("id")
+        PaperAccount.objects
+        .filter(user=request.user)
+        .order_by("id")
     )
-
-    selected_account = None
-    positions = []
-    trades = []
 
     selected_account_id = request.GET.get("account")
 
     if selected_account_id:
         selected_account = get_object_or_404(
             accounts,
-            pk = selected_account_id,
+            pk=selected_account_id,
         )
     else:
         selected_account = accounts.first()
-    
+
+    positions = PaperPositions.objects.none()
+    trades = PaperTrade.objects.none()
+
+    total_realised_pnl = Decimal("0.00")
+    today_realised_pnl = Decimal("0.00")
+
     if selected_account:
         positions = (
-            selected_account.positions
-            .select_related("stock", "forex", "futures")
+            PaperPositions.objects
+            .filter(
+                account=selected_account,
+                stock__isnull=False,
+            )
+            .exclude(stock_quantity=Decimal("0"))
+            .select_related("stock")
             .order_by("-updated_at")
         )
 
         trades = (
-            PaperTrade.objects.filter(order__account = selected_account)
-            .select_related("order")
-            .order_by("-executed_at", "-id")
+            PaperTrade.objects
+            .filter(
+                order__account=selected_account,
+                order__status=PaperOrder.Status.FILLED,
+            )
+            .select_related(
+                "order",
+                "order__stock",
+            )
+            .order_by("-order__filled_at", "-id")
         )
-    
+
+        total_realised_pnl = (
+            trades.aggregate(
+                total=Sum("realised_pnl")
+            )["total"]
+            or Decimal("0.00")
+        )
+
+        today = timezone.localdate()
+
+        today_realised_pnl = (
+            trades.filter(
+                order__filled_at__date=today,
+            )
+            .aggregate(
+                total=Sum("realised_pnl")
+            )["total"]
+            or Decimal("0.00")
+        )
+
     context = {
         "accounts": accounts,
         "selected_account": selected_account,
-        "positions" : positions,
-        "trades" : trades,
+        "positions": positions,
+        "trades": trades,
+        "total_realised_pnl": total_realised_pnl,
+        "today_realised_pnl": today_realised_pnl,
     }
 
     return render(request, "portfolio.html", context)

@@ -53,6 +53,8 @@ def get_mean_daily_returns(equity_record: pd.DataFrame) -> float:
 def get_cagr(equity_record: pd.DataFrame) -> float:
     num_days = equity_record['date'].iloc[-1] - equity_record['date'].iloc[0]
     years = num_days.days / 365.25
+    if equity_record['equity'].iloc[-1] <= 0:
+        return -1
     return (equity_record['equity'].iloc[-1] / equity_record['equity'].iloc[0]) ** (1 / years) - 1
 
 def get_volatility(equity_record: pd.DataFrame) -> float:
@@ -63,6 +65,8 @@ def get_volatility(equity_record: pd.DataFrame) -> float:
 def get_sharpe_ratio(equity_record: pd.DataFrame, risk_free_rate: float) -> float:
     excess_daily_return = get_mean_daily_returns(equity_record) - (risk_free_rate / 252)
     sharpe_ratio = (excess_daily_return / get_daily_returns(equity_record).std()) * np.sqrt(252)
+    if get_daily_returns(equity_record).std() == 0:
+        return 0
     return sharpe_ratio
 
 def get_max_drawdown(equity_record: pd.DataFrame) -> float:
@@ -77,6 +81,8 @@ def get_win_rate(trade_log: pd.DataFrame) -> float:
     Returns the win rate of the backtest 0.50 corresponding to 50%
     win rate is considered trades with pnl > 0 over total trades
     '''
+    if len(trade_log) == 0:
+        return 0
     win_count = (trade_log['pnl'] > 0).sum()
     return win_count / trade_log['pnl'].count()
 
@@ -86,19 +92,8 @@ def get_metrics(equity_record: pd.DataFrame, risk_free_rate: float,
     ''' 
     Based on some parameters, calculate the metrics of the backtest run.
     
-    In the case of 0 trades, return metrics with values of 0
+    In the case of 0 trades, return win rate with values of 0
     '''
-    if trade_log.empty:
-            metrics = {
-            "Total Return" : 0,
-            "Mean Daily Return" : 0,
-            "CAGR" : 0,
-            "Volatility" : 0,
-            "Sharpe Ratio" : 0,
-            "Max Drawdown" : 0,
-            "Win Rate" : 0,
-            }
-            return metrics
     total_return = get_total_return(equity_record)
     mean_daily_return = get_mean_daily_returns(equity_record)
     cagr = get_cagr(equity_record)
@@ -143,6 +138,9 @@ def get_metrics(equity_record: pd.DataFrame, risk_free_rate: float,
 # @timed
 def fill_to_trade_log(arg_fill_records: list[dict[str, any]]) -> tuple[list[dict[str, any]],
                                                                     dict[str, list[any]]]:
+    # print("----------This is the fill records--------------\n")
+    # print("From fill_to_trade_log of performance.py\n")
+    # print(f"{pd.DataFrame(arg_fill_records)}")
     '''
     Converts a list of records into a list of trades.
     There are three possible cases
@@ -151,6 +149,21 @@ def fill_to_trade_log(arg_fill_records: list[dict[str, any]]) -> tuple[list[dict
     2. Scale in, Long to long, short to short
     3. Short/Long to flat, or reversal
     '''
+    # Testing
+    # print(f"These are the fill records to convert \n{pd.DataFrame(arg_fill_records)}")
+
+    # Bug Fix for FOREX, having fill records where 0 quantities are traded.
+    # Which causes a division by 0 error here
+    # Basically remove the records with 0 quantity
+    index_remove = []
+    for i, record in enumerate(arg_fill_records):
+        if record['quantity'] == 0:
+            index_remove.append(i)
+    index_remove.reverse()
+    for i in index_remove:
+        arg_fill_records.pop(i)
+    # print(f"These are the cleaned records\n{pd.DataFrame(arg_fill_records)}")
+    
     fill_records = deque(arg_fill_records)
     count = 0
     def is_scale_in(prev_quantity, direction):
@@ -225,8 +238,9 @@ def handle_reversal_close(open_trades: dict[str, list[dict[str, any]]],
 
     Splits records into two, uses one for a full close and places other in open orders
     '''
-    # print("Handling a reversal," \
-    # f"Open Trades = {open_trades}"
+    # print("Handling a reversal,"   
+    # f"Open Trades = {open_trades}" 
+
     # f"record = {record}")
     # print(f"This is the open trades = {open_trades}")
     # print(f"This is the open trades for the stock = {open_trades[record['ticker']]}")
@@ -323,9 +337,9 @@ def handle_partial_close(open_trades: dict[str, list[dict[str, any]]],
 
     # This refers to the trade that is partially closed
     open_trade = open_trades[record['ticker']].pop(0)
-    print(f"This is the trade that is partially closed {open_trade}"
-          f"The amount to close is {quantity_close}, and the record has"
-          f" quantity {open_trade["quantity"]}")
+    # print(f"This is the trade that is partially closed {open_trade}"
+    #       f"The amount to close is {quantity_close}, and the record has"
+    #       f" quantity {open_trade["quantity"]}")
 
     # Based on previous quantity, the buy/sell prices are determined
     # Additionally determines the new previous quantity of the open trade
@@ -375,7 +389,7 @@ def handle_partial_close(open_trades: dict[str, list[dict[str, any]]],
             }
 
     quantity_close -= open_trade["quantity"]
-    print(f"The quantity to close should be 0, quantity close = {quantity_close}")
+    # print(f"The quantity to close should be 0, quantity close = {quantity_close}")
     open_trades[record['ticker']].insert(0, new_record)
     return closed_trades
 
@@ -388,8 +402,17 @@ def handle_full_close(open_trades: dict[str, list[dict[str, any]]],
     # print(f"These are the open trades {open_trades[record['ticker']]}")
     # print(f"Fully closing a record. record is {record}")
     closed_trades = []
-    quantity_close = record['quantity']
+    # Rounding to handle some floating point error
+    quantity_close = np.round(record['quantity'], 6)
+    if quantity_close < 0.00001:
+        # print("Try and end early ")
+        return closed_trades
     while quantity_close > 0:
+        # print(f"This is the quantity to close {quantity_close}\n")
+        # print(f"These are the open trades {open_trades[record['ticker']]}")
+        # Try and fix the bug?
+        if len(open_trades[record['ticker']]) == 0:
+            return closed_trades
         open_trade = open_trades[record['ticker']].pop(0)
 
         # Commission Calculation

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from queue import Queue
 from datetime import datetime
 from decimal import Decimal
@@ -51,6 +52,7 @@ class Portfolio(ABC):
         self.data_loader = data_loader
         self.events = events
         self.initial_capital = initial_capital
+        
         self.account_currency = "USD"
         self.cash_reserves: dict[str, float] = {
             self.account_currency: initial_capital
@@ -127,21 +129,59 @@ class Portfolio(ABC):
         direct_conversion = f"{from_currency}{to_currency}=X"
         inverse_conversion = f"{to_currency}{from_currency}=X"
 
-        try: 
-            direct_price = self.data_loader.get_current_bar_value(direct_conversion, "close")
-            return amount * direct_price
-        except KeyError:
+
+        # The bug was that the except was excepting a Lookup Error instead of ValueError
+        # print(f"---------------------------")
+        # print(f"convert_currency Called in portfolio")
+        # print(f"\nThis is the data loader's bars loaded {self.data_loader.latest_stock_data}")
+        # print(f"\nThis is the data loader tickers loaded {self.data_loader.tickers}")
+        # print(f"\nThis is inverse conversion {inverse_conversion}")
+        # print(f"\nThis is direct conversion {direct_conversion}")
+        # print(f"---------------------------")
+
+        try:
+            direct_price = float(
+                self.data_loader.get_current_conversion_value(
+                    direct_conversion,
+                    "close",
+                )
+            )
+            return float(amount) * direct_price
+
+        except (ValueError, KeyError):
             pass
 
         try:
-            inverse_price = self.data_loader.get_current_bar_value(inverse_conversion, "close")
-            return amount / inverse_price
-        except KeyError:
-            pass
+            # The data loader requires the USD to JPY/.../ ticker which is not lot loaded
+            # for EUR/JPY
+            inverse_price = float(
+                self.data_loader.get_current_conversion_value(
+                    inverse_conversion,
+                    "close",
+                )
+            )
 
-        raise ValueError(f"No exchange rate data available for {from_currency} to {to_currency} conversion.")
+            if inverse_price == 0:
+                raise ZeroDivisionError(
+                    f"Exchange rate for {inverse_conversion} is zero."
+                )
+
+            return float(amount) / inverse_price
+
+        except (ValueError, KeyError) as e:
+            raise ValueError(
+                f"No exchange-rate data available for "
+                f"{from_currency} to {to_currency}. "
+                f"Tried {direct_conversion} and {inverse_conversion}."
+            ) from e
+ 
 
     def convert_to_account_currency(self, amount: float, currency: str) -> float:
+        # print("--------------------")
+        # print("Calling convert to account currency in Portfolio")
+        # print(f"currency = {currency}, self.account currency = {self.account_currency}")
+        # print("--------------------")
+
         if currency == self.account_currency:
             return amount
         return self.convert_currency(amount, from_currency=currency, to_currency=self.account_currency)   
@@ -244,6 +284,9 @@ class Portfolio(ABC):
         return total_value
 
     def generate_order(self, signal: SignalEvent):
+        # print("-------From generate_order in portfolio.py---------\n")
+        # print(f"This is the signal = \n{signal}")
+        # print(f"This is the target quantity = {self.calculate_target_quantity(signal)}\n")
         ticker = signal.ticker
         signal_type = signal.signal_type
         current_quantity = self.holdings[ticker]
@@ -260,6 +303,8 @@ class Portfolio(ABC):
         target_qty = self.calculate_target_quantity(signal)
 
         if target_qty <= 0:
+            # Even if there is no equity left, the backtest should still be able to run.
+            return None
             raise ValueError(f"Invalid quantity {target_qty}")
         
         if signal_type == "LONG":
@@ -311,20 +356,45 @@ class Portfolio(ABC):
         the parts that update the db records are removed.
         '''
 
-    def update_cash(self, fill: FillEvent, realised_pnl_day: float) -> None:
-        fill_cost = fill.quantity * fill.fill_cost
+    def update_cash(self, fill: FillEvent, realised_pnl_day: float):
+        quantity = float(fill.quantity)
+        price = float(fill.fill_cost)
+        commission = float(fill.commission)
+
+        fill_value = quantity * price
+
         if fill.asset_type == AssetType.FUTURES:
-            cash_chng = realised_pnl_day
+            cash_change = float(realised_pnl_day)
+
         else:
             if fill.direction == "BUY":
-                cash_chng = -(fill_cost + fill.commission)
+                cash_change = -fill_value
             elif fill.direction == "SELL":
-                cash_chng = (fill_cost - fill.commission)
+                cash_change = fill_value
             else:
-                raise ValueError(f"Invalid fill direction {fill.direction} in cash update. Expected 'BUY' or 'SELL'.")
-        self.cash_reserves[self.account_currency] += cash_chng
+                raise ValueError(
+                    f"Invalid fill direction {fill.direction}. "
+                    "Expected 'BUY' or 'SELL'."
+                )
+
+            if fill.asset_type == AssetType.FOREX:
+                bar = self.data_loader.get_current_bar(fill.ticker)
+
+                if bar is None:
+                    raise LookupError(
+                        f"No current forex bar for {fill.ticker}"
+                    )
+                cash_change = self.convert_to_account_currency(
+                    amount=cash_change,
+                    currency=bar.quote_currency,
+                )
+
+            cash_change -= commission
+
+        self.cash_reserves[self.account_currency] += cash_change
         self.current_capital = self.cash_reserves[self.account_currency]
-        self.total_commission += fill.commission
+        self.total_commission += commission
+
 
     #Updates average price and realized PnL for the ticker based on the new fill
     #Note: Returns -commission as a negative cost to the trade
@@ -544,20 +614,20 @@ class Portfolio(ABC):
         }
 
         self.benchmark_records[date] = record
-        # BenchmarkRecord.objects.update_or_create(
-        #     backtest_run = self.backtest_run,
-        #     date = date,
-        #     defaults = {
-        #         "ticker": self.benchmark_ticker,
-        #         "close_price": to_decimal(benchmark_price),
-        #         "quantity": to_decimal(self.benchmark_quantity),
-        #         "market_value": to_decimal(market_value),
-        #         "unrealised_pnl": to_decimal(benchmark_unrealised_pnl),
-        #     }
-        # )
-        #print(f"Updated benchmark record for {self.benchmark_ticker} on 
-        # {date}: price {benchmark_price}, quantity {self.benchmark_quantity},
-        # market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")
+        BenchmarkRecord.objects.update_or_create(
+            backtest_run = self.backtest_run,
+            date = date,
+            defaults = {
+                "ticker": self.benchmark_ticker,
+                "close_price": to_decimal(benchmark_price),
+                "quantity": to_decimal(self.benchmark_quantity),
+                "market_value": to_decimal(market_value),
+                "unrealised_pnl": to_decimal(benchmark_unrealised_pnl),
+            }
+        )
+        print(f"Updated benchmark record for {self.benchmark_ticker} on 
+        {date}: price {benchmark_price}, quantity {self.benchmark_quantity},
+        market value {market_value}, unrealised PnL {benchmark_unrealised_pnl}")
 
     # Position sizing methods
     def get_unit_exposure(self, ticker:str, price:float):
@@ -621,7 +691,16 @@ class Portfolio(ABC):
             )
 
         return stop_distance
-    
+    def end_equity(self):
+        cash_value = self.calculate_cash_value()
+        current_holdings = self.calculate_holdings_value()
+        futures_unrealised_pnl = self.calculate_total_futures_unrealised_pnl()
+        #end_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+        self.current_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+        return self.current_equity
+
+        #backtest_run.end_equity = end_equity
+
     def calculate_target_quantity(self, signal: SignalEvent):
         ticker = signal.ticker
         current_price = float(self.get_latest_price(ticker))
@@ -810,15 +889,16 @@ class DatabasePortfolio(Portfolio):
 
         print("Database save completed")
 
-    def end_equity(self):
-        cash_value = self.calculate_cash_value()
-        current_holdings = self.calculate_holdings_value()
-        futures_unrealised_pnl = self.calculate_total_futures_unrealised_pnl()
-        #end_equity = current_holdings + self.current_capital + futures_unrealised_pnl
-        self.current_equity = current_holdings + self.current_capital + futures_unrealised_pnl
-        return self.current_equity
+# This has been monved
+    # def end_equity(self):
+    #     cash_value = self.calculate_cash_value()
+    #     current_holdings = self.calculate_holdings_value()
+    #     futures_unrealised_pnl = self.calculate_total_futures_unrealised_pnl()
+    #     #end_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+    #     self.current_equity = current_holdings + self.current_capital + futures_unrealised_pnl
+    #     return self.current_equity
 
-        #backtest_run.end_equity = end_equity
+    #     #backtest_run.end_equity = end_equity
     
     def _load_caches(self) -> None:
         for ticker in self.data_loader.tickers:
@@ -843,7 +923,7 @@ class DatabasePortfolio(Portfolio):
         and some attributes, it is abstract because it in MCSPortfolio, 
         the parts that update the db records are removed.
         '''
-        print("Updating fill")
+        # print("Updating fill from portfolio")
         if event.type != "FILL":
             raise ValueError(f"Invalid event type {event.type} in fill update. Expected 'FILL'.")
         
@@ -866,10 +946,11 @@ class DatabasePortfolio(Portfolio):
         self.update_cash(event, net_realised_pnl)
 
         self.holdings[ticker] = new_quantity
-        print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
-        print(f"Current capital after fill: {self.current_capital}")
+        # print("-----From update_fill in portfolio.py--------------")
+        # print(f"Updated holdings for {ticker}: {curr_quantity} -> {new_quantity}")
+        # print(f"Current capital after fill: {self.current_capital}")
         self.realised_pnl += net_realised_pnl
-        print(f"Realized PnL after fill: {self.realised_pnl}")
+        # print(f"Realized PnL after fill: {self.realised_pnl}")
 
         self.update_fill_records(event,
                             curr_quantity,
@@ -891,7 +972,7 @@ class MCSPortfolio(Portfolio):
         This version of update fill lacks the self.end_equity because the db records
         are not saved
         '''
-        print("Updating fields MCS")
+        # print("Update fill for MCS from portfolio")
         if event.type != "FILL":
             raise ValueError(f"Invalid event type {event.type} in fill update. Expected 'FILL'.")
         

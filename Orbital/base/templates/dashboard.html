@@ -7,11 +7,6 @@
 
 {% block content %}
 
-<link
-    rel="stylesheet"
-    href="{% static 'base/css/account.css' %}"
->
-
 <section class = "market-hero">
     <div class =  "page-container market-hero__inner">
         <div>
@@ -103,10 +98,13 @@
             <h2>Margin Account</h2>
         </div>
         <div class = "total-assests">
-            <h3>Total Assets . </h3>
+            <h3>Total Assets</h3>
+            <td>{{ total_assets }}</td>
+
         </div>
         <div class = "todays-pnl">
-            Today's PnL
+            <h3>Today's PnL</h3>
+            <td>{{ today_pnl }}</td>
         </div>
     </div>
 </section>
@@ -363,7 +361,7 @@
 
                 {% if page.has_next %}
                     <a
-                        class = "pagination__current"
+                        class = "pagination__button"
                         href = "?page={{ page.next_page_number }}&q={{ filters.q }}"
                         >
                         Next

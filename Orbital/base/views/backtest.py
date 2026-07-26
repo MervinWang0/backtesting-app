@@ -9,7 +9,8 @@ from base.engine.data_loader import DatabaseDataLoader
 from base.engine.backtest import Backtest
 from base.engine.execution import ExecutionLoader
 from base.models import (StockPriceHistory, Stock,
-ContinuousFuturesSeries, FuturesContract, ForexPair)
+ContinuousFuturesSeries, FuturesContract, ForexPair,
+BenchmarkRecord, PortfolioEquityRecord)
 from django.core.management import call_command
 import re 
 
@@ -53,20 +54,33 @@ def backtest_graph(request) -> JsonResponse:
             
         print("This is the data to be used in backtest"
               f" = {data}")
-        # Checks if stock data exists for ticker in period otherwise download
-        period = get_yf_period(data["start_date"], data["end_date"])
-        if data["asset_type"] == "STOCK":
-            for ticker in data["tickers"]:
-                if not data_exists(ticker, data["start_date"], data["end_date"]):
-                    call_command(
-                        "load_stock_data",
-                        symbol = ticker,
-                        period = period,
-                        interval = "1d",
-                    )
+        # Checks if data exists, and if it does not, download it.
+        # period = get_yf_period(data["start_date"], data["end_date"])
+        # if data["asset_type"] == "STOCK":
+        #     command = "load_stock_data"
+        # elif data["asset_type"] == "FUTURES":
+        #     command = "load_futures_data"
+        # elif data["asset_type"] == "FOREX":
+        #     command = "load_forex_data"
+        # else:
+        #     raise ValueError(f"Asset type is of unexpected type = {data["asset_type"]}")
+        # for ticker in data["tickers"]:
+        #     # data_exists does not work for all assets only stock currently
+        #     if not data_exists(ticker, data["start_date"], data["end_date"]):
+        #         call_command(
+        #             command,
+        #             symbol = ticker,
+        #             period = period,
+        #             interval = "1d",
+        #         )
+        #         print(f"Downloaded data for {ticker}")
         # For Futures, there is a step of stiching the contracts before the
+        # This can be done in backtest itself not here
         # backtest can be run.
-        elif data["asset_type"] == "FUTURES":
+        # TODO Move this to backtest
+        if data["asset_type"] == "FUTURES":
+            # print("backtest_graph of backtest.py")
+            # print("Building futures series")
             data["roll_days"] = 5
             data["continuous_contract_index"] = 1
             data["adjustment_method"] = "NONE"
@@ -95,26 +109,42 @@ def backtest_graph(request) -> JsonResponse:
                                          start_date=data["start_date"],
                                          end_date=data["end_date"],
                                          asset_type=data["asset_type"])
-        print("Backtest not executed but params created")
+        # print("Backtest not executed but params created")
         backtest = Backtest(
                             events=data_loader.events,
                             data_loader=data_loader,
                             **data
                             )
-        # print(Backtest.__dict__)
-        print("Backtest created")
+        # print("These are the attributes of the backtest obj"
+        #       "In the original backtest webpage")
+        # print(backtest.__dict__)
+        # print(f"This is the number of days of data needed")
+        # print("Backtest created")
         btr = backtest.run()
-        print("Backtest executed")
+        # print("Backtest executed")
         fig = btr.get_equity_graph()
         # fig.show()
-        print("equity graph obtained")
+        # print("equity graph obtained")
         equity_graph_html = fig.to_html(full_html=False)
-        print("equity graph converted to html")
+        # print("equity graph converted to html")
 
         # Also pass in the performance metrics.
+        run_model = backtest.run_model
+        run_id = backtest.get_backtest_run_id()
         metrics = btr.get_metrics()
+        benchmark_record = BenchmarkRecord.objects.filter(backtest_run=run_model)
+        market_value = benchmark_record.market_value
+        print(f"This is the market value retrieved from the model {market_value}")
+        portfolio_metrics = PortfolioEquityRecord.objects.filter(backtest_run_id=run_id).values(
+    'total_commission', 'gross_exposure', 'net_exposure', 'gross_exposure_leverage'
+)
+        
         return JsonResponse({"equity_graph_html" : equity_graph_html,
-                             "metrics" : metrics, "run_id" : backtest.get_backtest_run_id()})
+                             "metrics" : metrics,
+                             "run_id" : backtest.get_backtest_run_id(),
+                             "portfolio_metrics" : portfolio_metrics,
+                             "market_value" : market_value,
+                             })
     else:
         return JsonResponse(
             {"error": "This endpoint only supports POST requests."},
@@ -163,9 +193,9 @@ def get_SP500(request) -> JsonResponse:
     This is used in backtest.js to get a list of SP500 tickers from the db
     '''
     tickers = list(Stock.objects.values_list('ticker', flat=True))
-    print("These are the SP 500 tickers to be passed to JS")
-    print(f"\n{tickers}")
-    print(f"\nThis is the length of the tickers {len(tickers)}")
+    # print("These are the SP 500 tickers to be passed to JS")
+    # print(f"\n{tickers}")
+    # print(f"\nThis is the length of the tickers {len(tickers)}")
     return JsonResponse({"tickers" : tickers})
 
 def get_futures_tickers(request) -> JsonResponse:
@@ -173,9 +203,9 @@ def get_futures_tickers(request) -> JsonResponse:
     This is used in backtest.js to get a list of futures tickers from the db
     '''
     tickers = list(set(FuturesContract.objects.values_list('root_symbol', flat=True)))
-    print("These are the futures tickers to be passed to JS")
-    print(f"\n{tickers}")
-    print(f"\nThis is the length of the tickers {len(tickers)}")
+    # print("These are the futures tickers to be passed to JS")
+    # print(f"\n{tickers}")
+    # print(f"\nThis is the length of the tickers {len(tickers)}")
     return JsonResponse({"tickers" : tickers})
 
 def get_forex_tickers(request) -> JsonResponse:
@@ -183,9 +213,9 @@ def get_forex_tickers(request) -> JsonResponse:
     This is used in backtest.js to get a list of forex tickers from the db
     '''
     tickers = list(set(ForexPair.objects.values_list('ticker', flat=True)))
-    print("These are the forex tickers to be passed to JS")
-    print(f"\n{tickers}")
-    print(f"\nThis is the length of the tickers {len(tickers)}")
+    # print("These are the forex tickers to be passed to JS")
+    # print(f"\n{tickers}")
+    # print(f"\nThis is the length of the tickers {len(tickers)}")
     return JsonResponse({"tickers" : tickers})
 
 # Functions for handling Futures backtest

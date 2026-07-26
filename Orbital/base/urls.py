@@ -13,6 +13,7 @@ urlpatterns = [
     path("stocks/<str:symbol>/order/", views.submit_paper_order, name= "submit_paper_order"),
     path("paper-accounts/create", views.create_paper_account, name="create_paper_account"),
     path("portfolio/", views.portfolio, name="portfolio"),
+    path("portfolio/delete-account/", views.delete_paper_account, name="delete_paper_account"),
     path("backtest/", views.get_backtest, name="backtest"),
     path("backtest/monte_carlo_simulation/", views.monte_carlo_simulation,
          name="monte_carlo_simulation"),

@@ -42,8 +42,8 @@ def timed(f):
 
 if __name__ == "__main__":
 # Moving Average Cross test
-    # data = {'short_window': int(5.0),
-    #         'long_window': int(10.0),
+    # data = {'mac_short_window': int(5.0),
+    #         'mac_long_window': int(10.0),
     #         'asset_type': 'STOCK',
     #         'strength': 1.0,
     #         'slippage': 0.0,
@@ -67,6 +67,30 @@ if __name__ == "__main__":
     # btr = backtest1.run()
     # btr.get_equity_graph().show()
     
+# Moving Average Cross Divergence test
+    # data = {
+    #         'asset_type': 'STOCK',
+    #         'strength': 1.0,
+    #         'slippage': 0.0,
+    #         'initial_capital': 100000.0,
+    #         'commission': 0.0,
+    #         'start_date': datetime.fromisoformat("2024-01-01").date(),
+    #         'end_date': datetime.fromisoformat("2025-01-01").date(),
+    #         'tickers': ['AAPL'],
+    #         'strategy_name': 'MACD'}
+    # # start_date = datetime.fromisoformat("2024-01-01").date()
+    # # end_date = datetime.fromisoformat("2025-01-01").date()
+    # data_loader = DatabaseDataLoader(Queue(), ["AAPL"], data['start_date'],
+    #                          data['end_date'], "STOCK")
+    # backtest1 = Backtest(
+    #                     events=data_loader.events,
+    #                     data_loader=data_loader,
+    #                     **data
+    #                     )
+    # # print(backtest1)
+    # # print(backtest2)
+    # btr = backtest1.run()
+    # btr.get_equity_graph().show()
 # Mean Reversion test
 
     # data = {
@@ -74,14 +98,14 @@ if __name__ == "__main__":
     #         'rsi_oversold' : 30,
     #         'bollinger_window' : 20,
     #         'z_window' : 20,
-    #         'asset_type': 'FUTURES',
+    #         'asset_type': 'STOCK',
     #         'strength': 1.0,
     #         'slippage': 0.0,
     #         'initial_capital': 100000.0,
     #         'commission': 0.0,
     #         'start_date': datetime.fromisoformat("2025-01-01").date(),
     #         'end_date': datetime.fromisoformat("2025-05-01").date(),
-    #         'tickers': ['ES'],
+    #         'tickers': ['AAPL'],
     #         'strategy_name': 'Mean Reversion'}
     # data_loader = DatabaseDataLoader(Queue(), data['tickers'], data['start_date'],
     #                          data['end_date'], data['asset_type'])
@@ -91,8 +115,6 @@ if __name__ == "__main__":
     #                     adjustment_method="BACK_ADJUSTED",
     #                     **data
     #                     )
-    # print(backtest1)
-    # print(backtest2)
     # btr = backtest1.run()
     # btr.get_equity_graph().show()
     # prices = [bar.close for bar in data_loader.latest_stock_data['TSLA']]
@@ -122,6 +144,30 @@ if __name__ == "__main__":
     # btr.get_equity_graph().show()
 
 # Breakout Testing
+    data = {
+            'asset_type': 'STOCK',
+            'strength': 1.0,
+            'slippage': 0.0,
+            'initial_capital': 100000.0,
+            'commission': 0.0,
+            'start_date': datetime.fromisoformat("2025-01-01").date(),
+            'end_date': datetime.fromisoformat("2026-01-01").date(),
+            'tickers': ['TSLA'],
+            'strategy_name': 'Breakout'}
+
+    data_loader = DatabaseDataLoader(Queue(), data['tickers'], data['start_date'],
+                             data['end_date'], "STOCK")
+
+    backtest1 = Backtest(
+                        events=data_loader.events,
+                        data_loader=data_loader,
+                        **data
+                        )
+
+    btr = backtest1.run()
+    # btr.get_equity_graph().show()
+
+# Momentum Triple testing
     # data = {
     #         'asset_type': 'STOCK',
     #         'strength': 1.0,
@@ -130,8 +176,8 @@ if __name__ == "__main__":
     #         'commission': 0.0,
     #         'start_date': datetime.fromisoformat("2025-01-01").date(),
     #         'end_date': datetime.fromisoformat("2026-01-01").date(),
-    #         'tickers': ['TSLA'],
-    #         'strategy_name': 'Breakout'}
+    #         'tickers': ['JPM'],
+    #         'strategy_name': 'Momentum'}
 
     # data_loader = DatabaseDataLoader(Queue(), data['tickers'], data['start_date'],
     #                          data['end_date'], "STOCK")
@@ -144,30 +190,6 @@ if __name__ == "__main__":
 
     # btr = backtest1.run()
     # btr.get_equity_graph().show()
-
-# Momentum Triple testing
-    data = {
-            'asset_type': 'STOCK',
-            'strength': 1.0,
-            'slippage': 0.0,
-            'initial_capital': 100000.0,
-            'commission': 0.0,
-            'start_date': datetime.fromisoformat("2025-01-01").date(),
-            'end_date': datetime.fromisoformat("2026-01-01").date(),
-            'tickers': ['JPM'],
-            'strategy_name': 'Momentum'}
-
-    data_loader = DatabaseDataLoader(Queue(), data['tickers'], data['start_date'],
-                             data['end_date'], "STOCK")
-
-    backtest1 = Backtest(
-                        events=data_loader.events,
-                        data_loader=data_loader,
-                        **data
-                        )
-
-    btr = backtest1.run()
-    btr.get_equity_graph().show()
 
 # Rate of Change Strategy
 

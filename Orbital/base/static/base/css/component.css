@@ -155,6 +155,7 @@
     color: var(--text-primary);
 }
 
+
 .activity-table {
     width: 100%;
     border-collapse: collapse;
@@ -204,6 +205,43 @@
     flex-wrap: wrap;
 }
 
+.flex-row-description {
+    display: flex;
+}
+
+.flex-item-text {
+    flex: 1;
+    padding: 1rem;
+}
+
+.flex-item-text p {
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    letter-spacing: 0.04em;
+    font-weight: 200;
+    margin: 0 0 3rem 0;;
+}
+
+.flex-item-text p:last-child {
+    margin-bottom: 0;
+}
+
+.flex-item-img {
+    flex: 1;
+    padding: 1rem;
+}
+
+.flex-item-img img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.flex-item {
+    display: flex;
+    flex-grow: 1;
+    flex-basis: 0;
+}
 /* A general container, for displaying activity cards using grid */
 .grid-container {
     display: grid;
@@ -229,6 +267,10 @@
     min-width: 160px;
 }
 
+/* Styling for the table in MCS */
+.table {
+
+}
 .button:hover:not(:disabled) {
     background-color: var(--color-black);
     color: var(--color-white);
@@ -426,6 +468,14 @@
 
 /* Progress bar css */
 
+/* The style of the graph needs to be configured, 
+Otherwise the graph may only fill up part of the page. 
+Note do not uncomment, this styling will destroy graph*/
+/* .graph {
+    width: 100%;
+    height: 600px;
+    padding: 1rem;
+} */
 /* The wrapper storing the loading bar and loading text */
 .progress-wrapper {
     width: 100%;

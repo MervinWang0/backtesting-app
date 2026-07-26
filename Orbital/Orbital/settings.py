@@ -93,7 +93,6 @@ DATABASES = {
     # This is the setting for remote db
     'default' : dj_database_url.config(
         default=os.environ.get("DATABASE_URL"))
-    
 
         # Old native way of setting database params
         # 'default' : {
@@ -104,6 +103,7 @@ DATABASES = {
         #     'HOST': os.environ.get('DB_HOST', 'localhost'),
         #     'PORT': os.environ.get('DB_PORT', '5432'),
         # }
+        
 }
 
 # Password validation

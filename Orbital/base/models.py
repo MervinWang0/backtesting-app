@@ -281,10 +281,10 @@ class BacktestRun(TimeStampedModel):
     tickers = models.JSONField(default=list, blank=True)
 
     # Additional parameters necessary
-    strength = models.IntegerField(default=1)
-    commission = models.DecimalField(max_digits=10, decimal_places=2,default=0)
-    slippage = models.IntegerField(default=0)
-    risk_free_rate = models.DecimalField(max_digits=10, decimal_places=4,default=0)
+    strength = models.DecimalField(max_digits=32, decimal_places=16)
+    commission = models.DecimalField(max_digits=32, decimal_places=16)
+    slippage = models.DecimalField(max_digits=32, decimal_places=16)
+    risk_free_rate = models.DecimalField(max_digits=32, decimal_places=16)
     # Encodes strategy params in a dict
     strategy_params = models.JSONField(_("Strategy specific parameters"),
                                        encoder=DjangoJSONEncoder,
@@ -420,9 +420,9 @@ class PaperAccount(models.Model):
 
 class PaperPositions(models.Model):
     account = models.ForeignKey(PaperAccount, on_delete=models.CASCADE, related_name = "positions")
-    stock = models.ForeignKey(Stock, on_delete=models.PROTECT, related_name="stock_positions", null=True, blank=True)
-    forex = models.ForeignKey(ForexPair, on_delete=models.PROTECT, related_name = "forex_positions", null=True, blank=True)
-    futures = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="futures_positions", null=True, blank=True)
+    stock = models.ForeignKey(Stock, on_delete=models.CASCADE, related_name="stock_positions", null=True, blank=True)
+    forex = models.ForeignKey(ForexPair, on_delete=models.CASCADE, related_name = "forex_positions", null=True, blank=True)
+    futures = models.ForeignKey(FuturesContract, on_delete=models.CASCADE, related_name="futures_positions", null=True, blank=True)
 
     #stock 
     stock_quantity = models.DecimalField(max_digits=10, decimal_places=4, default=Decimal("0"))
@@ -461,9 +461,9 @@ class PaperOrder(models.Model):
         LMT = "LMT", "Limit"
     
     account = models.ForeignKey(PaperAccount, on_delete=models.CASCADE)
-    stock = models.ForeignKey(Stock, on_delete=models.PROTECT, related_name="stock_order", null=True, blank=True)
-    forex = models.ForeignKey(ForexPair, on_delete=models.PROTECT, related_name = "forex_order", null=True, blank=True)
-    futures = models.ForeignKey(FuturesContract, on_delete=models.PROTECT, related_name="futures_order", null=True, blank=True)
+    stock = models.ForeignKey(Stock, on_delete=models.CASCADE, related_name="stock_order", null=True, blank=True)
+    forex = models.ForeignKey(ForexPair, on_delete=models.CASCADE, related_name = "forex_order", null=True, blank=True)
+    futures = models.ForeignKey(FuturesContract, on_delete=models.CASCADE, related_name="futures_order", null=True, blank=True)
 
     order = models.CharField(max_length=10, choices=Order.choices,)
     type = models.CharField(max_length=10, choices = OrderType.choices , default = OrderType.MARKET,)
@@ -484,7 +484,7 @@ class PaperOrder(models.Model):
         f"{self.account}"
 
 class PaperTrade(models.Model):
-    order = models.OneToOneField(PaperOrder, on_delete=models.PROTECT, related_name="trade",)
+    order = models.OneToOneField(PaperOrder, on_delete=models.CASCADE, related_name="trade",)
     date = models.DateField()
     fulfilled_price = models.DecimalField(max_digits = 20, decimal_places=4)
     quantity = models.DecimalField(max_digits = 20, decimal_places=4)
