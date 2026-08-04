@@ -791,7 +791,7 @@ class DatabasePortfolio(Portfolio):
         self.backtest_run = run_model
         self._load_caches()
 
-    @timed
+    # @timed
     def complete_bt(self) -> None:
         PortfolioEquityRecord.objects.filter(backtest_run=self.backtest_run).delete()
         PortfolioPositionRecord.objects.filter(backtest_run=self.backtest_run).delete()

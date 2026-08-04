@@ -66,7 +66,7 @@ class MonteCarloSimulator():
         self.backtest = backtest
 
     
-    @timed
+    # @timed
     def simulate(self, num_sims: int, df: float = 5, exp_jumps: int = 0, mean_log_jump_size: float = 0.05,
                  std_log_jump_size: float = 0.01, is_t: bool = True,is_regime_switching: bool = True,
                  is_jump_diffusion: bool = True, **kwargs) -> list[BacktestResult]:
@@ -217,7 +217,7 @@ class MonteCarloSimulator():
                             for i in range(len(og_data))]
         return random_stock_data
     
-    @timed
+    # @timed
     def run_backtest(self, random_stock_data: list[Bar]) -> any:
         ''' 
         This function is just to seperate the execution of the backtest with randomized
@@ -319,7 +319,7 @@ class GBMPriceSimulator(PriceSimulator):
         # Carry out GBM Formula, note that jump_contribution does not work with non 1 dt currently
         return mu * dt + sigma * np.sqrt(dt) * epsilon + jump_contribution
 
-    @timed
+    # @timed
     def randomize_price(self) -> np.array:
         ''' 
         Takes in a list of prices. E.g. list of close prices.

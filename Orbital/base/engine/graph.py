@@ -71,7 +71,7 @@ def get_stock_graph(stock_data: list[Bar]) -> px.Figure:
     )])
     return fig
 
-@timed
+# @timed
 def get_monte_graph(btr_lst: list[BacktestResult]) -> px.Figure:
     '''
     This function takes in a list of backtest results, basically the ouput of MCS simulate,

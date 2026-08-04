@@ -62,22 +62,22 @@ def initialize_strategy(name: str,
                                             **strategy_params)
         
 
-def timed(f):
-    '''
-    This function is used to time any function
-    Usage syntax
-    @timed
-    def funct()
-    '''
+# def timed(f):
+#     '''
+#     This function is used to time any function
+#     Usage syntax
+#     @timed
+#     def funct()
+#     '''
 
-    @wraps(f)
-    def wrapper(*args, **kwds):
-        start = time()
-        result = f(*args, **kwds)
-        elapsed = time() - start
-        print(f"function {f.__name__} took {elapsed}")
-        return result
-    return wrapper
+#     @wraps(f)
+#     def wrapper(*args, **kwds):
+#         start = time()
+#         result = f(*args, **kwds)
+#         elapsed = time() - start
+#         print(f"function {f.__name__} took {elapsed}")
+#         return result
+#     return wrapper
 
 class BacktestResult:
     '''
@@ -137,7 +137,7 @@ class BacktestResult:
         df["pnl"] = (df['sell_price'] - df['buy_price']) * df['quantity']
         return df
 
-    @timed
+    # @timed
     def get_metrics(self) -> dict[str: float]:
         '''
         Returns various performance and portfolio metrics.
@@ -152,7 +152,7 @@ class BacktestResult:
                              trade_log=trade_log)
 
 class Backtest:
-    @timed
+    # @timed
     def __init__(self, events: Queue,
                  tickers: list[str],
                  start_date: datetime.date,
@@ -269,7 +269,7 @@ class Backtest:
         '''
         return self.run_model.id
 
-    @timed
+    # @timed
     def run(self):
         '''
         Function that executes the backtest.
