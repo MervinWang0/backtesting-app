@@ -85,8 +85,8 @@ function remove_checkbox_ids(array) {
             array.splice(index, 1);
         }
     }
-    console.log(`This is the list of ids, which are visible,
-        excluding the checkbox ids ${array}`);
+    // console.log(`This is the list of ids, which are visible,
+    //     excluding the checkbox ids ${array}`);
     return array;
 }
 // Technically unnecessary if the mcs is only run with visible inputs,
@@ -98,7 +98,7 @@ function clear_hidden_output() {
     for (const input_div of input_container_divs) {
         const input_element = input_div.querySelector("input");
         if(input_element.closest('div').style.display == "none") {
-            console.log(`This is the element to clear value ${input_element.id}`);
+            // console.log(`This is the element to clear value ${input_element.id}`);
             input_element.value = "";
         }
     }
@@ -121,7 +121,7 @@ function graph_mcs() {
     bar_set_run();
     // Pass data to views function
     const cleaned_params = get_cleaned_params();
-    console.log(cleaned_params)
+    // console.log(cleaned_params)
     fetch("/mcs_graph/", {
         method: "POST",
         headers: {
@@ -140,11 +140,11 @@ function graph_mcs() {
         mcs_graph_container.innerHTML = '';
         let range = document.createRange();
         let fragment = range.createContextualFragment(data["mcs_graph_html"]);
-        console.log(`This is what html of graph looks like ${fragment}`);
+        // console.log(`This is what html of graph looks like ${fragment}`);
         mcs_graph_container.append(fragment);
         // Make visible output
-        console.log(data);
-        console.log(data["mcs_metrics"]);
+        // console.log(data);
+        // console.log(data["mcs_metrics"]);
         show_output()
         bar_set_completed();
         range.createContextualFragment(add_rows(data["mcs_metrics"]))
@@ -322,13 +322,13 @@ function quicktest(param_list) {
     // Operate on the JS data, basically a dictonary
     .then(data => 
         {
-        console.log("This is the data returned by quicktest\n");
-        console.log(JSON.stringify(data));
+        // console.log("This is the data returned by quicktest\n");
+        // console.log(JSON.stringify(data));
         for(const [key, value] of Object.entries(data)) {
 
             // The key is the id of the param, value is its value
-            console.log(`This is the key ${key}`)
-            console.log(`This is the value ${value}`)
+            // console.log(`This is the key ${key}`)
+            // console.log(`This is the value ${value}`)
             const element = document.getElementById(key);
 
             // First fill in the values
@@ -345,7 +345,7 @@ function quicktest(param_list) {
             }
             }
         // Clear the params which are hidden
-        console.log(`Clearing hidden outputs`)
+        // console.log(`Clearing hidden outputs`)
         clear_hidden_output();
         }
         )
@@ -353,20 +353,20 @@ function quicktest(param_list) {
 
 // Obtain the a list of the input ids, those which are displayed
 function get_param_list(){
-    console.log(`Obtaining the list of visible inputs`);
+    // console.log(`Obtaining the list of visible inputs`);
     const input_ids = [];
     // Input container is a div containing divs, which contain input elements
     const input_container = document.getElementById("input_container");
     const input_container_divs = input_container.querySelectorAll("div");
     for (const input_div of input_container_divs) {
         const input_element = input_div.querySelector("input");
-        console.log(`This is the input element ${input_element.id}`);
+        // console.log(`This is the input element ${input_element.id}`);
         // If the div containing the input is visible, add it to list
         if (input_element.closest("div").style.display == "") {
             input_ids.push(input_element.id);
         }
     }
-    console.log(`This is the list of visible inputs ${input_ids}`);
+    // console.log(`This is the list of visible inputs ${input_ids}`);
     return input_ids
 }
 
@@ -380,7 +380,7 @@ function get_all_parameters() {
         const input_element = input_div.querySelector("input");
         input_ids.push(input_element.id);
     }
-    console.log(`This is the list of all inputs ${input_ids}`);
+    // console.log(`This is the list of all inputs ${input_ids}`);
     return input_ids
 }
 
@@ -438,8 +438,8 @@ let bar_state = "Monte Carlo Simulation Not Started";
 function update_progress() {
     // progress_bar.style.background = "linear-gradient(90deg, #3b82f6, #8b5cf6);";
     // progress_bar.stylee.animation = "width 0.3s ease;";
-    console.log(`This is the state = ${bar_state}`)
-    console.log(`This is the width = ${bar_width}`)
+    // console.log(`This is the state = ${bar_state}`)
+    // console.log(`This is the width = ${bar_width}`)
     // Other functions will update state, and this function is called once per second.
     switch(bar_state) {
         case "Monte Carlo Simulation Not Started":
