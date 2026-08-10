@@ -173,7 +173,17 @@
                                     {% for trade in trades %}
                                         <tr>
                                             <td>{{ trade.date|date:"d M Y" }}</td>
-                                            <td class="stock-symbol">{{ trade.stock.ticker }}</td>
+                                            {% comment %} if else needed to select ticker, 
+                                            as asset is not indicated in PaperOrder {% endcomment %}
+                                            {% if trade.order.stock.ticker %}
+                                                <td class="stock-symbol">{{ trade.order.stock.ticker }}</td>
+                                            {% elif trade.order.forex.ticker %}
+                                                <td class="stock-symbol">{{ trade.order.stock.ticker }}</td>
+                                            {% elif trade.order.futures.ticker %}
+                                                <td class="stock-symbol">{{ trade.order.stock.ticker }}</td>
+                                            {% else %}
+                                                <td class="stock-symbol">{{ "Missing" }}</td>
+                                            {% endif %}
                                             <td class="price-column">${{ trade.fulfilled_price|floatformat:4 }}</td>
                                             <td class="quantity-column">{{ trade.quantity|floatformat:4 }}</td>
                                             <td class="quantity-column">{{ trade.opened_quantity|floatformat:4 }}</td>
